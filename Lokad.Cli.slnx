@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="Lokad.Cli.Generator.FullTests/Lokad.Cli.Generator.FullTests.csproj" />
+  <Project Path="Lokad.Cli.Generator.Tests/Lokad.Cli.Generator.Tests.csproj" />
+  <Project Path="Lokad.Cli.Generator/Lokad.Cli.Generator.csproj" />
+  <Project Path="Lokad.Cli.Tests/Lokad.Cli.Tests.csproj" />
+  <Project Path="Lokad.Cli/Lokad.Cli.csproj" />
+</Solution>

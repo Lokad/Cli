@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+        <Nullable>enable</Nullable>
+        <LangVersion>11.0</LangVersion>
+        <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+        <IsPackable Condition="'$(Configuration)'=='Release'">true</IsPackable>
+        <IsPackable Condition="'$(Configuration)'!='Release'">false</IsPackable>
+        <GeneratePackageOnBuild Condition="'$(Configuration)'=='Release'">true</GeneratePackageOnBuild>
+        <PackageReadmeFile>Readme.md</PackageReadmeFile>
+        <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+        <PackageIcon>lokad.png</PackageIcon>
+        <Version>1.0.0</Version>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="Readme.md" Pack="true" PackagePath="\" />
+        <None Include="..\LICENSE.txt" Pack="true" PackagePath="\" />
+        <None Include="..\lokad.png" Pack="true" PackagePath="\" />
+        <None Include="..\Lokad.Cli.Generator\bin\$(Configuration)\netstandard2.0\Lokad.Cli.Generator.dll"
+              Pack="true"
+              PackagePath="analyzers/dotnet/cs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Lokad.Cli.Generator\Lokad.Cli.Generator.csproj"
+                          PrivateAssets="all"
+                          ReferenceOutputAssembly="false" />
+    </ItemGroup>
+
+</Project>
