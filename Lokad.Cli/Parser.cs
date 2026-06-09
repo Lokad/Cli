@@ -16,5 +16,17 @@ namespace Lokad.Cli
         {
             return T.Parse(arguments);
         }
+
+        /// <summary>
+        ///     Parses tokenized command-line arguments into the requested generated argument type.
+        /// </summary>
+        /// <param name="arguments"> Tokenized command-line argument stream. </param>
+        /// <typeparam name="T"> Generated argument type. </typeparam>
+        /// <returns> Parsed argument object. </returns>
+        public static T ParseTokenized<T>(TokenizedArguments arguments)
+            where T : ICliParsed<T>
+        {
+            return T.ParseTokenized(arguments);
+        }
     }
 }

@@ -3,10 +3,39 @@ namespace Lokad.Cli.Generator.Emit
     public sealed class CliTypeInfo
     {
         public CliTypeInfo(TypeName typeName, CliTypeKind kind, SourceLocationInfo? location)
+            : this(
+                typeName,
+                kind,
+                location,
+                new char[0],
+                new string[0],
+                false,
+                new CliChoiceInfo[0],
+                new CliArgumentInfo[0],
+                null)
+        {
+        }
+
+        public CliTypeInfo(
+            TypeName typeName,
+            CliTypeKind kind,
+            SourceLocationInfo? location,
+            char[] shortOptions,
+            string[] longOptions,
+            bool hasShortNumericArguments,
+            CliChoiceInfo[] choices,
+            CliArgumentInfo[] arguments,
+            CliDiscriminatorInfo? discriminator)
         {
             TypeName = typeName;
             Kind = kind;
             Location = location;
+            ShortOptions = shortOptions;
+            LongOptions = longOptions;
+            HasShortNumericArguments = hasShortNumericArguments;
+            Choices = choices;
+            Arguments = arguments;
+            Discriminator = discriminator;
         }
 
         public TypeName TypeName { get; }
@@ -14,5 +43,17 @@ namespace Lokad.Cli.Generator.Emit
         public CliTypeKind Kind { get; }
 
         public SourceLocationInfo? Location { get; }
+
+        public char[] ShortOptions { get; }
+
+        public string[] LongOptions { get; }
+
+        public bool HasShortNumericArguments { get; }
+
+        public CliChoiceInfo[] Choices { get; }
+
+        public CliArgumentInfo[] Arguments { get; }
+
+        public CliDiscriminatorInfo? Discriminator { get; }
     }
 }

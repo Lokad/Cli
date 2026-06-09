@@ -11,7 +11,9 @@ public class GeneratorTests
 
     #region AUTO-GENERATED CODE
 
+    [Fact] public void ChoiceDiscrimination() => Run();
     [Fact] public void Empty() => Run();
+    [Fact] public void TokenizationOptions() => Run();
 
     #endregion
 }

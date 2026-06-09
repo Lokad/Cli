@@ -12,5 +12,12 @@ namespace Lokad.Cli
         /// <param name="arguments"> Raw command-line argument strings. </param>
         /// <returns> Parsed argument object. </returns>
         static abstract T Parse(string[] arguments);
+
+        /// <summary>
+        ///     Parses tokenized command-line arguments into an instance of <typeparamref name="T"/>.
+        /// </summary>
+        /// <param name="arguments"> Tokenized command-line argument stream. </param>
+        /// <returns> Parsed argument object. </returns>
+        static abstract T ParseTokenized(TokenizedArguments arguments);
     }
 }

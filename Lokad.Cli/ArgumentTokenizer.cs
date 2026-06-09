@@ -124,14 +124,51 @@ namespace Lokad.Cli
             }
 
             var set = argument.Substring(1);
+            var separator = set.IndexOf('=');
+            if (separator >= 0)
+            {
+                if (separator == 1)
+                {
+                    var option = set[0];
+                    if (!shortOptions.Contains(option))
+                        throw new ParseException($"unknown short option `-{option}`");
+
+                    tokens.Add(new ShortArgWithValue(option, set.Substring(separator + 1)));
+                    return true;
+                }
+
+                throw new ParseException($"unexpected = in short option list `{argument}`");
+            }
+
+            var allKnownShortOptions = true;
+            foreach (var option in set)
+            {
+                if (!shortOptions.Contains(option))
+                {
+                    allKnownShortOptions = false;
+                    break;
+                }
+            }
+
+            if (allKnownShortOptions)
+            {
+                tokens.Add(new ShortArgSet(set));
+                return true;
+            }
+
+            if (set.Length > 1 && shortOptions.Contains(set[0]) && IsDigits(set, 1))
+            {
+                tokens.Add(new ShortArgWithValue(set[0], set.Substring(1)));
+                return true;
+            }
+
             foreach (var option in set)
             {
                 if (!shortOptions.Contains(option))
                     throw new ParseException($"unknown short option `-{option}`");
             }
 
-            tokens.Add(new ShortArgSet(set));
-            return true;
+            throw new InvalidOperationException("Unreachable short option tokenization state.");
         }
 
         /// <summary>
@@ -141,14 +178,19 @@ namespace Lokad.Cli
         /// <returns> <c>true</c> when the argument starts with <c>-</c> followed by digits. </returns>
         private static bool IsNumericShortArgument(string argument)
         {
-            for (var i = 1; i < argument.Length; i++)
+            return IsDigits(argument, 1);
+        }
+
+        private static bool IsDigits(string value, int start)
+        {
+            for (var i = start; i < value.Length; i++)
             {
-                var c = argument[i];
+                var c = value[i];
                 if (c < '0' || c > '9')
                     return false;
             }
 
-            return argument.Length > 1;
+            return value.Length > start;
         }
     }
 }

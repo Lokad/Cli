@@ -1,0 +1,258 @@
+#nullable enable
+#pragma warning disable 0162, 0219
+namespace Test;
+partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.TokenizationOptions>
+{
+    public static global::Test.TokenizationOptions Parse(string[] arguments)
+    {
+        // Tokenization
+        var tokenized = global::Lokad.Cli.ArgumentTokenizer.Tokenize(
+            arguments,
+            new char[] { 'm', 'c', 'p', 'v', 'f' },
+            new string[] { @"mode", @"from-ctor", @"raw-param", @"verbose", @"field" },
+            true);
+
+        return ParseTokenizedCore(tokenized);
+    }
+
+    public static global::Test.TokenizationOptions ParseTokenized(global::Lokad.Cli.TokenizedArguments arguments)
+    {
+        if (arguments == null) throw new global::System.ArgumentNullException(nameof(arguments));
+
+        return ParseTokenizedCore(arguments);
+    }
+
+    private static global::Test.TokenizationOptions ParseTokenizedCore(global::Lokad.Cli.TokenizedArguments tokenized)
+    {
+        // Discrimination
+        _ = tokenized;
+
+        // Binding
+        var arg0Seen = false;
+        string? arg0Value = default;
+        var arg1Seen = false;
+        string? arg1Value = default;
+        var arg2Seen = false;
+        bool arg2Value = default;
+        var arg3Seen = false;
+        int arg3Value = default;
+        var arg4Seen = false;
+        string? arg4Value = default;
+        var positionalIndex = 0;
+        global::Lokad.Cli.ITokenizedArguments? current;
+        while ((current = tokenized.Shift()) != null)
+        {
+            switch (current)
+            {
+                case global::Lokad.Cli.LongArgWithValue longArgWithValue:
+                    if (longArgWithValue.Name == @"from-ctor")
+                    {
+                        arg0Value = longArgWithValue.Value;
+                        arg0Seen = true;
+                        break;
+                    }
+                    if (longArgWithValue.Name == @"raw-param")
+                    {
+                        arg1Value = longArgWithValue.Value;
+                        arg1Seen = true;
+                        break;
+                    }
+                    if (longArgWithValue.Name == @"field")
+                    {
+                        arg4Value = longArgWithValue.Value;
+                        arg4Seen = true;
+                        break;
+                    }
+                    if (longArgWithValue.Name == @"mode")
+                        break;
+                    throw new global::Lokad.Cli.ParseException($"unexpected option `--{longArgWithValue.Name}`");
+                    break;
+                case global::Lokad.Cli.LongArg longArg:
+                    if (longArg.Name == @"from-ctor")
+                    {
+                        var valueToken = tokenized.Shift();
+                        if (!(valueToken is global::Lokad.Cli.ValueArg optionValue))
+                            throw new global::Lokad.Cli.ParseException(@"option `--from-ctor` expects a value");
+                        arg0Value = optionValue.Value;
+                        arg0Seen = true;
+                        break;
+                    }
+                    if (longArg.Name == @"raw-param")
+                    {
+                        var valueToken = tokenized.Shift();
+                        if (!(valueToken is global::Lokad.Cli.ValueArg optionValue))
+                            throw new global::Lokad.Cli.ParseException(@"option `--raw-param` expects a value");
+                        arg1Value = optionValue.Value;
+                        arg1Seen = true;
+                        break;
+                    }
+                    if (longArg.Name == @"verbose")
+                    {
+                        if (arg2Seen)
+                            throw new global::Lokad.Cli.ParseException(@"duplicate option `--verbose`");
+                        arg2Seen = true;
+                        arg2Value = true;
+                        break;
+                    }
+                    if (longArg.Name == @"field")
+                    {
+                        var valueToken = tokenized.Shift();
+                        if (!(valueToken is global::Lokad.Cli.ValueArg optionValue))
+                            throw new global::Lokad.Cli.ParseException(@"option `--field` expects a value");
+                        arg4Value = optionValue.Value;
+                        arg4Seen = true;
+                        break;
+                    }
+                    if (longArg.Name == @"mode")
+                        break;
+                    throw new global::Lokad.Cli.ParseException($"unexpected option `--{longArg.Name}`");
+                    break;
+                case global::Lokad.Cli.ShortArgWithValue shortArgWithValue:
+                    if (shortArgWithValue.Name == 'c')
+                    {
+                        arg0Value = shortArgWithValue.Value;
+                        arg0Seen = true;
+                        break;
+                    }
+                    if (shortArgWithValue.Name == 'p')
+                    {
+                        arg1Value = shortArgWithValue.Value;
+                        arg1Seen = true;
+                        break;
+                    }
+                    if (shortArgWithValue.Name == 'f')
+                    {
+                        arg4Value = shortArgWithValue.Value;
+                        arg4Seen = true;
+                        break;
+                    }
+                    throw new global::Lokad.Cli.ParseException($"unexpected option `-{shortArgWithValue.Name}`");
+                    break;
+                case global::Lokad.Cli.ShortArgSet shortArgSet:
+                    foreach (var shortOption in shortArgSet.Options)
+                    {
+                        if (shortOption == 'c')
+                        {
+                            var valueToken = tokenized.Shift();
+                            if (!(valueToken is global::Lokad.Cli.ValueArg optionValue))
+                                throw new global::Lokad.Cli.ParseException(@"option `-c` expects a value");
+                            arg0Value = optionValue.Value;
+                            arg0Seen = true;
+                            continue;
+                        }
+                        if (shortOption == 'p')
+                        {
+                            var valueToken = tokenized.Shift();
+                            if (!(valueToken is global::Lokad.Cli.ValueArg optionValue))
+                                throw new global::Lokad.Cli.ParseException(@"option `-p` expects a value");
+                            arg1Value = optionValue.Value;
+                            arg1Seen = true;
+                            continue;
+                        }
+                        if (shortOption == 'v')
+                        {
+                            if (arg2Seen)
+                                throw new global::Lokad.Cli.ParseException(@"duplicate option `-v`");
+                            arg2Seen = true;
+                            arg2Value = true;
+                            continue;
+                        }
+                        if (shortOption == 'f')
+                        {
+                            var valueToken = tokenized.Shift();
+                            if (!(valueToken is global::Lokad.Cli.ValueArg optionValue))
+                                throw new global::Lokad.Cli.ParseException(@"option `-f` expects a value");
+                            arg4Value = optionValue.Value;
+                            arg4Seen = true;
+                            continue;
+                        }
+                        throw new global::Lokad.Cli.ParseException($"unexpected option `-{shortOption}`");
+                    }
+                    break;
+                case global::Lokad.Cli.NumericShortArg numericShortArg:
+                    {
+                        arg3Value = ParseInt32(numericShortArg.Value, "-" + numericShortArg.Value);
+                        arg3Seen = true;
+                        break;
+                    }
+                    break;
+                case global::Lokad.Cli.ValueArg valueArg:
+                    if (tokenized.MaybeSkipPositional(valueArg.Value))
+                        break;
+                    throw new global::Lokad.Cli.ParseException($"unexpected argument `{valueArg.Value}`");
+                    break;
+            }
+        }
+
+        if (!arg0Seen)
+            throw new global::Lokad.Cli.ParseException(@"missing option `--from-ctor`");
+
+        if (!arg1Seen)
+            throw new global::Lokad.Cli.ParseException(@"missing option `--raw-param`");
+
+        return new global::Test.TokenizationOptions(arg0Value!, arg1Value!)
+        {
+            Verbose = arg2Value,
+            Depth = arg3Seen ? arg3Value : default(global::System.Nullable<int>),
+            Field = arg4Seen ? arg4Value : default,
+        };
+    }
+
+    private static int ParseInt32(string value, string label)
+    {
+        if (global::System.Int32.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+            return parsed;
+
+        throw new global::Lokad.Cli.ParseException($"invalid value `{value}` for `{label}`");
+    }
+
+    private static uint ParseUInt32(string value, string label)
+    {
+        if (global::System.UInt32.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+            return parsed;
+
+        throw new global::Lokad.Cli.ParseException($"invalid value `{value}` for `{label}`");
+    }
+
+    private static long ParseInt64(string value, string label)
+    {
+        if (global::System.Int64.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+            return parsed;
+
+        throw new global::Lokad.Cli.ParseException($"invalid value `{value}` for `{label}`");
+    }
+
+    private static ulong ParseUInt64(string value, string label)
+    {
+        if (global::System.UInt64.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+            return parsed;
+
+        throw new global::Lokad.Cli.ParseException($"invalid value `{value}` for `{label}`");
+    }
+
+    private static double ParseDouble(string value, string label)
+    {
+        if (global::System.Double.TryParse(value, global::System.Globalization.NumberStyles.Float | global::System.Globalization.NumberStyles.AllowThousands, global::System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+            return parsed;
+
+        throw new global::Lokad.Cli.ParseException($"invalid value `{value}` for `{label}`");
+    }
+
+    private static global::System.DateTime ParseDateTime(string value, string label)
+    {
+        if (global::System.DateTime.TryParse(value, global::System.Globalization.CultureInfo.InvariantCulture, global::System.Globalization.DateTimeStyles.None, out var parsed))
+            return parsed;
+
+        throw new global::Lokad.Cli.ParseException($"invalid value `{value}` for `{label}`");
+    }
+
+    private static TEnum ParseEnum<TEnum>(string value, string label)
+        where TEnum : struct, global::System.Enum
+    {
+        if (global::System.Enum.TryParse<TEnum>(value, ignoreCase: false, out var parsed))
+            return parsed;
+
+        throw new global::Lokad.Cli.ParseException($"invalid value `{value}` for `{label}`");
+    }
+
+}

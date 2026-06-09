@@ -19,6 +19,11 @@ namespace Lokad.Cli
         private int _position;
 
         /// <summary>
+        ///     Positional values that should be ignored by the binding phase.
+        /// </summary>
+        private readonly Queue<string> _skipPositional = new Queue<string>();
+
+        /// <summary>
         ///     Initializes a token stream from a pre-tokenized argument list.
         /// </summary>
         /// <param name="arguments"> Tokenized arguments in original command-line order. </param>
@@ -38,6 +43,10 @@ namespace Lokad.Cli
             {
                 if (argument is ShortArgSet shortArgSet &&
                     shortArgSet.Options.IndexOf(option) >= 0)
+                    return true;
+
+                if (argument is ShortArgWithValue shortArgWithValue &&
+                    shortArgWithValue.Name == option)
                     return true;
             }
 
@@ -76,13 +85,50 @@ namespace Lokad.Cli
         {
             if (prefix == null) throw new ArgumentNullException(nameof(prefix));
 
+            var skipPositional = _skipPositional.ToArray();
+            var skipIndex = 0;
             foreach (var argument in _arguments)
             {
-                if (argument is ValueArg valueArg)
-                    return string.Equals(valueArg.Value, prefix, StringComparison.Ordinal);
+                if (!(argument is ValueArg valueArg))
+                    continue;
+
+                if (skipIndex < skipPositional.Length &&
+                    string.Equals(valueArg.Value, skipPositional[skipIndex], StringComparison.Ordinal))
+                {
+                    skipIndex++;
+                    continue;
+                }
+
+                return string.Equals(valueArg.Value, prefix, StringComparison.Ordinal);
             }
 
             return false;
+        }
+
+        /// <summary>
+        ///     Adds a positional value to skip when binding positional arguments.
+        /// </summary>
+        /// <param name="value"> Positional value to skip. </param>
+        public void SkipPositional(string value)
+        {
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            _skipPositional.Enqueue(value);
+        }
+
+        /// <summary>
+        ///     Returns whether the supplied positional value should be skipped by binding.
+        /// </summary>
+        /// <param name="value"> Positional value about to be bound. </param>
+        /// <returns> <c>true</c> when the value was scheduled to be skipped; otherwise <c>false</c>. </returns>
+        public bool MaybeSkipPositional(string value)
+        {
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            if (_skipPositional.Count == 0 ||
+                !string.Equals(_skipPositional.Peek(), value, StringComparison.Ordinal))
+                return false;
+
+            _skipPositional.Dequeue();
+            return true;
         }
 
         /// <summary>

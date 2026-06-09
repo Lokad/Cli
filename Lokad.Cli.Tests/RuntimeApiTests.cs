@@ -14,5 +14,10 @@ public class RuntimeApiTests
         {
             throw new System.NotImplementedException();
         }
+
+        public static Parsed ParseTokenized(TokenizedArguments arguments)
+        {
+            throw new System.NotImplementedException();
+        }
     }
 }

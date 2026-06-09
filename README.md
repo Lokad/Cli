@@ -20,7 +20,7 @@ The `[Argument]` annotation is added to a property to configure how it is parsed
 public partial record MyArgs
 {
     // Type 'int?' means an optional argument that must be parsed as an integer. 
-    // The presence of 'Short' and/or 'Long' means this is a 
+    // The presence of 'Short' and/or 'Long' means this is a named option.
     // Recognizes `-d 10`, `-d10`, `--max-depth 10` or `--max-depth=10`
     // Recognizes `-d abc` and reports "Invalid integer value for option `-d`: abc"
     [Argument(

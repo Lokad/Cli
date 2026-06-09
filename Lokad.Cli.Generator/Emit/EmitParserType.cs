@@ -1,3 +1,5 @@
+using System;
+
 namespace Lokad.Cli.Generator.Emit
 {
     public static class EmitParserType
@@ -6,24 +8,39 @@ namespace Lokad.Cli.Generator.Emit
         {
             return
 $@"#nullable enable
+#pragma warning disable 0162, 0219
 namespace {type.TypeName.Namespace};
 partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICliParsed<{type.TypeName.FullName}>
 {{
-    public static {type.TypeName.FullName} Parse(string[] arguments)
+    {GetParseMethodDeclaration(type)}
     {{
         // Tokenization
         var tokenized = global::Lokad.Cli.ArgumentTokenizer.Tokenize(
             arguments,
-            global::System.Array.Empty<char>(),
-            global::System.Array.Empty<string>(),
-            false);
+            {FormatCharArray(type.ShortOptions)},
+            {FormatStringArray(type.LongOptions)},
+            {FormatBoolean(type.HasShortNumericArguments)});
 
+        return ParseTokenizedCore(tokenized);
+    }}
+
+    {GetParseTokenizedMethodDeclaration(type)}
+    {{
+        if (arguments == null) throw new global::System.ArgumentNullException(nameof(arguments));
+
+        return ParseTokenizedCore(arguments);
+    }}
+
+    private static {type.TypeName.FullName} ParseTokenizedCore(global::Lokad.Cli.TokenizedArguments tokenized)
+    {{{EmitTokenizedParseArguments(type)}
         // Discrimination
-        _ = tokenized;
+{EmitDiscrimination(type)}
 
         // Binding
-        throw new global::System.NotImplementedException();
+{EmitBinding(type)}
     }}
+
+{EmitParseHelpers(type)}
 }}
 ";
         }
@@ -44,5 +61,711 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
                     return "record";
             }
         }
+
+        private static string GetParseMethodDeclaration(CliTypeInfo type)
+        {
+            if (type.Kind == CliTypeKind.Interface)
+                return "static " + type.TypeName.FullName + " global::Lokad.Cli.ICliParsed<" + type.TypeName.FullName + ">.Parse(string[] arguments)";
+
+            return "public static " + type.TypeName.FullName + " Parse(string[] arguments)";
+        }
+
+        private static string GetParseTokenizedMethodDeclaration(CliTypeInfo type)
+        {
+            if (type.Kind == CliTypeKind.Interface)
+                return "static " + type.TypeName.FullName + " global::Lokad.Cli.ICliParsed<" + type.TypeName.FullName + ">.ParseTokenized(global::Lokad.Cli.TokenizedArguments arguments)";
+
+            return "public static " + type.TypeName.FullName + " ParseTokenized(global::Lokad.Cli.TokenizedArguments arguments)";
+        }
+
+        private static string FormatCharArray(char[] values)
+        {
+            if (values.Length == 0)
+                return "global::System.Array.Empty<char>()";
+
+            return "new char[] { " + string.Join(", ", Array.ConvertAll(values, FormatCharLiteral)) + " }";
+        }
+
+        private static string FormatStringArray(string[] values)
+        {
+            if (values.Length == 0)
+                return "global::System.Array.Empty<string>()";
+
+            return "new string[] { " + string.Join(", ", Array.ConvertAll(values, FormatStringLiteral)) + " }";
+        }
+
+        private static string FormatBoolean(bool value) => value ? "true" : "false";
+
+        private static string EmitTokenizedParseArguments(CliTypeInfo type)
+        {
+            if (type.Discriminator?.Prefix == null)
+                return string.Empty;
+
+            var lines = new System.Text.StringBuilder();
+            lines.AppendLine();
+            lines.Append("        tokenized.SkipPositional(")
+                .Append(FormatStringLiteral(type.Discriminator.Prefix))
+                .AppendLine(");");
+
+            return lines.ToString();
+        }
+
+        private static string EmitBinding(CliTypeInfo type)
+        {
+            if (type.Choices.Length > 0)
+                return "        throw new global::System.InvalidOperationException();";
+
+            var lines = new System.Text.StringBuilder();
+            var positional = GetPositionalArguments(type);
+
+            for (var i = 0; i < type.Arguments.Length; i++)
+            {
+                var argument = type.Arguments[i];
+                lines.Append("        var ").Append(GetSeenName(i)).AppendLine(" = false;");
+                lines.Append("        ").Append(GetLocalType(argument)).Append(' ').Append(GetValueName(i));
+                if (argument.IsArray)
+                    lines.AppendLine(" = new();");
+                else
+                    lines.AppendLine(" = default;");
+            }
+
+            lines.AppendLine("        var positionalIndex = 0;");
+            lines.AppendLine("        global::Lokad.Cli.ITokenizedArguments? current;");
+            lines.AppendLine("        while ((current = tokenized.Shift()) != null)");
+            lines.AppendLine("        {");
+            lines.AppendLine("            switch (current)");
+            lines.AppendLine("            {");
+            lines.AppendLine("                case global::Lokad.Cli.LongArgWithValue longArgWithValue:");
+            lines.Append(EmitLongWithValueBinding(type));
+            lines.AppendLine("                    break;");
+            lines.AppendLine("                case global::Lokad.Cli.LongArg longArg:");
+            lines.Append(EmitLongBinding(type));
+            lines.AppendLine("                    break;");
+            lines.AppendLine("                case global::Lokad.Cli.ShortArgWithValue shortArgWithValue:");
+            lines.Append(EmitShortWithValueBinding(type));
+            lines.AppendLine("                    break;");
+            lines.AppendLine("                case global::Lokad.Cli.ShortArgSet shortArgSet:");
+            lines.Append(EmitShortBinding(type));
+            lines.AppendLine("                    break;");
+            lines.AppendLine("                case global::Lokad.Cli.NumericShortArg numericShortArg:");
+            lines.Append(EmitNumericShortBinding(type));
+            lines.AppendLine("                    break;");
+            lines.AppendLine("                case global::Lokad.Cli.ValueArg valueArg:");
+            lines.Append(EmitPositionalBinding(type, positional));
+            lines.AppendLine("                    break;");
+            lines.AppendLine("            }");
+            lines.AppendLine("        }");
+
+            lines.Append(EmitRequiredChecks(type));
+            lines.Append(EmitConstruction(type));
+            return lines.ToString().TrimEnd();
+        }
+
+        private static string EmitLongWithValueBinding(CliTypeInfo type)
+        {
+            var lines = new System.Text.StringBuilder();
+            for (var i = 0; i < type.Arguments.Length; i++)
+            {
+                var argument = type.Arguments[i];
+                if (argument.LongOption == null || argument.IsBoolean)
+                    continue;
+
+                lines.Append("                    if (longArgWithValue.Name == ")
+                    .Append(FormatStringLiteral(argument.LongOption))
+                    .AppendLine(")");
+                lines.AppendLine("                    {");
+                lines.Append(EmitAssign(i, argument, "longArgWithValue.Value", FormatStringLiteral("--" + argument.LongOption), "                        "));
+                lines.AppendLine("                        break;");
+                lines.AppendLine("                    }");
+            }
+
+            lines.Append(EmitLongDiscriminatorSkip(type, "longArgWithValue.Name", "                    "));
+            lines.AppendLine("                    throw new global::Lokad.Cli.ParseException($\"unexpected option `--{longArgWithValue.Name}`\");");
+            return lines.ToString();
+        }
+
+        private static string EmitLongBinding(CliTypeInfo type)
+        {
+            var lines = new System.Text.StringBuilder();
+            for (var i = 0; i < type.Arguments.Length; i++)
+            {
+                var argument = type.Arguments[i];
+                if (argument.LongOption == null)
+                    continue;
+
+                lines.Append("                    if (longArg.Name == ")
+                    .Append(FormatStringLiteral(argument.LongOption))
+                    .AppendLine(")");
+                lines.AppendLine("                    {");
+                if (argument.IsBoolean)
+                {
+                    lines.Append("                        if (").Append(GetSeenName(i)).AppendLine(")");
+                    lines.Append("                            throw new global::Lokad.Cli.ParseException(")
+                        .Append(FormatStringLiteral("duplicate option `--" + argument.LongOption + "`"))
+                        .AppendLine(");");
+                    lines.Append("                        ").Append(GetSeenName(i)).AppendLine(" = true;");
+                    lines.Append("                        ").Append(GetValueName(i)).AppendLine(" = true;");
+                }
+                else
+                {
+                    lines.AppendLine("                        var valueToken = tokenized.Shift();");
+                    lines.AppendLine("                        if (!(valueToken is global::Lokad.Cli.ValueArg optionValue))");
+                    lines.Append("                            throw new global::Lokad.Cli.ParseException(")
+                        .Append(FormatStringLiteral("option `--" + argument.LongOption + "` expects a value"))
+                        .AppendLine(");");
+                    lines.Append(EmitAssign(i, argument, "optionValue.Value", FormatStringLiteral("--" + argument.LongOption), "                        "));
+                }
+
+                lines.AppendLine("                        break;");
+                lines.AppendLine("                    }");
+            }
+
+            lines.Append(EmitLongDiscriminatorSkip(type, "longArg.Name", "                    "));
+            lines.AppendLine("                    throw new global::Lokad.Cli.ParseException($\"unexpected option `--{longArg.Name}`\");");
+            return lines.ToString();
+        }
+
+        private static string EmitShortWithValueBinding(CliTypeInfo type)
+        {
+            var lines = new System.Text.StringBuilder();
+            for (var i = 0; i < type.Arguments.Length; i++)
+            {
+                var argument = type.Arguments[i];
+                if (argument.ShortOption == '\0' || argument.IsBoolean)
+                    continue;
+
+                lines.Append("                    if (shortArgWithValue.Name == ")
+                    .Append(FormatCharLiteral(argument.ShortOption))
+                    .AppendLine(")");
+                lines.AppendLine("                    {");
+                lines.Append(EmitAssign(i, argument, "shortArgWithValue.Value", FormatStringLiteral("-" + argument.ShortOption), "                        "));
+                lines.AppendLine("                        break;");
+                lines.AppendLine("                    }");
+            }
+
+            if (type.Discriminator?.ShortOption != '\0' && type.Discriminator?.ShortOption != null)
+            {
+                lines.Append("                    if (shortArgWithValue.Name == ")
+                    .Append(FormatCharLiteral(type.Discriminator.ShortOption))
+                    .AppendLine(")");
+                lines.AppendLine("                        break;");
+            }
+
+            lines.AppendLine("                    throw new global::Lokad.Cli.ParseException($\"unexpected option `-{shortArgWithValue.Name}`\");");
+            return lines.ToString();
+        }
+
+        private static string EmitShortBinding(CliTypeInfo type)
+        {
+            var lines = new System.Text.StringBuilder();
+            lines.AppendLine("                    foreach (var shortOption in shortArgSet.Options)");
+            lines.AppendLine("                    {");
+            for (var i = 0; i < type.Arguments.Length; i++)
+            {
+                var argument = type.Arguments[i];
+                if (argument.ShortOption == '\0')
+                    continue;
+
+                lines.Append("                        if (shortOption == ").Append(FormatCharLiteral(argument.ShortOption)).AppendLine(")");
+                lines.AppendLine("                        {");
+                if (argument.IsBoolean)
+                {
+                    lines.Append("                            if (").Append(GetSeenName(i)).AppendLine(")");
+                    lines.Append("                                throw new global::Lokad.Cli.ParseException(")
+                        .Append(FormatStringLiteral("duplicate option `-" + argument.ShortOption + "`"))
+                        .AppendLine(");");
+                    lines.Append("                            ").Append(GetSeenName(i)).AppendLine(" = true;");
+                    lines.Append("                            ").Append(GetValueName(i)).AppendLine(" = true;");
+                }
+                else
+                {
+                    lines.AppendLine("                            var valueToken = tokenized.Shift();");
+                    lines.AppendLine("                            if (!(valueToken is global::Lokad.Cli.ValueArg optionValue))");
+                    lines.Append("                                throw new global::Lokad.Cli.ParseException(")
+                        .Append(FormatStringLiteral("option `-" + argument.ShortOption + "` expects a value"))
+                        .AppendLine(");");
+                    lines.Append(EmitAssign(i, argument, "optionValue.Value", FormatStringLiteral("-" + argument.ShortOption), "                            "));
+                }
+
+                lines.AppendLine("                            continue;");
+                lines.AppendLine("                        }");
+            }
+
+            if (type.Discriminator?.ShortOption != '\0' && type.Discriminator?.ShortOption != null)
+            {
+                lines.Append("                        if (shortOption == ")
+                    .Append(FormatCharLiteral(type.Discriminator.ShortOption))
+                    .AppendLine(")");
+                lines.AppendLine("                            continue;");
+            }
+
+            lines.AppendLine("                        throw new global::Lokad.Cli.ParseException($\"unexpected option `-{shortOption}`\");");
+            lines.AppendLine("                    }");
+            return lines.ToString();
+        }
+
+        private static string EmitNumericShortBinding(CliTypeInfo type)
+        {
+            var lines = new System.Text.StringBuilder();
+            for (var i = 0; i < type.Arguments.Length; i++)
+            {
+                var argument = type.Arguments[i];
+                if (!argument.ShortNumeric)
+                    continue;
+
+                lines.AppendLine("                    {");
+                lines.Append(EmitAssign(i, argument, "numericShortArg.Value", "\"-\" + numericShortArg.Value", "                        "));
+                lines.AppendLine("                        break;");
+                lines.AppendLine("                    }");
+                return lines.ToString();
+            }
+
+            lines.AppendLine("                    throw new global::Lokad.Cli.ParseException($\"unexpected argument `-{numericShortArg.Value}`\");");
+            return lines.ToString();
+        }
+
+        private static string EmitPositionalBinding(CliTypeInfo type, CliArgumentInfo[] positional)
+        {
+            var lines = new System.Text.StringBuilder();
+            lines.AppendLine("                    if (tokenized.MaybeSkipPositional(valueArg.Value))");
+            lines.AppendLine("                        break;");
+
+            for (var p = 0; p < positional.Length; p++)
+            {
+                var argumentIndex = Array.IndexOf(type.Arguments, positional[p]);
+                lines.Append("                    if (positionalIndex == ").Append(p).AppendLine(")");
+                lines.AppendLine("                    {");
+                lines.Append(EmitAssign(argumentIndex, positional[p], "valueArg.Value", "\"argument\"", "                        "));
+                lines.AppendLine("                        positionalIndex++;");
+                lines.AppendLine("                        break;");
+                lines.AppendLine("                    }");
+            }
+
+            lines.AppendLine("                    throw new global::Lokad.Cli.ParseException($\"unexpected argument `{valueArg.Value}`\");");
+            return lines.ToString();
+        }
+
+        private static string EmitRequiredChecks(CliTypeInfo type)
+        {
+            var lines = new System.Text.StringBuilder();
+            for (var i = 0; i < type.Arguments.Length; i++)
+            {
+                var argument = type.Arguments[i];
+                if (argument.IsNullable || argument.IsBoolean || argument.IsArray)
+                    continue;
+
+                lines.AppendLine();
+                lines.Append("        if (!").Append(GetSeenName(i)).AppendLine(")");
+                if (argument.IsOption)
+                {
+                    lines.Append("            throw new global::Lokad.Cli.ParseException(")
+                        .Append(FormatStringLiteral("missing option `" + GetPrimaryLabel(argument) + "`"))
+                        .AppendLine(");");
+                }
+                else
+                {
+                    lines.AppendLine("            throw new global::Lokad.Cli.ParseException(\"missing argument\");");
+                }
+            }
+
+            return lines.ToString();
+        }
+
+        private static string EmitConstruction(CliTypeInfo type)
+        {
+            var lines = new System.Text.StringBuilder();
+            lines.AppendLine();
+            lines.Append("        return new ").Append(type.TypeName.FullName).Append('(');
+
+            var first = true;
+            for (var i = 0; i < type.Arguments.Length; i++)
+            {
+                if (!type.Arguments[i].IsConstructorParameter)
+                    continue;
+
+                if (!first)
+                    lines.Append(", ");
+
+                lines.Append(GetResultValueExpression(i, type.Arguments[i]));
+                first = false;
+            }
+
+            lines.Append(')');
+            var hasInitializer = false;
+            for (var i = 0; i < type.Arguments.Length; i++)
+            {
+                var argument = type.Arguments[i];
+                if (argument.IsConstructorParameter || !argument.IsSettableMember)
+                    continue;
+
+                if (!hasInitializer)
+                {
+                    lines.AppendLine();
+                    lines.AppendLine("        {");
+                    hasInitializer = true;
+                }
+
+                lines.Append("            ").Append(argument.Name).Append(" = ").Append(GetResultValueExpression(i, argument)).AppendLine(",");
+            }
+
+            if (hasInitializer)
+            {
+                lines.Append("        }");
+            }
+
+            lines.AppendLine(";");
+            return lines.ToString();
+        }
+
+        private static string EmitAssign(int index, CliArgumentInfo argument, string valueExpression, string labelExpression, string indent)
+        {
+            var lines = new System.Text.StringBuilder();
+            if (argument.IsBoolean)
+            {
+                lines.Append(indent).Append(GetSeenName(index)).AppendLine(" = true;");
+                lines.Append(indent).Append(GetValueName(index)).AppendLine(" = true;");
+                return lines.ToString();
+            }
+
+            lines.Append(indent).Append(GetValueName(index));
+            if (argument.IsArray)
+            {
+                lines.Append(".Add(")
+                    .Append(GetParseExpression(argument, valueExpression, labelExpression))
+                    .AppendLine(");");
+            }
+            else
+            {
+                lines.Append(" = ")
+                    .Append(GetParseExpression(argument, valueExpression, labelExpression))
+                    .AppendLine(";");
+            }
+            lines.Append(indent).Append(GetSeenName(index)).AppendLine(" = true;");
+            return lines.ToString();
+        }
+
+        private static string GetParseExpression(CliArgumentInfo argument, string valueExpression, string labelExpression)
+        {
+            var type = argument.TypeName.FullName;
+            switch (type)
+            {
+                case "string":
+                case "global::System.String":
+                    return valueExpression;
+                case "int":
+                case "global::System.Int32":
+                    return "ParseInt32(" + valueExpression + ", " + labelExpression + ")";
+                case "uint":
+                case "global::System.UInt32":
+                    return "ParseUInt32(" + valueExpression + ", " + labelExpression + ")";
+                case "long":
+                case "global::System.Int64":
+                    return "ParseInt64(" + valueExpression + ", " + labelExpression + ")";
+                case "ulong":
+                case "global::System.UInt64":
+                    return "ParseUInt64(" + valueExpression + ", " + labelExpression + ")";
+                case "double":
+                case "global::System.Double":
+                    return "ParseDouble(" + valueExpression + ", " + labelExpression + ")";
+                case "global::System.DateTime":
+                    return "ParseDateTime(" + valueExpression + ", " + labelExpression + ")";
+                default:
+                    if (argument.IsEnum)
+                        return "ParseEnum<" + type + ">(" + valueExpression + ", " + labelExpression + ")";
+
+                    return type + ".Parse(" + valueExpression + ", null)";
+            }
+        }
+
+        private static string GetLocalType(CliArgumentInfo argument)
+        {
+            var type = argument.TypeName.FullName;
+            if (argument.IsArray)
+                return "global::System.Collections.Generic.List<" + GetValueType(argument) + ">";
+
+            if (type == "string" || type == "global::System.String")
+                return "string?";
+
+            return type;
+        }
+
+        private static string GetValueType(CliArgumentInfo argument)
+        {
+            var type = argument.TypeName.FullName;
+            if (type == "string" || type == "global::System.String")
+                return "string";
+
+            return type;
+        }
+
+        private static string GetResultValueExpression(int index, CliArgumentInfo argument)
+        {
+            var value = GetValueName(index);
+            var type = argument.TypeName.FullName;
+            if (argument.IsArray)
+                return value + ".ToArray()";
+
+            if (!argument.IsNullable)
+            {
+                if (type == "string" || type == "global::System.String")
+                    return value + "!";
+
+                return value;
+            }
+
+            if (type == "string" || type == "global::System.String")
+                return GetSeenName(index) + " ? " + value + " : default";
+
+            return GetSeenName(index) + " ? " + value + " : default(global::System.Nullable<" + type + ">)";
+        }
+
+        private static string GetPrimaryLabel(CliArgumentInfo argument)
+        {
+            if (argument.LongOption != null)
+                return "--" + argument.LongOption;
+
+            if (argument.ShortOption != '\0')
+                return "-" + argument.ShortOption;
+
+            return "argument";
+        }
+
+        private static string EmitLongDiscriminatorSkip(CliTypeInfo type, string nameExpression, string indent)
+        {
+            if (type.Discriminator?.LongOption == null)
+                return string.Empty;
+
+            return indent + "if (" + nameExpression + " == " + FormatStringLiteral(type.Discriminator.LongOption) + ")" + System.Environment.NewLine +
+                   indent + "    break;" + System.Environment.NewLine;
+        }
+
+        private static CliArgumentInfo[] GetPositionalArguments(CliTypeInfo type) =>
+            Array.FindAll(type.Arguments, argument => !argument.IsOption);
+
+        private static string GetSeenName(int index) => "arg" + index + "Seen";
+
+        private static string GetValueName(int index) => "arg" + index + "Value";
+
+        private static string EmitParseHelpers(CliTypeInfo type)
+        {
+            var lines = new System.Text.StringBuilder();
+
+            if (type.Choices.Length > 0)
+            {
+                lines.AppendLine(@"    private static TChoice ParseChoice<TChoice>(global::Lokad.Cli.TokenizedArguments arguments)
+        where TChoice : global::Lokad.Cli.ICliParsed<TChoice>
+    {
+        return TChoice.ParseTokenized(arguments);
+    }");
+
+            }
+
+            if (type.Arguments.Length == 0)
+                return lines.ToString().TrimEnd();
+
+            if (lines.Length > 0)
+                lines.AppendLine().AppendLine();
+
+            lines.Append(
+@"    private static int ParseInt32(string value, string label)
+    {
+        if (global::System.Int32.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+            return parsed;
+
+        throw new global::Lokad.Cli.ParseException($""invalid value `{value}` for `{label}`"");
+    }
+
+    private static uint ParseUInt32(string value, string label)
+    {
+        if (global::System.UInt32.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+            return parsed;
+
+        throw new global::Lokad.Cli.ParseException($""invalid value `{value}` for `{label}`"");
+    }
+
+    private static long ParseInt64(string value, string label)
+    {
+        if (global::System.Int64.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+            return parsed;
+
+        throw new global::Lokad.Cli.ParseException($""invalid value `{value}` for `{label}`"");
+    }
+
+    private static ulong ParseUInt64(string value, string label)
+    {
+        if (global::System.UInt64.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+            return parsed;
+
+        throw new global::Lokad.Cli.ParseException($""invalid value `{value}` for `{label}`"");
+    }
+
+    private static double ParseDouble(string value, string label)
+    {
+        if (global::System.Double.TryParse(value, global::System.Globalization.NumberStyles.Float | global::System.Globalization.NumberStyles.AllowThousands, global::System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+            return parsed;
+
+        throw new global::Lokad.Cli.ParseException($""invalid value `{value}` for `{label}`"");
+    }
+
+    private static global::System.DateTime ParseDateTime(string value, string label)
+    {
+        if (global::System.DateTime.TryParse(value, global::System.Globalization.CultureInfo.InvariantCulture, global::System.Globalization.DateTimeStyles.None, out var parsed))
+            return parsed;
+
+        throw new global::Lokad.Cli.ParseException($""invalid value `{value}` for `{label}`"");
+    }
+
+    private static TEnum ParseEnum<TEnum>(string value, string label)
+        where TEnum : struct, global::System.Enum
+    {
+        if (global::System.Enum.TryParse<TEnum>(value, ignoreCase: false, out var parsed))
+            return parsed;
+
+        throw new global::Lokad.Cli.ParseException($""invalid value `{value}` for `{label}`"");
+    }
+");
+
+            return lines.ToString();
+        }
+
+        private static string EmitDiscrimination(CliTypeInfo type)
+        {
+            if (type.Choices.Length == 0)
+                return "        _ = tokenized;";
+
+            var lines = new System.Text.StringBuilder();
+            lines.AppendLine("        var choice = -1;");
+            lines.AppendLine("        string? choiceDiscriminator = null;");
+
+            for (var i = 0; i < type.Choices.Length; i++)
+            {
+                var discriminator = type.Choices[i].Discriminator;
+                if (discriminator == null)
+                    continue;
+
+                lines.Append("        if (").Append(FormatDiscriminatorTest(discriminator)).AppendLine(")");
+                lines.AppendLine("        {");
+                lines.AppendLine("            if (choice >= 0)");
+                lines.Append("                throw new global::Lokad.Cli.ParseException($\"incompatible options `")
+                    .Append("{choiceDiscriminator}")
+                    .Append("` and `")
+                    .Append(EscapeInterpolatedStringText(discriminator.Display))
+                    .AppendLine("`\");");
+                lines.Append("            choice = ").Append(i).AppendLine(";");
+                lines.Append("            choiceDiscriminator = ").Append(FormatStringLiteral(discriminator.Display)).AppendLine(";");
+                lines.AppendLine("        }");
+            }
+
+            var defaultChoice = GetDefaultChoice(type);
+            if (defaultChoice >= 0)
+            {
+                lines.AppendLine();
+                lines.AppendLine("        if (choice < 0)");
+                lines.Append("            choice = ").Append(defaultChoice).AppendLine(";");
+            }
+            else if (AllChoicesHaveDiscriminators(type))
+            {
+                lines.AppendLine();
+                lines.AppendLine("        if (choice < 0)");
+                lines.Append("            throw new global::Lokad.Cli.ParseException(")
+                    .Append(FormatStringLiteral("expected " + FormatExpectedDiscriminators(type)))
+                    .AppendLine(");");
+            }
+
+            lines.AppendLine();
+            lines.AppendLine("        switch (choice)");
+            lines.AppendLine("        {");
+            for (var i = 0; i < type.Choices.Length; i++)
+            {
+                lines.Append("            case ").Append(i).AppendLine(":");
+                lines.Append("                return ParseChoice<").Append(type.Choices[i].TypeName.FullName).AppendLine(">(tokenized);");
+            }
+
+            lines.AppendLine("        }");
+            return lines.ToString().TrimEnd();
+        }
+
+        private static string FormatDiscriminatorTest(CliDiscriminatorInfo discriminator)
+        {
+            if (discriminator.LongOption != null)
+                return "tokenized.HasLongOption(" + FormatStringLiteral(discriminator.LongOption) + ")";
+
+            if (discriminator.ShortOption != '\0')
+                return "tokenized.HasShortOption(" + FormatCharLiteral(discriminator.ShortOption) + ")";
+
+            if (discriminator.Prefix != null)
+                return "tokenized.HasPositionalPrefix(" + FormatStringLiteral(discriminator.Prefix) + ")";
+
+            throw new InvalidOperationException("Discriminator has no value.");
+        }
+
+        private static bool AllChoicesHaveDiscriminators(CliTypeInfo type)
+        {
+            foreach (var choice in type.Choices)
+                if (choice.Discriminator == null)
+                    return false;
+
+            return true;
+        }
+
+        private static int GetDefaultChoice(CliTypeInfo type)
+        {
+            for (var i = 0; i < type.Choices.Length; i++)
+                if (type.Choices[i].Discriminator == null)
+                    return i;
+
+            return -1;
+        }
+
+        private static string FormatExpectedDiscriminators(CliTypeInfo type)
+        {
+            var discriminators = Array.FindAll(
+                Array.ConvertAll(type.Choices, choice => choice.Discriminator),
+                discriminator => discriminator != null);
+
+            if (discriminators.Length == 1)
+                return "`" + discriminators[0]!.Display + "`";
+
+            if (discriminators.Length == 2)
+                return "`" + discriminators[0]!.Display + "` or `" + discriminators[1]!.Display + "`";
+
+            var text = new System.Text.StringBuilder();
+            for (var i = 0; i < discriminators.Length; i++)
+            {
+                if (i > 0)
+                    text.Append(i == discriminators.Length - 1 ? " or " : ", ");
+
+                text.Append('`').Append(discriminators[i]!.Display).Append('`');
+            }
+
+            return text.ToString();
+        }
+
+        private static string FormatCharLiteral(char value)
+        {
+            switch (value)
+            {
+                case '\'':
+                    return "'\\''";
+                case '\\':
+                    return "'\\\\'";
+                case '\0':
+                    return "'\\0'";
+                case '\r':
+                    return "'\\r'";
+                case '\n':
+                    return "'\\n'";
+                case '\t':
+                    return "'\\t'";
+                default:
+                    return "'" + value + "'";
+            }
+        }
+
+        private static string FormatStringLiteral(string value) =>
+            "@\"" + value.Replace("\"", "\"\"") + "\"";
+
+        private static string EscapeInterpolatedStringText(string value) =>
+            value.Replace("{", "{{").Replace("}", "}}").Replace("\"", "\\\"");
     }
 }

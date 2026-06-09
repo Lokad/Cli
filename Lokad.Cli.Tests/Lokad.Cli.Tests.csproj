@@ -10,6 +10,9 @@
 
     <ItemGroup Condition="'$(Configuration)'=='Debug'">
         <ProjectReference Include="..\Lokad.Cli\Lokad.Cli.csproj" />
+        <ProjectReference Include="..\Lokad.Cli.Generator\Lokad.Cli.Generator.csproj"
+                          OutputItemType="Analyzer"
+                          ReferenceOutputAssembly="false" />
         <ProjectReference Include="..\Lokad.Cli.Generator.Tests\Lokad.Cli.Generator.Tests.csproj" />
     </ItemGroup>
 
