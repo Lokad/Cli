@@ -205,6 +205,64 @@ public class GeneratorFullTests
     }
 
     [Fact]
+    public void ParsesChoiceWithLongOptionDiscriminator()
+    {
+        var parsed = Assert.IsType<LongOptionChoiceAlphaArgs>(
+            Parser.Parse<ILongOptionChoiceArgs>(new[] { "--alpha", "alpha-pos", "--alpha-name", "alpha-name" }));
+
+        Assert.Equal("alpha-pos", parsed.Positional);
+        Assert.Equal("alpha-name", parsed.Name);
+    }
+
+    [Fact]
+    public void ParsesOtherChoiceWithLongOptionDiscriminator()
+    {
+        var parsed = Assert.IsType<LongOptionChoiceBetaArgs>(
+            Parser.Parse<ILongOptionChoiceArgs>(new[] { "--beta", "beta-pos", "--beta-name", "beta-name" }));
+
+        Assert.Equal("beta-pos", parsed.Positional);
+        Assert.Equal("beta-name", parsed.Name);
+    }
+
+    [Fact]
+    public void RejectsIncompatibleLongOptionChoiceDiscriminators()
+    {
+        var ex = Assert.Throws<ParseException>(
+            () => Parser.Parse<ILongOptionChoiceArgs>(new[] { "--alpha", "--beta" }));
+
+        Assert.Equal("incompatible options `--alpha` and `--beta`", ex.Message);
+    }
+
+    [Fact]
+    public void ParsesChoiceWithShortOptionDiscriminator()
+    {
+        var parsed = Assert.IsType<ShortOptionChoiceAlphaArgs>(
+            Parser.Parse<IShortOptionChoiceArgs>(new[] { "-a", "alpha-pos", "-x", "alpha-name" }));
+
+        Assert.Equal("alpha-pos", parsed.Positional);
+        Assert.Equal("alpha-name", parsed.Name);
+    }
+
+    [Fact]
+    public void ParsesOtherChoiceWithShortOptionDiscriminator()
+    {
+        var parsed = Assert.IsType<ShortOptionChoiceBetaArgs>(
+            Parser.Parse<IShortOptionChoiceArgs>(new[] { "-b", "beta-pos", "-y", "beta-name" }));
+
+        Assert.Equal("beta-pos", parsed.Positional);
+        Assert.Equal("beta-name", parsed.Name);
+    }
+
+    [Fact]
+    public void RejectsIncompatibleShortOptionChoiceDiscriminators()
+    {
+        var ex = Assert.Throws<ParseException>(
+            () => Parser.Parse<IShortOptionChoiceArgs>(new[] { "-ab" }));
+
+        Assert.Equal("incompatible options `-a` and `-b`", ex.Message);
+    }
+
+    [Fact]
     public void SkipsOnlyPositionalDiscriminatorWhenOptionValueMatchesPrefix()
     {
         var parsed = Assert.IsType<PrefixFieldArgs>(
@@ -326,6 +384,58 @@ public partial record NestedChoiceWithMembersSubArgs2 : INestedChoiceWithMembers
 
     [Argument(Long = "second")]
     public string? Named { get; init; }
+}
+
+[Choice(typeof(LongOptionChoiceAlphaArgs))]
+[Choice(typeof(LongOptionChoiceBetaArgs))]
+public partial interface ILongOptionChoiceArgs
+{
+}
+
+[Arguments(Long = "alpha")]
+public partial record LongOptionChoiceAlphaArgs : ILongOptionChoiceArgs
+{
+    [Argument]
+    public string? Positional { get; init; }
+
+    [Argument(Long = "alpha-name")]
+    public string? Name { get; init; }
+}
+
+[Arguments(Long = "beta")]
+public partial record LongOptionChoiceBetaArgs : ILongOptionChoiceArgs
+{
+    [Argument]
+    public string? Positional { get; init; }
+
+    [Argument(Long = "beta-name")]
+    public string? Name { get; init; }
+}
+
+[Choice(typeof(ShortOptionChoiceAlphaArgs))]
+[Choice(typeof(ShortOptionChoiceBetaArgs))]
+public partial interface IShortOptionChoiceArgs
+{
+}
+
+[Arguments(Short = 'a')]
+public partial record ShortOptionChoiceAlphaArgs : IShortOptionChoiceArgs
+{
+    [Argument]
+    public string? Positional { get; init; }
+
+    [Argument(Short = 'x')]
+    public string? Name { get; init; }
+}
+
+[Arguments(Short = 'b')]
+public partial record ShortOptionChoiceBetaArgs : IShortOptionChoiceArgs
+{
+    [Argument]
+    public string? Positional { get; init; }
+
+    [Argument(Short = 'y')]
+    public string? Name { get; init; }
 }
 
 [Choice(typeof(PrefixFieldArgs))]
