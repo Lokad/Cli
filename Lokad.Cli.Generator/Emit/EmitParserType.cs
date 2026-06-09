@@ -11,6 +11,17 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
 {{
     public static {type.TypeName.FullName} Parse(string[] arguments)
     {{
+        // Tokenization
+        var tokenized = global::Lokad.Cli.ArgumentTokenizer.Tokenize(
+            arguments,
+            global::System.Array.Empty<char>(),
+            global::System.Array.Empty<string>(),
+            false);
+
+        // Discrimination
+        _ = tokenized;
+
+        // Binding
         throw new global::System.NotImplementedException();
     }}
 }}
