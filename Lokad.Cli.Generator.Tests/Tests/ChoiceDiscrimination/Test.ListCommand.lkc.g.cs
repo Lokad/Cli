@@ -22,6 +22,11 @@ partial record ListCommand : global::Lokad.Cli.ICliParsed<global::Test.ListComma
         return ParseTokenizedCore(arguments);
     }
 
+    public static string Document(string commandName)
+    {
+        return DocumentCore(commandName);
+    }
+
     private static global::Test.ListCommand ParseTokenizedCore(global::Lokad.Cli.TokenizedArguments tokenized)
     {
         tokenized.SkipPositional(@"list");
@@ -65,5 +70,19 @@ partial record ListCommand : global::Lokad.Cli.ICliParsed<global::Test.ListComma
         return new global::Test.ListCommand();
     }
 
+    private static string DocumentCore(string commandName)
+    {
+        if (commandName == null) throw new global::System.ArgumentNullException(nameof(commandName));
 
+        var lines = new global::System.Collections.Generic.List<string> { FormatDocumentationLine(commandName + @" list", @"List command.") };
+        return string.Join(global::System.Environment.NewLine, lines);
+    }
+
+    private static string FormatDocumentationLine(string commandName, string documentation)
+    {
+        if (documentation.Length == 0)
+            return commandName;
+
+        return commandName + ": " + documentation;
+    }
 }

@@ -12,6 +12,7 @@ namespace Lokad.Cli.Generator.Emit
                 false,
                 new CliChoiceInfo[0],
                 new CliArgumentInfo[0],
+                null,
                 null)
         {
         }
@@ -25,7 +26,8 @@ namespace Lokad.Cli.Generator.Emit
             bool hasShortNumericArguments,
             CliChoiceInfo[] choices,
             CliArgumentInfo[] arguments,
-            CliDiscriminatorInfo? discriminator)
+            CliDiscriminatorInfo? discriminator,
+            string? documentation)
         {
             TypeName = typeName;
             Kind = kind;
@@ -36,6 +38,7 @@ namespace Lokad.Cli.Generator.Emit
             Choices = choices;
             Arguments = arguments;
             Discriminator = discriminator;
+            Documentation = documentation;
         }
 
         public TypeName TypeName { get; }
@@ -55,5 +58,7 @@ namespace Lokad.Cli.Generator.Emit
         public CliArgumentInfo[] Arguments { get; }
 
         public CliDiscriminatorInfo? Discriminator { get; }
+
+        public string? Documentation { get; }
     }
 }

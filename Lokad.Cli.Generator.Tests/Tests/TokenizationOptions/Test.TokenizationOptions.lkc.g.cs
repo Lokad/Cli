@@ -22,6 +22,11 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
         return ParseTokenizedCore(arguments);
     }
 
+    public static string Document(string commandName)
+    {
+        return DocumentCore(commandName);
+    }
+
     private static global::Test.TokenizationOptions ParseTokenizedCore(global::Lokad.Cli.TokenizedArguments tokenized)
     {
         // Discrimination
@@ -196,6 +201,27 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
             Depth = arg3Seen ? arg3Value : default(global::System.Nullable<int>),
             Field = arg4Seen ? arg4Value : default,
         };
+    }
+
+    private static string DocumentCore(string commandName)
+    {
+        if (commandName == null) throw new global::System.ArgumentNullException(nameof(commandName));
+
+        var lines = new global::System.Collections.Generic.List<string> { FormatDocumentationLine(commandName + @" --mode", @"Tokenization mode.") };
+        lines.Add(@"  --from-ctor, -c: Constructor property value.");
+        lines.Add(@"  --raw-param, -p: Raw constructor parameter.");
+        lines.Add(@"  --verbose, -v: Enable verbose output.");
+        lines.Add(@"  -<number>: Numeric depth.");
+        lines.Add(@"  --field, -f: Field value.");
+        return string.Join(global::System.Environment.NewLine, lines);
+    }
+
+    private static string FormatDocumentationLine(string commandName, string documentation)
+    {
+        if (documentation.Length == 0)
+            return commandName;
+
+        return commandName + ": " + documentation;
     }
 
     private static int ParseInt32(string value, string label)

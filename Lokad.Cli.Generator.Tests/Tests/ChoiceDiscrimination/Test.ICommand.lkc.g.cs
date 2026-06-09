@@ -22,6 +22,11 @@ partial interface ICommand : global::Lokad.Cli.ICliParsed<global::Test.ICommand>
         return ParseTokenizedCore(arguments);
     }
 
+    static string global::Lokad.Cli.ICliParsed<global::Test.ICommand>.Document(string commandName)
+    {
+        return DocumentCore(commandName);
+    }
+
     private static global::Test.ICommand ParseTokenizedCore(global::Lokad.Cli.TokenizedArguments tokenized)
     {
         // Discrimination
@@ -64,6 +69,42 @@ partial interface ICommand : global::Lokad.Cli.ICliParsed<global::Test.ICommand>
 
         // Binding
         throw new global::System.InvalidOperationException();
+    }
+
+    private static string DocumentCore(string commandName)
+    {
+        if (commandName == null) throw new global::System.ArgumentNullException(nameof(commandName));
+
+        var documentedCommandName = commandName;
+        var lines = new global::System.Collections.Generic.List<string>();
+        AddDocumentation(lines, DocumentChoice<global::Test.AddCommand>(documentedCommandName));
+        AddDocumentation(lines, DocumentChoice<global::Test.RemoveCommand>(documentedCommandName));
+        AddDocumentation(lines, DocumentChoice<global::Test.ListCommand>(documentedCommandName));
+        return string.Join(global::System.Environment.NewLine, lines);
+    }
+
+    private static string DocumentChoice<TChoice>(string commandName)
+        where TChoice : global::Lokad.Cli.ICliParsed<TChoice>
+    {
+        return TChoice.Document(commandName);
+    }
+
+    private static void AddDocumentation(global::System.Collections.Generic.List<string> lines, string documentation)
+    {
+        if (documentation.Length == 0)
+            return;
+
+        var split = documentation.Split(new[] { global::System.Environment.NewLine }, global::System.StringSplitOptions.None);
+        foreach (var line in split)
+            lines.Add(line);
+    }
+
+    private static string FormatDocumentationLine(string commandName, string documentation)
+    {
+        if (documentation.Length == 0)
+            return commandName;
+
+        return commandName + ": " + documentation;
     }
 
     private static TChoice ParseChoice<TChoice>(global::Lokad.Cli.TokenizedArguments arguments)

@@ -275,26 +275,69 @@ public class GeneratorFullTests
 
         Assert.Equal(parsed.Field, equivalent.Field);
     }
+
+    public static TheoryData<string, string, string> DocumentationCases => new()
+    {
+        { nameof(BoolFlags), Parser.Document<BoolFlags>("cmd"), "cmd: Boolean flags command.\n  -a: Enables flag A.\n  -b: Enables flag B." },
+        { nameof(StringArrayOptions), Parser.Document<StringArrayOptions>("cmd"), "cmd: String array options command.\n  --xval, -x: Adds an X value." },
+        { nameof(PositionalArrayArgs), Parser.Document<PositionalArrayArgs>("cmd"), "cmd <input...>: Positional array command.\n  <input...>: Input values." },
+        { nameof(MyArgs), Parser.Document<MyArgs>("cmd"), "cmd: Nullable depth command.\n  --max-depth, -d: Maximum depth for recursive traversal." },
+        { nameof(ShortNumericArgs), Parser.Document<ShortNumericArgs>("cmd"), "cmd: Numeric short command.\n  -<number>: Numeric value." },
+        { nameof(LetterAndDigitBoolFlags), Parser.Document<LetterAndDigitBoolFlags>("cmd"), "cmd: Letter and digit flags command.\n  -x: Enables X.\n  -4: Enables four." },
+        { nameof(INestedChoiceArgs), Parser.Document<INestedChoiceArgs>("cmd"), "cmd sub: Nested sub-command group.\ncmd sub B: First nested sub-choice.\ncmd sub C: Second nested sub-choice.\ncmd A: Direct nested choice." },
+        { nameof(INestedChoiceSubArgs), Parser.Document<INestedChoiceSubArgs>("cmd"), "cmd sub: Nested sub-command group.\ncmd sub B: First nested sub-choice.\ncmd sub C: Second nested sub-choice." },
+        { nameof(NestedChoiceArgs), Parser.Document<NestedChoiceArgs>("cmd"), "cmd A: Direct nested choice." },
+        { nameof(NestedChoiceSubArgs1), Parser.Document<NestedChoiceSubArgs1>("cmd"), "cmd B: First nested sub-choice." },
+        { nameof(NestedChoiceSubArgs2), Parser.Document<NestedChoiceSubArgs2>("cmd"), "cmd C: Second nested sub-choice." },
+        { nameof(INestedChoiceWithMembersArgs), Parser.Document<INestedChoiceWithMembersArgs>("cmd"), "cmd sub: Nested member sub-command group.\ncmd sub B <first-pos?>: First sub-choice with members.\n  <first-pos?>: First positional value.\n  --first: First named value.\ncmd sub C <second-pos?>: Second sub-choice with members.\n  <second-pos?>: Second positional value.\n  --second: Second named value.\ncmd A <direct-pos?>: Direct choice with members.\n  <direct-pos?>: Direct positional value.\n  --direct: Direct named value." },
+        { nameof(INestedChoiceWithMembersSubArgs), Parser.Document<INestedChoiceWithMembersSubArgs>("cmd"), "cmd sub: Nested member sub-command group.\ncmd sub B <first-pos?>: First sub-choice with members.\n  <first-pos?>: First positional value.\n  --first: First named value.\ncmd sub C <second-pos?>: Second sub-choice with members.\n  <second-pos?>: Second positional value.\n  --second: Second named value." },
+        { nameof(NestedChoiceWithMembersArgs), Parser.Document<NestedChoiceWithMembersArgs>("cmd"), "cmd A <direct-pos?>: Direct choice with members.\n  <direct-pos?>: Direct positional value.\n  --direct: Direct named value." },
+        { nameof(NestedChoiceWithMembersSubArgs1), Parser.Document<NestedChoiceWithMembersSubArgs1>("cmd"), "cmd B <first-pos?>: First sub-choice with members.\n  <first-pos?>: First positional value.\n  --first: First named value." },
+        { nameof(NestedChoiceWithMembersSubArgs2), Parser.Document<NestedChoiceWithMembersSubArgs2>("cmd"), "cmd C <second-pos?>: Second sub-choice with members.\n  <second-pos?>: Second positional value.\n  --second: Second named value." },
+        { nameof(ILongOptionChoiceArgs), Parser.Document<ILongOptionChoiceArgs>("cmd"), "cmd --alpha <alpha-pos?>: Alpha command.\n  <alpha-pos?>: Alpha positional value.\n  --alpha-name: Alpha name.\ncmd --beta <beta-pos?>: Beta command.\n  <beta-pos?>: Beta positional value.\n  --beta-name: Beta name." },
+        { nameof(LongOptionChoiceAlphaArgs), Parser.Document<LongOptionChoiceAlphaArgs>("cmd"), "cmd --alpha <alpha-pos?>: Alpha command.\n  <alpha-pos?>: Alpha positional value.\n  --alpha-name: Alpha name." },
+        { nameof(LongOptionChoiceBetaArgs), Parser.Document<LongOptionChoiceBetaArgs>("cmd"), "cmd --beta <beta-pos?>: Beta command.\n  <beta-pos?>: Beta positional value.\n  --beta-name: Beta name." },
+        { nameof(IShortOptionChoiceArgs), Parser.Document<IShortOptionChoiceArgs>("cmd"), "cmd -a <short-alpha-pos?>: Short alpha command.\n  <short-alpha-pos?>: Short alpha positional value.\n  -x: Short alpha name.\ncmd -b <short-beta-pos?>: Short beta command.\n  <short-beta-pos?>: Short beta positional value.\n  -y: Short beta name." },
+        { nameof(ShortOptionChoiceAlphaArgs), Parser.Document<ShortOptionChoiceAlphaArgs>("cmd"), "cmd -a <short-alpha-pos?>: Short alpha command.\n  <short-alpha-pos?>: Short alpha positional value.\n  -x: Short alpha name." },
+        { nameof(ShortOptionChoiceBetaArgs), Parser.Document<ShortOptionChoiceBetaArgs>("cmd"), "cmd -b <short-beta-pos?>: Short beta command.\n  <short-beta-pos?>: Short beta positional value.\n  -y: Short beta name." },
+        { nameof(IPrefixFieldArgs), Parser.Document<IPrefixFieldArgs>("cmd"), "cmd xxx: Prefix field command.\n  --field: Field value." },
+        { nameof(PrefixFieldArgs), Parser.Document<PrefixFieldArgs>("cmd"), "cmd xxx: Prefix field command.\n  --field: Field value." },
+    };
+
+    [Theory]
+    [MemberData(nameof(DocumentationCases))]
+    public void DocumentsExistingEndToEndTypes(string typeName, string actual, string expected)
+    {
+        Assert.NotEmpty(typeName);
+        Assert.Equal(expected.Replace("\n", System.Environment.NewLine), actual);
+    }
 }
 
-[Arguments]
+[Arguments("Boolean flags command.")]
 public partial record BoolFlags
 {
-    [Argument(Short = 'a')]
+    [Argument("Enables flag A.", Short = 'a')]
     public bool A { get; init; }
 
-    [Argument(Short = 'b')]
+    [Argument("Enables flag B.", Short = 'b')]
     public bool B { get; init; }
 }
 
-[Arguments]
+[Arguments("String array options command.")]
 public partial record StringArrayOptions
 {
-    [Argument(Short = 'x', Long = "xval")]
+    [Argument("Adds an X value.", Short = 'x', Long = "xval")]
     public string[] X { get; init; } = System.Array.Empty<string>();
 }
 
-[Arguments]
+[Arguments("Positional array command.")]
+public partial record PositionalArrayArgs
+{
+    [Argument("Input values.", Name = "input")]
+    public string[] Input { get; init; } = System.Array.Empty<string>();
+}
+
+[Arguments("Nullable depth command.")]
 public partial record MyArgs
 {
     [Argument(
@@ -304,20 +347,20 @@ public partial record MyArgs
     public int? MaxDepth { get; init; }
 }
 
-[Arguments]
+[Arguments("Numeric short command.")]
 public partial record ShortNumericArgs
 {
-    [Argument(ShortNumeric = true)]
+    [Argument("Numeric value.", ShortNumeric = true)]
     public int Value { get; init; }
 }
 
-[Arguments]
+[Arguments("Letter and digit flags command.")]
 public partial record LetterAndDigitBoolFlags
 {
-    [Argument(Short = 'x')]
+    [Argument("Enables X.", Short = 'x')]
     public bool X { get; init; }
 
-    [Argument(Short = '4')]
+    [Argument("Enables four.", Short = '4')]
     public bool Four { get; init; }
 }
 
@@ -329,18 +372,18 @@ public partial interface INestedChoiceArgs
 
 [Choice(typeof(NestedChoiceSubArgs1))]
 [Choice(typeof(NestedChoiceSubArgs2))]
-[Arguments(Prefix = "sub")]
+[Arguments("Nested sub-command group.", Prefix = "sub")]
 public partial interface INestedChoiceSubArgs : INestedChoiceArgs
 {
 }
 
-[Arguments(Prefix = "A")]
+[Arguments("Direct nested choice.", Prefix = "A")]
 public partial record NestedChoiceArgs : INestedChoiceArgs;
 
-[Arguments(Prefix = "B")]
+[Arguments("First nested sub-choice.", Prefix = "B")]
 public partial record NestedChoiceSubArgs1 : INestedChoiceSubArgs;
 
-[Arguments(Prefix = "C")]
+[Arguments("Second nested sub-choice.", Prefix = "C")]
 public partial record NestedChoiceSubArgs2 : INestedChoiceSubArgs;
 
 [Choice(typeof(INestedChoiceWithMembersSubArgs))]
@@ -351,38 +394,38 @@ public partial interface INestedChoiceWithMembersArgs
 
 [Choice(typeof(NestedChoiceWithMembersSubArgs1))]
 [Choice(typeof(NestedChoiceWithMembersSubArgs2))]
-[Arguments(Prefix = "sub")]
+[Arguments("Nested member sub-command group.", Prefix = "sub")]
 public partial interface INestedChoiceWithMembersSubArgs : INestedChoiceWithMembersArgs
 {
 }
 
-[Arguments(Prefix = "A")]
+[Arguments("Direct choice with members.", Prefix = "A")]
 public partial record NestedChoiceWithMembersArgs : INestedChoiceWithMembersArgs
 {
-    [Argument]
+    [Argument("Direct positional value.", Name = "direct-pos")]
     public string? Positional { get; init; }
 
-    [Argument(Long = "direct")]
+    [Argument("Direct named value.", Long = "direct")]
     public string? Named { get; init; }
 }
 
-[Arguments(Prefix = "B")]
+[Arguments("First sub-choice with members.", Prefix = "B")]
 public partial record NestedChoiceWithMembersSubArgs1 : INestedChoiceWithMembersSubArgs
 {
-    [Argument]
+    [Argument("First positional value.", Name = "first-pos")]
     public string? Positional { get; init; }
 
-    [Argument(Long = "first")]
+    [Argument("First named value.", Long = "first")]
     public string? Named { get; init; }
 }
 
-[Arguments(Prefix = "C")]
+[Arguments("Second sub-choice with members.", Prefix = "C")]
 public partial record NestedChoiceWithMembersSubArgs2 : INestedChoiceWithMembersSubArgs
 {
-    [Argument]
+    [Argument("Second positional value.", Name = "second-pos")]
     public string? Positional { get; init; }
 
-    [Argument(Long = "second")]
+    [Argument("Second named value.", Long = "second")]
     public string? Named { get; init; }
 }
 
@@ -392,23 +435,23 @@ public partial interface ILongOptionChoiceArgs
 {
 }
 
-[Arguments(Long = "alpha")]
+[Arguments("Alpha command.", Long = "alpha")]
 public partial record LongOptionChoiceAlphaArgs : ILongOptionChoiceArgs
 {
-    [Argument]
+    [Argument("Alpha positional value.", Name = "alpha-pos")]
     public string? Positional { get; init; }
 
-    [Argument(Long = "alpha-name")]
+    [Argument("Alpha name.", Long = "alpha-name")]
     public string? Name { get; init; }
 }
 
-[Arguments(Long = "beta")]
+[Arguments("Beta command.", Long = "beta")]
 public partial record LongOptionChoiceBetaArgs : ILongOptionChoiceArgs
 {
-    [Argument]
+    [Argument("Beta positional value.", Name = "beta-pos")]
     public string? Positional { get; init; }
 
-    [Argument(Long = "beta-name")]
+    [Argument("Beta name.", Long = "beta-name")]
     public string? Name { get; init; }
 }
 
@@ -418,23 +461,23 @@ public partial interface IShortOptionChoiceArgs
 {
 }
 
-[Arguments(Short = 'a')]
+[Arguments("Short alpha command.", Short = 'a')]
 public partial record ShortOptionChoiceAlphaArgs : IShortOptionChoiceArgs
 {
-    [Argument]
+    [Argument("Short alpha positional value.", Name = "short-alpha-pos")]
     public string? Positional { get; init; }
 
-    [Argument(Short = 'x')]
+    [Argument("Short alpha name.", Short = 'x')]
     public string? Name { get; init; }
 }
 
-[Arguments(Short = 'b')]
+[Arguments("Short beta command.", Short = 'b')]
 public partial record ShortOptionChoiceBetaArgs : IShortOptionChoiceArgs
 {
-    [Argument]
+    [Argument("Short beta positional value.", Name = "short-beta-pos")]
     public string? Positional { get; init; }
 
-    [Argument(Short = 'y')]
+    [Argument("Short beta name.", Short = 'y')]
     public string? Name { get; init; }
 }
 
@@ -443,9 +486,9 @@ public partial interface IPrefixFieldArgs
 {
 }
 
-[Arguments(Prefix = "xxx")]
+[Arguments("Prefix field command.", Prefix = "xxx")]
 public partial record PrefixFieldArgs : IPrefixFieldArgs
 {
-    [Argument(Long = "field")]
+    [Argument("Field value.", Long = "field")]
     public string[] Field { get; init; } = System.Array.Empty<string>();
 }

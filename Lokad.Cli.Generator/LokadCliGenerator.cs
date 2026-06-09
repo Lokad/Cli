@@ -45,10 +45,12 @@ namespace Lokad.Cli.Generator
             var choices = new List<CliChoiceInfo>();
             var arguments = new List<CliArgumentInfo>();
             var discriminator = default(CliDiscriminatorInfo);
+            var documentation = default(string);
 
             foreach (var argumentsAttribute in typeSymbol.GetAttributes(compilation, _argumentsAttribute))
             {
                 discriminator = GetDiscriminator(argumentsAttribute);
+                documentation = GetConstructorString(argumentsAttribute, 0);
                 CollectArgumentNames(argumentsAttribute, shortOptions, longOptions, ref hasShortNumericArguments);
             }
 
@@ -86,7 +88,8 @@ namespace Lokad.Cli.Generator
                 hasShortNumericArguments,
                 choices.ToArray(),
                 arguments.ToArray(),
-                discriminator);
+                discriminator,
+                documentation);
         }
 
         private void CollectChoice(
@@ -260,6 +263,8 @@ namespace Lokad.Cli.Generator
                 isArray,
                 isConstructorParameter,
                 isSettableMember,
+                GetConstructorString(attribute, 0) ?? string.Empty,
+                GetNamedString(attribute, "Name"),
                 GetNamedString(attribute, "Long"),
                 GetNamedChar(attribute, "Short"),
                 GetNamedBool(attribute, "ShortNumeric"));
@@ -342,6 +347,14 @@ namespace Lokad.Cli.Generator
                     return argument.Value.Value as string;
 
             return null;
+        }
+
+        private static string? GetConstructorString(AttributeData attribute, int index)
+        {
+            if (attribute.ConstructorArguments.Length <= index)
+                return null;
+
+            return attribute.ConstructorArguments[index].Value as string;
         }
 
         private static char GetNamedChar(AttributeData attribute, string name)

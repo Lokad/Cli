@@ -31,6 +31,11 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
         return ParseTokenizedCore(arguments);
     }}
 
+    {GetDocumentMethodDeclaration(type)}
+    {{
+        return DocumentCore(commandName);
+    }}
+
     private static {type.TypeName.FullName} ParseTokenizedCore(global::Lokad.Cli.TokenizedArguments tokenized)
     {{{EmitTokenizedParseArguments(type)}
         // Discrimination
@@ -76,6 +81,14 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
                 return "static " + type.TypeName.FullName + " global::Lokad.Cli.ICliParsed<" + type.TypeName.FullName + ">.ParseTokenized(global::Lokad.Cli.TokenizedArguments arguments)";
 
             return "public static " + type.TypeName.FullName + " ParseTokenized(global::Lokad.Cli.TokenizedArguments arguments)";
+        }
+
+        private static string GetDocumentMethodDeclaration(CliTypeInfo type)
+        {
+            if (type.Kind == CliTypeKind.Interface)
+                return "static string global::Lokad.Cli.ICliParsed<" + type.TypeName.FullName + ">.Document(string commandName)";
+
+            return "public static string Document(string commandName)";
         }
 
         private static string FormatCharArray(char[] values)
@@ -549,9 +562,13 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
         private static string EmitParseHelpers(CliTypeInfo type)
         {
             var lines = new System.Text.StringBuilder();
+            lines.Append(EmitDocumentHelpers(type));
 
             if (type.Choices.Length > 0)
             {
+                if (lines.Length > 0)
+                    lines.AppendLine().AppendLine();
+
                 lines.AppendLine(@"    private static TChoice ParseChoice<TChoice>(global::Lokad.Cli.TokenizedArguments arguments)
         where TChoice : global::Lokad.Cli.ICliParsed<TChoice>
     {
@@ -657,6 +674,144 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
 
             lines.Append(helpers);
             return lines.ToString();
+        }
+
+        private static string EmitDocumentHelpers(CliTypeInfo type)
+        {
+            var lines = new System.Text.StringBuilder();
+
+            lines.AppendLine("    private static string DocumentCore(string commandName)");
+            lines.AppendLine("    {");
+            lines.AppendLine("        if (commandName == null) throw new global::System.ArgumentNullException(nameof(commandName));");
+            lines.AppendLine();
+
+            if (type.Choices.Length > 0)
+            {
+                lines.Append("        var documentedCommandName = ")
+                    .Append(GetDocumentedCommandNameExpression(type, "commandName"))
+                    .AppendLine(";");
+                lines.AppendLine("        var lines = new global::System.Collections.Generic.List<string>();");
+                if (type.Documentation != null)
+                {
+                    lines.Append("        lines.Add(FormatDocumentationLine(documentedCommandName, ")
+                        .Append(FormatStringLiteral(type.Documentation))
+                        .AppendLine("));");
+                }
+
+                for (var i = 0; i < type.Choices.Length; i++)
+                {
+                    lines.Append("        AddDocumentation(lines, DocumentChoice<")
+                        .Append(type.Choices[i].TypeName.FullName)
+                        .AppendLine(">(documentedCommandName));");
+                }
+
+                lines.AppendLine("        return string.Join(global::System.Environment.NewLine, lines);");
+            }
+            else
+            {
+                lines.Append("        var lines = new global::System.Collections.Generic.List<string> { FormatDocumentationLine(")
+                    .Append(GetDocumentedCommandNameExpression(type, "commandName"))
+                    .Append(", ")
+                    .Append(FormatStringLiteral(type.Documentation ?? string.Empty))
+                    .AppendLine(") };");
+
+                foreach (var argument in type.Arguments)
+                {
+                    lines.Append("        lines.Add(")
+                        .Append(FormatStringLiteral("  " + GetArgumentDocumentationLabel(argument) + ": " + argument.Documentation))
+                        .AppendLine(");");
+                }
+
+                lines.AppendLine("        return string.Join(global::System.Environment.NewLine, lines);");
+            }
+
+            lines.AppendLine("    }");
+
+            if (type.Choices.Length > 0)
+            {
+                lines.AppendLine();
+                lines.AppendLine(@"    private static string DocumentChoice<TChoice>(string commandName)
+        where TChoice : global::Lokad.Cli.ICliParsed<TChoice>
+    {
+        return TChoice.Document(commandName);
+    }
+
+    private static void AddDocumentation(global::System.Collections.Generic.List<string> lines, string documentation)
+    {
+        if (documentation.Length == 0)
+            return;
+
+        var split = documentation.Split(new[] { global::System.Environment.NewLine }, global::System.StringSplitOptions.None);
+        foreach (var line in split)
+            lines.Add(line);
+    }");
+            }
+
+            lines.AppendLine();
+            lines.AppendLine(@"    private static string FormatDocumentationLine(string commandName, string documentation)
+    {
+        if (documentation.Length == 0)
+            return commandName;
+
+        return commandName + "": "" + documentation;
+    }");
+
+            return lines.ToString().TrimEnd();
+        }
+
+        private static string GetDocumentedCommandNameExpression(CliTypeInfo type, string commandNameExpression)
+        {
+            var text = new System.Text.StringBuilder(commandNameExpression);
+            if (type.Discriminator == null)
+            {
+                AppendPositionalDocumentationNames(type, text);
+                return text.ToString();
+            }
+
+            text.Append(" + ").Append(FormatStringLiteral(" " + type.Discriminator.Display));
+            AppendPositionalDocumentationNames(type, text);
+            return text.ToString();
+        }
+
+        private static void AppendPositionalDocumentationNames(CliTypeInfo type, System.Text.StringBuilder text)
+        {
+            foreach (var argument in type.Arguments)
+            {
+                if (argument.IsOption)
+                    continue;
+
+                text.Append(" + ")
+                    .Append(FormatStringLiteral(" " + GetPositionalDocumentationPlaceholder(argument)));
+            }
+        }
+
+        private static string GetArgumentDocumentationLabel(CliArgumentInfo argument)
+        {
+            if (argument.LongOption != null && argument.ShortOption != '\0')
+                return "--" + argument.LongOption + ", -" + argument.ShortOption;
+
+            if (argument.LongOption != null)
+                return "--" + argument.LongOption;
+
+            if (argument.ShortOption != '\0')
+                return "-" + argument.ShortOption;
+
+            if (argument.ShortNumeric)
+                return "-<number>";
+
+            return GetPositionalDocumentationPlaceholder(argument);
+        }
+
+        private static string GetPositionalDocumentationPlaceholder(CliArgumentInfo argument)
+        {
+            var name = string.IsNullOrEmpty(argument.DocumentationName) ? argument.Name : argument.DocumentationName!;
+            if (argument.IsArray)
+                return "<" + name + "...>";
+
+            if (argument.IsNullable)
+                return "<" + name + "?>";
+
+            return "<" + name + ">";
         }
 
         private static bool UsesType(CliTypeInfo type, params string[] typeNames)

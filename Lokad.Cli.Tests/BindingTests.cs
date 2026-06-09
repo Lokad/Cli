@@ -45,22 +45,22 @@ public class BindingTests
 
 }
 
-[Arguments]
+[Arguments("Bound argument test command.")]
 public partial record BoundArgs
 {
-    [Argument(Long = "name", Short = 'n')]
+    [Argument("Name value.", Long = "name", Short = 'n')]
     public string Name { get; init; } = "";
 
-    [Argument(Long = "verbose", Short = 'v')]
+    [Argument("Enable verbose output.", Long = "verbose", Short = 'v')]
     public bool Verbose { get; init; }
 
-    [Argument(ShortNumeric = true)]
+    [Argument("Numeric short depth.", ShortNumeric = true)]
     public int? Depth { get; init; }
 
-    [Argument]
+    [Argument("Required count.")]
     public int Count { get; init; }
 
-    [Argument(Long = "optional")]
+    [Argument("Optional text.", Long = "optional")]
     public string? Optional { get; init; }
 }
 
@@ -70,12 +70,12 @@ public partial interface ICommand
 {
 }
 
-[Arguments(Long = "run")]
+[Arguments("Run command.", Long = "run")]
 public partial record RunCommand : ICommand
 {
-    [Argument(Long = "name")]
+    [Argument("Run name.", Long = "name")]
     public string Name { get; init; } = "";
 }
 
-[Arguments(Long = "stop")]
+[Arguments("Stop command.", Long = "stop")]
 public partial record StopCommand : ICommand;

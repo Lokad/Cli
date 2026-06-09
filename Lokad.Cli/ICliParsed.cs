@@ -19,5 +19,12 @@ namespace Lokad.Cli
         /// <param name="arguments"> Tokenized command-line argument stream. </param>
         /// <returns> Parsed argument object. </returns>
         static abstract T ParseTokenized(TokenizedArguments arguments);
+
+        /// <summary>
+        ///     Generates line-by-line command documentation for <typeparamref name="T"/>.
+        /// </summary>
+        /// <param name="commandName"> Root command name shown in the generated documentation. </param>
+        /// <returns> Generated command documentation. </returns>
+        static abstract string Document(string commandName);
     }
 }

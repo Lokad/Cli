@@ -11,6 +11,8 @@ namespace Lokad.Cli.Generator.Emit
             bool isArray,
             bool isConstructorParameter,
             bool isSettableMember,
+            string documentation,
+            string? documentationName,
             string? longOption,
             char shortOption,
             bool shortNumeric)
@@ -23,6 +25,8 @@ namespace Lokad.Cli.Generator.Emit
             IsArray = isArray;
             IsConstructorParameter = isConstructorParameter;
             IsSettableMember = isSettableMember;
+            Documentation = documentation;
+            DocumentationName = documentationName;
             LongOption = longOption;
             ShortOption = shortOption;
             ShortNumeric = shortNumeric;
@@ -43,6 +47,10 @@ namespace Lokad.Cli.Generator.Emit
         public bool IsConstructorParameter { get; }
 
         public bool IsSettableMember { get; }
+
+        public string Documentation { get; }
+
+        public string? DocumentationName { get; }
 
         public string? LongOption { get; }
 

@@ -28,5 +28,17 @@ namespace Lokad.Cli
         {
             return T.ParseTokenized(arguments);
         }
+
+        /// <summary>
+        ///     Generates line-by-line documentation for the requested generated argument type.
+        /// </summary>
+        /// <param name="commandName"> Root command name shown in the generated documentation. </param>
+        /// <typeparam name="T"> Generated argument type. </typeparam>
+        /// <returns> Generated command documentation. </returns>
+        public static string Document<T>(string commandName)
+            where T : ICliParsed<T>
+        {
+            return T.Document(commandName);
+        }
     }
 }

@@ -11,25 +11,40 @@ In case of parsing error, a `Lokad.Cli.ParseException` is thrown, and should be 
 
 ## Basic usage
 
-The `[Arguments]` annotation is added to a record to indicate that it should be automatically parsed from the command-line arguments. 
+The `[Arguments]` annotation is added to a record to indicate that it should be automatically parsed from the command-line arguments.
+It requires user-facing documentation for the argument shape.
 
-The `[Argument]` annotation is added to a property to configure how it is parsed, in conjunction with information from the argument type. 
+The `[Argument]` annotation is added to a property to configure how it is parsed, in conjunction with information from the argument type.
+It requires user-facing documentation for the argument.
+For positional arguments, set `Name` to control the placeholder shown in generated documentation.
 
 ```csharp
-[Arguments]
+[Arguments("Runs the application.")]
 public partial record MyArgs
 {
+    [Argument("Input file to process.", Name = "input")]
+    public string Input { get; init; } = "";
+
     // Type 'int?' means an optional argument that must be parsed as an integer. 
     // The presence of 'Short' and/or 'Long' means this is a named option.
     // Recognizes `-d 10`, `-d10`, `--max-depth 10` or `--max-depth=10`
     // Recognizes `-d abc` and reports "Invalid integer value for option `-d`: abc"
     [Argument(
-        "Maximum depth for recursive traversal."
-    	Short = 'd',
-    	Long  = "max-depth")]
+        "Maximum depth for recursive traversal.",
+        Short = 'd',
+        Long  = "max-depth")]
     public int? MaxDepth { get; init; }
 }
 ``` 
+
+Documentation can be generated from the same metadata:
+
+```csharp
+var documentation = Lokad.Cli.Parser.Document<MyArgs>("appname");
+```
+
+This produces line-oriented documentation that starts with a usage line such as `appname <input>`.
+Optional positional arguments are shown as `<input?>`; multiple-arity positional arguments are shown as `<input...>`.
 
 The parsing is performed based on a list of string arguments: 
 
@@ -52,9 +67,9 @@ public int Main(string[] args)
 
 A discriminator can be requested as part of the `[Arguments]` itself:
 
- - `[Arguments(Prefix = "abc")]` expects an unmatched positional argument equal to `abc` 
- - `[Arguments(Long = "def")]` expects `--def` (without arguments) to appear as a long argument.
- - `[Arguments(Short = 'g')]` expects `-g` (without arguments) to appear as a short argument.
+ - `[Arguments("...", Prefix = "abc")]` expects an unmatched positional argument equal to `abc` 
+ - `[Arguments("...", Long = "def")]` expects `--def` (without arguments) to appear as a long argument.
+ - `[Arguments("...", Short = 'g')]` expects `-g` (without arguments) to appear as a short argument.
  
 Being used as a discriminator does not prevent the option from appearing on an argument as well.
 
@@ -81,17 +96,17 @@ public partial interface IMyArgs {}
 
 [Choice(typeof(MySubArgs1)]
 [Choice(typeof(MySubArgs2)]
-[Arguments(Prefix = "sub")]
+[Arguments("Subcommands.", Prefix = "sub")]
 public partial interface IMySubArgs : IMyArgs {}
 
 // Produced by parsing `A`
-[Arguments(Prefix = "A"] public partial record MyArgs();
+[Arguments("Command A.", Prefix = "A"] public partial record MyArgs();
  
 // Produced by parsing `sub B` 
-[Arguments(Prefix = "B"] public partial record MySubArgs1();
+[Arguments("Command B.", Prefix = "B"] public partial record MySubArgs1();
 
 // Produced by parsing `sub C`
-[Arguments(Prefix = "C"] public partial record MySubArgs2();
+[Arguments("Command C.", Prefix = "C"] public partial record MySubArgs2();
 ``` 
 
 ### Parsing algorithm steps
@@ -99,11 +114,11 @@ public partial interface IMySubArgs : IMyArgs {}
 The parsing algorithm works as follows: 
 
   1. **Tokenization**: run left-to-right and classify each argument based on its contents. The classifier has access to the set of all `[Argument]` that could possibly be parsed, but not to the context in which those arguments could be parsed, or their type, or whether they expect additional arguments.
-     - if an `[Argument(ShortNumeric=true)]` exists, `-[0-9]+` is treated as `NumericShortArg`
-     - if an `[Argument(ShortNumeric=true, Short='x')]` exists, `-x[0-9]+` is treated as `NumericShortArg`
-     - `-[a-zA-Z0-9]+` is a `ShortArgSet` made up of single-character short arguments. Reports "unknown short option -x" for each character for which `[Argument(Short='x')]` does not exist.
-     - `--[a-zA-Z0-9]+` is a `LongArg`. Reports "unknown option `--xyz`" if `[Argument("--xyz")]` does not exist.
-     - `--[a-zA-Z0-9]+=.*` is a `LongArgWithValue`. Reports "unknown option `--xyz`" if `[Argument("--xyz")]` does not exist.
+     - if an `[Argument("...", ShortNumeric=true)]` exists, `-[0-9]+` is treated as `NumericShortArg`
+     - if an `[Argument("...", ShortNumeric=true, Short='x')]` exists, `-x[0-9]+` is treated as `NumericShortArg`
+     - `-[a-zA-Z0-9]+` is a `ShortArgSet` made up of single-character short arguments. Reports "unknown short option -x" for each character for which `[Argument("...", Short='x')]` does not exist.
+     - `--[a-zA-Z0-9]+` is a `LongArg`. Reports "unknown option `--xyz`" if `[Argument("...", Long="xyz")]` does not exist.
+     - `--[a-zA-Z0-9]+=.*` is a `LongArgWithValue`. Reports "unknown option `--xyz`" if `[Argument("...", Long="xyz")]` does not exist.
      - `--` is ignored, but causes all subsequent arguments to be treated as `ValueArg`.
      - Any unmatched argument is treated a `ValueArg`.
      
@@ -142,19 +157,19 @@ A C# compiler error is reported by the source generator if a type annotated with
 In preparation for the binding phase, the members of the inner type are inserted into the outer type as if they had been present at that position. This means that: 
 
 ```csharp
-[Arguments]
+[Arguments("Inner arguments.")]
 public partial record Inner
 {
-  [Argument] public int A { get; init }
-  [Argument(Short="b")] public bool B { get; init; }
+  [Argument("A value.")] public int A { get; init }
+  [Argument("B flag.", Short="b")] public bool B { get; init; }
 }
 
-[Arguments]
+[Arguments("Outer arguments.")]
 public partial record Outer
 {
-  [Argument] public string C { get; init; }
-  [Argument] public Inner I { get; init; }
-  [Argument(Short="d")] public string? D { get; init; }
+  [Argument("C value.")] public string C { get; init; }
+  [Argument("Inner group.")] public Inner I { get; init; }
+  [Argument("D value.", Short="d")] public string? D { get; init; }
 }
 ```
 
@@ -162,13 +177,13 @@ Will follow exactly the same parsing rules as:
 
 
 ```csharp
-[Arguments]
+[Arguments("Outer arguments.")]
 public partial record Outer
 {
-  [Argument] public string C { get; init; }
-  [Argument] public int A { get; init }
-  [Argument(Short="b")] public bool B { get; init; }
-  [Argument(Short="d")] public string? D { get; init; }
+  [Argument("C value.")] public string C { get; init; }
+  [Argument("A value.")] public int A { get; init }
+  [Argument("B flag.", Short="b")] public bool B { get; init; }
+  [Argument("D value.", Short="d")] public string? D { get; init; }
 }
 ```
 

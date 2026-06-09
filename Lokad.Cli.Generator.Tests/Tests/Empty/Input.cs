@@ -2,5 +2,5 @@ using Lokad.Cli;
 
 namespace Test;
 
-[Arguments]
+[Arguments("Empty command.")]
 public partial record Empty;

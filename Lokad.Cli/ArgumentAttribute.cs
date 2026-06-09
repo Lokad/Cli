@@ -10,25 +10,23 @@ namespace Lokad.Cli
     public sealed class ArgumentAttribute : Attribute
     {
         /// <summary>
-        ///     Initializes an argument annotation without a description.
+        ///     Initializes an argument annotation with user-facing documentation.
         /// </summary>
-        public ArgumentAttribute()
+        /// <param name="documentation"> Documentation shown in generated command documentation. </param>
+        public ArgumentAttribute(string documentation)
         {
+            Documentation = documentation ?? throw new ArgumentNullException(nameof(documentation));
         }
 
         /// <summary>
-        ///     Initializes an argument annotation with user-facing help text.
+        ///     User-facing documentation of the argument.
         /// </summary>
-        /// <param name="description"> Description shown in generated help output. </param>
-        public ArgumentAttribute(string description)
-        {
-            Description = description;
-        }
+        public string Documentation { get; }
 
         /// <summary>
-        ///     User-facing description of the argument.
+        ///     Positional argument name shown in generated command documentation, without angle brackets.
         /// </summary>
-        public string? Description { get; }
+        public string? Name { get; set; }
 
         /// <summary>
         ///     Long option name, without the leading <c>--</c>.

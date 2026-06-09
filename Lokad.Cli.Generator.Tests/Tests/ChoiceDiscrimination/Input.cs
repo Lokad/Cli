@@ -9,19 +9,19 @@ public partial interface ICommand
 {
 }
 
-[Arguments(Long = "add")]
+[Arguments("Add command.", Long = "add")]
 public partial record AddCommand : ICommand
 {
-    [Argument(Long = "name")]
+    [Argument("Name to add.", Long = "name")]
     public string? Name { get; init; }
 }
 
-[Arguments(Short = 'r')]
+[Arguments("Remove command.", Short = 'r')]
 public partial record RemoveCommand : ICommand
 {
-    [Argument(Short = 'i')]
+    [Argument("Identifier to remove.", Short = 'i')]
     public int? Id { get; init; }
 }
 
-[Arguments(Prefix = "list")]
+[Arguments("List command.", Prefix = "list")]
 public partial record ListCommand : ICommand;

@@ -22,6 +22,11 @@ partial record Empty : global::Lokad.Cli.ICliParsed<global::Test.Empty>
         return ParseTokenizedCore(arguments);
     }
 
+    public static string Document(string commandName)
+    {
+        return DocumentCore(commandName);
+    }
+
     private static global::Test.Empty ParseTokenizedCore(global::Lokad.Cli.TokenizedArguments tokenized)
     {
         // Discrimination
@@ -63,5 +68,19 @@ partial record Empty : global::Lokad.Cli.ICliParsed<global::Test.Empty>
         return new global::Test.Empty();
     }
 
+    private static string DocumentCore(string commandName)
+    {
+        if (commandName == null) throw new global::System.ArgumentNullException(nameof(commandName));
 
+        var lines = new global::System.Collections.Generic.List<string> { FormatDocumentationLine(commandName, @"Empty command.") };
+        return string.Join(global::System.Environment.NewLine, lines);
+    }
+
+    private static string FormatDocumentationLine(string commandName, string documentation)
+    {
+        if (documentation.Length == 0)
+            return commandName;
+
+        return commandName + ": " + documentation;
+    }
 }

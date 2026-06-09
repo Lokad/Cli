@@ -9,6 +9,20 @@ namespace Lokad.Cli
     public sealed class ArgumentsAttribute : Attribute
     {
         /// <summary>
+        ///     Initializes an argument shape annotation with user-facing documentation.
+        /// </summary>
+        /// <param name="documentation"> Documentation shown in generated command documentation. </param>
+        public ArgumentsAttribute(string documentation)
+        {
+            Documentation = documentation ?? throw new ArgumentNullException(nameof(documentation));
+        }
+
+        /// <summary>
+        ///     User-facing documentation of the argument shape.
+        /// </summary>
+        public string Documentation { get; }
+
+        /// <summary>
         ///     Positional discriminator prefix required for this argument shape.
         /// </summary>
         public string? Prefix { get; set; }

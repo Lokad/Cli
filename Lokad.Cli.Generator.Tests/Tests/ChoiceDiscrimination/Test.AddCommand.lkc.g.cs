@@ -22,6 +22,11 @@ partial record AddCommand : global::Lokad.Cli.ICliParsed<global::Test.AddCommand
         return ParseTokenizedCore(arguments);
     }
 
+    public static string Document(string commandName)
+    {
+        return DocumentCore(commandName);
+    }
+
     private static global::Test.AddCommand ParseTokenizedCore(global::Lokad.Cli.TokenizedArguments tokenized)
     {
         // Discrimination
@@ -87,5 +92,20 @@ partial record AddCommand : global::Lokad.Cli.ICliParsed<global::Test.AddCommand
         };
     }
 
+    private static string DocumentCore(string commandName)
+    {
+        if (commandName == null) throw new global::System.ArgumentNullException(nameof(commandName));
 
+        var lines = new global::System.Collections.Generic.List<string> { FormatDocumentationLine(commandName + @" --add", @"Add command.") };
+        lines.Add(@"  --name: Name to add.");
+        return string.Join(global::System.Environment.NewLine, lines);
+    }
+
+    private static string FormatDocumentationLine(string commandName, string documentation)
+    {
+        if (documentation.Length == 0)
+            return commandName;
+
+        return commandName + ": " + documentation;
+    }
 }

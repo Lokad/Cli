@@ -22,6 +22,11 @@ partial record RemoveCommand : global::Lokad.Cli.ICliParsed<global::Test.RemoveC
         return ParseTokenizedCore(arguments);
     }
 
+    public static string Document(string commandName)
+    {
+        return DocumentCore(commandName);
+    }
+
     private static global::Test.RemoveCommand ParseTokenizedCore(global::Lokad.Cli.TokenizedArguments tokenized)
     {
         // Discrimination
@@ -85,6 +90,23 @@ partial record RemoveCommand : global::Lokad.Cli.ICliParsed<global::Test.RemoveC
         {
             Id = arg0Seen ? arg0Value : default(global::System.Nullable<int>),
         };
+    }
+
+    private static string DocumentCore(string commandName)
+    {
+        if (commandName == null) throw new global::System.ArgumentNullException(nameof(commandName));
+
+        var lines = new global::System.Collections.Generic.List<string> { FormatDocumentationLine(commandName + @" -r", @"Remove command.") };
+        lines.Add(@"  -i: Identifier to remove.");
+        return string.Join(global::System.Environment.NewLine, lines);
+    }
+
+    private static string FormatDocumentationLine(string commandName, string documentation)
+    {
+        if (documentation.Length == 0)
+            return commandName;
+
+        return commandName + ": " + documentation;
     }
 
     private static int ParseInt32(string value, string label)
