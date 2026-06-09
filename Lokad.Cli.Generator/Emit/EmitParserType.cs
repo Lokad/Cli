@@ -563,10 +563,10 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
             if (type.Arguments.Length == 0)
                 return lines.ToString().TrimEnd();
 
-            if (lines.Length > 0)
-                lines.AppendLine().AppendLine();
+            var helpers = new System.Text.StringBuilder();
 
-            lines.Append(
+            if (UsesType(type, "int", "global::System.Int32"))
+                helpers.Append(
 @"    private static int ParseInt32(string value, string label)
     {
         if (global::System.Int32.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out var parsed))
@@ -574,7 +574,11 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
 
         throw new global::Lokad.Cli.ParseException($""invalid value `{value}` for `{label}`"");
     }
+");
 
+            if (UsesType(type, "uint", "global::System.UInt32"))
+                helpers.Append(
+@"
     private static uint ParseUInt32(string value, string label)
     {
         if (global::System.UInt32.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out var parsed))
@@ -582,7 +586,11 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
 
         throw new global::Lokad.Cli.ParseException($""invalid value `{value}` for `{label}`"");
     }
+");
 
+            if (UsesType(type, "long", "global::System.Int64"))
+                helpers.Append(
+@"
     private static long ParseInt64(string value, string label)
     {
         if (global::System.Int64.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out var parsed))
@@ -590,7 +598,11 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
 
         throw new global::Lokad.Cli.ParseException($""invalid value `{value}` for `{label}`"");
     }
+");
 
+            if (UsesType(type, "ulong", "global::System.UInt64"))
+                helpers.Append(
+@"
     private static ulong ParseUInt64(string value, string label)
     {
         if (global::System.UInt64.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out var parsed))
@@ -598,7 +610,11 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
 
         throw new global::Lokad.Cli.ParseException($""invalid value `{value}` for `{label}`"");
     }
+");
 
+            if (UsesType(type, "double", "global::System.Double"))
+                helpers.Append(
+@"
     private static double ParseDouble(string value, string label)
     {
         if (global::System.Double.TryParse(value, global::System.Globalization.NumberStyles.Float | global::System.Globalization.NumberStyles.AllowThousands, global::System.Globalization.CultureInfo.InvariantCulture, out var parsed))
@@ -606,7 +622,11 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
 
         throw new global::Lokad.Cli.ParseException($""invalid value `{value}` for `{label}`"");
     }
+");
 
+            if (UsesType(type, "global::System.DateTime"))
+                helpers.Append(
+@"
     private static global::System.DateTime ParseDateTime(string value, string label)
     {
         if (global::System.DateTime.TryParse(value, global::System.Globalization.CultureInfo.InvariantCulture, global::System.Globalization.DateTimeStyles.None, out var parsed))
@@ -614,7 +634,11 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
 
         throw new global::Lokad.Cli.ParseException($""invalid value `{value}` for `{label}`"");
     }
+");
 
+            if (UsesEnum(type))
+                helpers.Append(
+@"
     private static TEnum ParseEnum<TEnum>(string value, string label)
         where TEnum : struct, global::System.Enum
     {
@@ -625,7 +649,33 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
     }
 ");
 
+            if (helpers.Length == 0)
+                return lines.ToString().TrimEnd();
+
+            if (lines.Length > 0)
+                lines.AppendLine().AppendLine();
+
+            lines.Append(helpers);
             return lines.ToString();
+        }
+
+        private static bool UsesType(CliTypeInfo type, params string[] typeNames)
+        {
+            foreach (var argument in type.Arguments)
+                foreach (var typeName in typeNames)
+                    if (argument.TypeName.FullName == typeName)
+                        return true;
+
+            return false;
+        }
+
+        private static bool UsesEnum(CliTypeInfo type)
+        {
+            foreach (var argument in type.Arguments)
+                if (argument.IsEnum)
+                    return true;
+
+            return false;
         }
 
         private static string EmitDiscrimination(CliTypeInfo type)

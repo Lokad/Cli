@@ -94,18 +94,6 @@ namespace Lokad.Cli
             return true;
         }
 
-        /// <summary>
-        ///     Attempts to classify an argument as a short-option token.
-        /// </summary>
-        /// <param name="argument"> Raw argument string. </param>
-        /// <param name="shortOptions"> Recognized short option names. </param>
-        /// <param name="hasShortNumericArguments">
-        ///     Indicates whether numeric short-argument forms should be recognized.
-        /// </param>
-        /// <param name="tokens"> Destination token list. </param>
-        /// <returns>
-        ///     <c>true</c> when <paramref name="argument"/> was a short-option token; otherwise <c>false</c>.
-        /// </returns>
         private static bool TryTokenizeShort(
             string argument,
             HashSet<char> shortOptions,
@@ -117,7 +105,7 @@ namespace Lokad.Cli
                 argument.Length <= 1)
                 return false;
 
-            if (hasShortNumericArguments && IsNumericShortArgument(argument))
+            if (hasShortNumericArguments && IsDigits(argument, 1))
             {
                 tokens.Add(new NumericShortArg(argument.Substring(1)));
                 return true;
@@ -140,17 +128,7 @@ namespace Lokad.Cli
                 throw new ParseException($"unexpected = in short option list `{argument}`");
             }
 
-            var allKnownShortOptions = true;
-            foreach (var option in set)
-            {
-                if (!shortOptions.Contains(option))
-                {
-                    allKnownShortOptions = false;
-                    break;
-                }
-            }
-
-            if (allKnownShortOptions)
+            if (AllShortOptionsKnown(set, shortOptions))
             {
                 tokens.Add(new ShortArgSet(set));
                 return true;
@@ -162,23 +140,26 @@ namespace Lokad.Cli
                 return true;
             }
 
-            foreach (var option in set)
-            {
-                if (!shortOptions.Contains(option))
-                    throw new ParseException($"unknown short option `-{option}`");
-            }
-
-            throw new InvalidOperationException("Unreachable short option tokenization state.");
+            ThrowUnknownShortOption(set, shortOptions);
+            return true;
         }
 
-        /// <summary>
-        ///     Returns whether an argument has the current numeric short-argument shape.
-        /// </summary>
-        /// <param name="argument"> Raw argument string. </param>
-        /// <returns> <c>true</c> when the argument starts with <c>-</c> followed by digits. </returns>
-        private static bool IsNumericShortArgument(string argument)
+        private static bool AllShortOptionsKnown(string options, HashSet<char> shortOptions)
         {
-            return IsDigits(argument, 1);
+            foreach (var option in options)
+                if (!shortOptions.Contains(option))
+                    return false;
+
+            return true;
+        }
+
+        private static void ThrowUnknownShortOption(string options, HashSet<char> shortOptions)
+        {
+            foreach (var option in options)
+                if (!shortOptions.Contains(option))
+                    throw new ParseException($"unknown short option `-{option}`");
+
+            throw new InvalidOperationException("Unreachable short option tokenization state.");
         }
 
         private static bool IsDigits(string value, int start)
