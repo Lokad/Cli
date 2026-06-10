@@ -74,6 +74,26 @@ public class GeneratorFullTests
     }
 
     [Theory]
+    [InlineData(new[] { "hello" }, "hello")]
+    [InlineData(new[] { "hello", "world" }, "hello", "world")]
+    [InlineData(new[] { "/alpha.txt", "/beta.txt" }, "/alpha.txt", "/beta.txt")]
+    public void ParsesPositionalStringArray(string[] expected, params string[] arguments)
+    {
+        var parsed = Parser.Parse<PositionalArrayArgs>(arguments);
+
+        Assert.Equal(expected, parsed.Input);
+    }
+
+    [Fact]
+    public void ParsesFixedPositionalThenPositionalStringArray()
+    {
+        var parsed = Parser.Parse<PatternAndPathsArgs>(new[] { "world", "/file.txt", "/other.txt" });
+
+        Assert.Equal("world", parsed.Pattern);
+        Assert.Equal(new[] { "/file.txt", "/other.txt" }, parsed.Paths);
+    }
+
+    [Theory]
     [InlineData(null)]
     [InlineData(10, "-d", "10")]
     [InlineData(10, "-d10")]
@@ -335,6 +355,16 @@ public partial record PositionalArrayArgs
 {
     [Argument("Input values.", Name = "input")]
     public string[] Input { get; init; } = System.Array.Empty<string>();
+}
+
+[Arguments("Pattern and paths command.")]
+public partial record PatternAndPathsArgs
+{
+    [Argument("Pattern value.", Name = "pattern")]
+    public string Pattern { get; init; } = "";
+
+    [Argument("Path values.", Name = "path")]
+    public string[] Paths { get; init; } = System.Array.Empty<string>();
 }
 
 [Arguments("Nullable depth command.")]

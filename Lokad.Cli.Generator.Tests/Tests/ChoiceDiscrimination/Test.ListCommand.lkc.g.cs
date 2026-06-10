@@ -2,7 +2,7 @@
 namespace Test;
 partial record ListCommand : global::Lokad.Cli.ICliParsed<global::Test.ListCommand>
 {
-    public static global::Test.ListCommand Parse(string[] arguments)
+    public static global::Test.ListCommand Parse(global::System.Collections.Generic.IReadOnlyList<string> arguments)
     {
         // Tokenization
         var tokenized = global::Lokad.Cli.ArgumentTokenizer.Tokenize(

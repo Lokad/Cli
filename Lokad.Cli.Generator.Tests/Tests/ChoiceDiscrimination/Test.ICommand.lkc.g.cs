@@ -2,7 +2,7 @@
 namespace Test;
 partial interface ICommand : global::Lokad.Cli.ICliParsed<global::Test.ICommand>
 {
-    static global::Test.ICommand global::Lokad.Cli.ICliParsed<global::Test.ICommand>.Parse(string[] arguments)
+    static global::Test.ICommand global::Lokad.Cli.ICliParsed<global::Test.ICommand>.Parse(global::System.Collections.Generic.IReadOnlyList<string> arguments)
     {
         // Tokenization
         var tokenized = global::Lokad.Cli.ArgumentTokenizer.Tokenize(

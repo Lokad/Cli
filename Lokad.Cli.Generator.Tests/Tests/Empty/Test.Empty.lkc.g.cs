@@ -2,7 +2,7 @@
 namespace Test;
 partial record Empty : global::Lokad.Cli.ICliParsed<global::Test.Empty>
 {
-    public static global::Test.Empty Parse(string[] arguments)
+    public static global::Test.Empty Parse(global::System.Collections.Generic.IReadOnlyList<string> arguments)
     {
         // Tokenization
         var tokenized = global::Lokad.Cli.ArgumentTokenizer.Tokenize(

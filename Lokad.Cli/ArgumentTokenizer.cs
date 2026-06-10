@@ -19,7 +19,7 @@ namespace Lokad.Cli
         /// </param>
         /// <returns> Tokenized argument stream. </returns>
         public static TokenizedArguments Tokenize(
-            string[] arguments,
+            IReadOnlyList<string> arguments,
             char[] shortOptions,
             string[] longOptions,
             bool hasShortNumericArguments)
@@ -30,7 +30,7 @@ namespace Lokad.Cli
 
             var shortSet = new HashSet<char>(shortOptions);
             var longSet = new HashSet<string>(longOptions, StringComparer.Ordinal);
-            var tokens = new List<ITokenizedArguments>(arguments.Length);
+            var tokens = new List<ITokenizedArguments>(arguments.Count);
             var valuesOnly = false;
 
             foreach (var argument in arguments)

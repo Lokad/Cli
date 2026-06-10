@@ -2,7 +2,7 @@
 namespace Test;
 partial record RemoveCommand : global::Lokad.Cli.ICliParsed<global::Test.RemoveCommand>
 {
-    public static global::Test.RemoveCommand Parse(string[] arguments)
+    public static global::Test.RemoveCommand Parse(global::System.Collections.Generic.IReadOnlyList<string> arguments)
     {
         // Tokenization
         var tokenized = global::Lokad.Cli.ArgumentTokenizer.Tokenize(

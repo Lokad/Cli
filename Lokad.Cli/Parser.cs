@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace Lokad.Cli
 {
     /// <summary>
@@ -15,6 +18,49 @@ namespace Lokad.Cli
             where T : ICliParsed<T>
         {
             return T.Parse(arguments);
+        }
+
+        /// <summary>
+        ///     Parses command-line arguments into the requested generated argument type.
+        /// </summary>
+        /// <param name="arguments"> Raw command-line argument strings. </param>
+        /// <typeparam name="T"> Generated argument type. </typeparam>
+        /// <returns> Parsed argument object. </returns>
+        public static T Parse<T>(IEnumerable<string> arguments)
+            where T : ICliParsed<T>
+        {
+            if (arguments == null) throw new ArgumentNullException(nameof(arguments));
+
+            if (arguments is IReadOnlyList<string> list)
+                return Parse<T>(list);
+
+            return Parse<T>(new List<string>(arguments));
+        }
+
+        /// <summary>
+        ///     Parses command-line arguments into the requested generated argument type.
+        /// </summary>
+        /// <param name="arguments"> Raw command-line argument strings. </param>
+        /// <typeparam name="T"> Generated argument type. </typeparam>
+        /// <returns> Parsed argument object. </returns>
+        public static T Parse<T>(IReadOnlyList<string> arguments)
+            where T : ICliParsed<T>
+        {
+            if (arguments == null) throw new ArgumentNullException(nameof(arguments));
+
+            return T.Parse(arguments);
+        }
+
+        /// <summary>
+        ///     Parses command-line arguments into the requested generated argument type.
+        /// </summary>
+        /// <param name="arguments"> Raw command-line argument strings. </param>
+        /// <typeparam name="T"> Generated argument type. </typeparam>
+        /// <returns> Parsed argument object. </returns>
+        public static T Parse<T>(ReadOnlySpan<string> arguments)
+            where T : ICliParsed<T>
+        {
+            return Parse<T>(arguments.ToArray());
         }
 
         /// <summary>

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Lokad.Cli
 {
     /// <summary>
@@ -11,7 +13,7 @@ namespace Lokad.Cli
         /// </summary>
         /// <param name="arguments"> Raw command-line argument strings. </param>
         /// <returns> Parsed argument object. </returns>
-        static abstract T Parse(string[] arguments);
+        static abstract T Parse(IReadOnlyList<string> arguments);
 
         /// <summary>
         ///     Parses tokenized command-line arguments into an instance of <typeparamref name="T"/>.

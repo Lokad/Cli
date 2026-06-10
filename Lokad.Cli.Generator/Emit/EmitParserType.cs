@@ -69,9 +69,9 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
         private static string GetParseMethodDeclaration(CliTypeInfo type)
         {
             if (type.Kind == CliTypeKind.Interface)
-                return "static " + type.TypeName.FullName + " global::Lokad.Cli.ICliParsed<" + type.TypeName.FullName + ">.Parse(string[] arguments)";
+                return "static " + type.TypeName.FullName + " global::Lokad.Cli.ICliParsed<" + type.TypeName.FullName + ">.Parse(global::System.Collections.Generic.IReadOnlyList<string> arguments)";
 
-            return "public static " + type.TypeName.FullName + " Parse(string[] arguments)";
+            return "public static " + type.TypeName.FullName + " Parse(global::System.Collections.Generic.IReadOnlyList<string> arguments)";
         }
 
         private static string GetParseTokenizedMethodDeclaration(CliTypeInfo type)
@@ -345,7 +345,8 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
                 lines.Append("                    if (positionalIndex == ").Append(p).AppendLine(")");
                 lines.AppendLine("                    {");
                 lines.Append(EmitAssign(argumentIndex, positional[p], "valueArg.Value", "\"argument\"", "                        "));
-                lines.AppendLine("                        positionalIndex++;");
+                if (!positional[p].IsArray || p < positional.Length - 1)
+                    lines.AppendLine("                        positionalIndex++;");
                 lines.AppendLine("                        break;");
                 lines.AppendLine("                    }");
             }

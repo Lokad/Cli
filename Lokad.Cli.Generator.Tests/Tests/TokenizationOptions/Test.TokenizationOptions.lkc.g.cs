@@ -2,7 +2,7 @@
 namespace Test;
 partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.TokenizationOptions>
 {
-    public static global::Test.TokenizationOptions Parse(string[] arguments)
+    public static global::Test.TokenizationOptions Parse(global::System.Collections.Generic.IReadOnlyList<string> arguments)
     {
         // Tokenization
         var tokenized = global::Lokad.Cli.ArgumentTokenizer.Tokenize(

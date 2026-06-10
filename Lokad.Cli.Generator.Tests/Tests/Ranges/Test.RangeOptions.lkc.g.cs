@@ -2,7 +2,7 @@
 namespace Test;
 partial record RangeOptions : global::Lokad.Cli.ICliParsed<global::Test.RangeOptions>
 {
-    public static global::Test.RangeOptions Parse(string[] arguments)
+    public static global::Test.RangeOptions Parse(global::System.Collections.Generic.IReadOnlyList<string> arguments)
     {
         // Tokenization
         var tokenized = global::Lokad.Cli.ArgumentTokenizer.Tokenize(
