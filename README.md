@@ -116,7 +116,7 @@ The parsing algorithm works as follows:
   1. **Tokenization**: run left-to-right and classify each argument based on its contents. The classifier has access to the set of all `[Argument]` that could possibly be parsed, but not to the context in which those arguments could be parsed, or their type, or whether they expect additional arguments.
      - if an `[Argument("...", ShortNumeric=true)]` exists, `-[0-9]+` is treated as `NumericShortArg`
      - if an `[Argument("...", ShortNumeric=true, Short='x')]` exists, `-x[0-9]+` is treated as `NumericShortArg`
-     - `-[a-zA-Z0-9]+` is a `ShortArgSet` made up of single-character short arguments. Reports "unknown short option -x" for each character for which `[Argument("...", Short='x')]` does not exist.
+     - `-[a-zA-Z0-9]+` can be a `LongArg` if `[Argument("...", Long="xyz")]` exists, otherwise, it becomes a `ShortArgSet` made up of single-character short arguments. Reports "unknown short option -x" for each character for which `[Argument("...", Short='x')]` does not exist.
      - `--[a-zA-Z0-9]+` is a `LongArg`. Reports "unknown option `--xyz`" if `[Argument("...", Long="xyz")]` does not exist.
      - `--[a-zA-Z0-9]+=.*` is a `LongArgWithValue`. Reports "unknown option `--xyz`" if `[Argument("...", Long="xyz")]` does not exist.
      - `--` is ignored, but causes all subsequent arguments to be treated as `ValueArg`.
@@ -137,7 +137,9 @@ The parsing algorithm works as follows:
 
 The `bool` type is special; a `bool` option must have a `Short` or `Long` label. It is true if present, false if not.
 
-The primitive types are `string`, `int`, `uint`, `long`, `ulong`, `DateTime`, `double`, all enums, and any type that implements `IParsable`. A property of a primitive type will parse its argument from the string value (or take the string value as-is, for a `string`), and report an error if parsing fails: "invalid value `value`" or "invalid value `value` for `--foo`). Conversely, if there is no value available for the property, it reports "missing argument" or "missing option `--foo`" 
+The primitive types are `string`, `int`, `uint`, `long`, `ulong`, `DateTime`, `double`, all enums, `Ranges`, and any type that implements `IParsable`. A property of a primitive type will parse its argument from the string value (or take the string value as-is, for a `string`), and report an error if parsing fails: "invalid value `value`" or "invalid value `value` for `--foo`). Conversely, if there is no value available for the property, it reports "missing argument" or "missing option `--foo`" 
+
+The `Ranges` type is an `IReadOnlyList<(int First, int Last)>` parsed from comma-separated range elements such as `1,4,5-6`. Each element can be a single number `N`, a closed range `N-N`, an open lower-bound range `-N` where `First` is `int.MinValue`, or an open upper-bound range `N-` where `Last` is `int.MaxValue`.
 
 Given a primitive type `T`, the type `T?` behaves the same, but the property is optional and does not fail if no value was provided. 
 
