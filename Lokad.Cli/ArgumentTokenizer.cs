@@ -50,6 +50,9 @@ namespace Lokad.Cli
                 if (TryTokenizeLong(argument, longSet, tokens))
                     continue;
 
+                if (TryTokenizeSingleDashLong(argument, longSet, tokens))
+                    continue;
+
                 if (TryTokenizeShort(argument, shortSet, hasShortNumericArguments, tokens))
                     continue;
 
@@ -81,6 +84,36 @@ namespace Lokad.Cli
 
             if (!longOptions.Contains(name))
                 throw new ParseException($"unknown option `--{name}`");
+
+            if (separator < 0)
+            {
+                tokens.Add(new LongArg(name));
+            }
+            else
+            {
+                tokens.Add(new LongArgWithValue(name, argument.Substring(separator + 1)));
+            }
+
+            return true;
+        }
+
+        private static bool TryTokenizeSingleDashLong(
+            string argument,
+            HashSet<string> longOptions,
+            List<ITokenizedArguments> tokens)
+        {
+            if (!argument.StartsWith("-", StringComparison.Ordinal) ||
+                argument.StartsWith("--", StringComparison.Ordinal) ||
+                argument.Length <= 2)
+            {
+                return false;
+            }
+
+            var separator = argument.IndexOf('=');
+            var name = separator < 0 ? argument.Substring(1) : argument.Substring(1, separator - 1);
+
+            if (!longOptions.Contains(name))
+                return false;
 
             if (separator < 0)
             {
