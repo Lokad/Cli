@@ -330,12 +330,12 @@ namespace Lokad.Cli.Generator
                 return new CliDiscriminatorInfo(prefix!, prefix, null, '\0');
 
             var longOption = GetNamedString(attribute, "Long");
-            if (!string.IsNullOrEmpty(longOption))
-                return new CliDiscriminatorInfo("--" + longOption, null, longOption, '\0');
-
             var shortOption = GetNamedChar(attribute, "Short");
-            if (shortOption != '\0')
-                return new CliDiscriminatorInfo("-" + shortOption, null, null, shortOption);
+            if (!string.IsNullOrEmpty(longOption) || shortOption != '\0')
+            {
+                var display = !string.IsNullOrEmpty(longOption) ? "--" + longOption : "-" + shortOption;
+                return new CliDiscriminatorInfo(display, null, longOption, shortOption);
+            }
 
             return null;
         }

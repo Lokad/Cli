@@ -282,6 +282,31 @@ public class GeneratorFullTests
         Assert.Equal("incompatible options `-a` and `-b`", ex.Message);
     }
 
+    [Theory]
+    [InlineData("--help")]
+    [InlineData("-h")]
+    public void ParsesChoiceWithDiscriminatorOnlyOption(string argument)
+    {
+        Assert.IsType<HelpChoiceArgs>(Parser.Parse<IHelpChoiceArgs>(new[] { argument }));
+    }
+
+    [Theory]
+    [InlineData("--help")]
+    [InlineData("-h")]
+    public void ParsesConcreteTypeWithDiscriminatorOnlyOption(string argument)
+    {
+        Parser.Parse<HelpChoiceArgs>(new[] { argument });
+    }
+
+    [Fact]
+    public void ParsesChoiceWithDiscriminatorAlsoUsedAsStringArgument()
+    {
+        var parsed = Assert.IsType<FooChoiceArgs>(
+            Parser.Parse<IFooChoiceArgs>(new[] { "--foo=bar" }));
+
+        Assert.Equal("bar", parsed.Foo);
+    }
+
     [Fact]
     public void SkipsOnlyPositionalDiscriminatorWhenOptionValueMatchesPrefix()
     {
@@ -509,6 +534,26 @@ public partial record ShortOptionChoiceBetaArgs : IShortOptionChoiceArgs
 
     [Argument("Short beta name.", Short = 'y')]
     public string? Name { get; init; }
+}
+
+[Choice(typeof(HelpChoiceArgs))]
+public partial interface IHelpChoiceArgs
+{
+}
+
+[Arguments("Help command.", Long = "help", Short = 'h')]
+public partial record HelpChoiceArgs : IHelpChoiceArgs;
+
+[Choice(typeof(FooChoiceArgs))]
+public partial interface IFooChoiceArgs
+{
+}
+
+[Arguments("Foo command.", Long = "foo")]
+public partial record FooChoiceArgs : IFooChoiceArgs
+{
+    [Argument("Foo value.", Long = "foo")]
+    public string? Foo { get; init; }
 }
 
 [Choice(typeof(PrefixFieldArgs))]

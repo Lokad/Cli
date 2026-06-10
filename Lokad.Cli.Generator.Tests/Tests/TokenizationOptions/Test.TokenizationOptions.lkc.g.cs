@@ -127,6 +127,8 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
                         arg4Seen = true;
                         break;
                     }
+                    if (shortArgWithValue.Name == 'm')
+                        break;
                     throw new global::Lokad.Cli.ParseException($"unexpected option `-{shortArgWithValue.Name}`");
                 case global::Lokad.Cli.ShortArgSet shortArgSet:
                     foreach (var shortOption in shortArgSet.Options)
@@ -166,6 +168,8 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
                             arg4Seen = true;
                             continue;
                         }
+                        if (shortOption == 'm')
+                            continue;
                         throw new global::Lokad.Cli.ParseException($"unexpected option `-{shortOption}`");
                     }
                     break;

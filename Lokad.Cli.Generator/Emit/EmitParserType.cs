@@ -890,16 +890,21 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
 
         private static string FormatDiscriminatorTest(CliDiscriminatorInfo discriminator)
         {
-            if (discriminator.LongOption != null)
-                return "tokenized.HasLongOption(" + FormatStringLiteral(discriminator.LongOption) + ")";
+            var tests = new System.Collections.Generic.List<string>();
 
             if (discriminator.ShortOption != '\0')
-                return "tokenized.HasShortOption(" + FormatCharLiteral(discriminator.ShortOption) + ")";
+                tests.Add("tokenized.HasShortOption(" + FormatCharLiteral(discriminator.ShortOption) + ")");
+
+            if (discriminator.LongOption != null)
+                tests.Add("tokenized.HasLongOption(" + FormatStringLiteral(discriminator.LongOption) + ")");
 
             if (discriminator.Prefix != null)
-                return "tokenized.HasPositionalPrefix(" + FormatStringLiteral(discriminator.Prefix) + ")";
+                tests.Add("tokenized.HasPositionalPrefix(" + FormatStringLiteral(discriminator.Prefix) + ")");
 
-            throw new InvalidOperationException("Discriminator has no value.");
+            if (tests.Count == 0)
+                throw new InvalidOperationException("Discriminator has no value.");
+
+            return string.Join(" || ", tests);
         }
 
         private static bool AllChoicesHaveDiscriminators(CliTypeInfo type)
