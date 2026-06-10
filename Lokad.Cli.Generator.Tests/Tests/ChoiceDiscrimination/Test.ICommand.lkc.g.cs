@@ -1,5 +1,4 @@
 #nullable enable
-#pragma warning disable 0162, 0219
 namespace Test;
 partial interface ICommand : global::Lokad.Cli.ICliParsed<global::Test.ICommand>
 {

@@ -1,5 +1,4 @@
 #nullable enable
-#pragma warning disable 0162, 0219
 namespace Test;
 partial record ListCommand : global::Lokad.Cli.ICliParsed<global::Test.ListCommand>
 {
@@ -35,7 +34,6 @@ partial record ListCommand : global::Lokad.Cli.ICliParsed<global::Test.ListComma
         _ = tokenized;
 
         // Binding
-        var positionalIndex = 0;
         global::Lokad.Cli.ITokenizedArguments? current;
         while ((current = tokenized.Shift()) != null)
         {
@@ -43,13 +41,10 @@ partial record ListCommand : global::Lokad.Cli.ICliParsed<global::Test.ListComma
             {
                 case global::Lokad.Cli.LongArgWithValue longArgWithValue:
                     throw new global::Lokad.Cli.ParseException($"unexpected option `--{longArgWithValue.Name}`");
-                    break;
                 case global::Lokad.Cli.LongArg longArg:
                     throw new global::Lokad.Cli.ParseException($"unexpected option `--{longArg.Name}`");
-                    break;
                 case global::Lokad.Cli.ShortArgWithValue shortArgWithValue:
                     throw new global::Lokad.Cli.ParseException($"unexpected option `-{shortArgWithValue.Name}`");
-                    break;
                 case global::Lokad.Cli.ShortArgSet shortArgSet:
                     foreach (var shortOption in shortArgSet.Options)
                     {
@@ -58,12 +53,10 @@ partial record ListCommand : global::Lokad.Cli.ICliParsed<global::Test.ListComma
                     break;
                 case global::Lokad.Cli.NumericShortArg numericShortArg:
                     throw new global::Lokad.Cli.ParseException($"unexpected argument `-{numericShortArg.Value}`");
-                    break;
                 case global::Lokad.Cli.ValueArg valueArg:
                     if (tokenized.MaybeSkipPositional(valueArg.Value))
                         break;
                     throw new global::Lokad.Cli.ParseException($"unexpected argument `{valueArg.Value}`");
-                    break;
             }
         }
 

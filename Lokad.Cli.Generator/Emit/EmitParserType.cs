@@ -8,7 +8,6 @@ namespace Lokad.Cli.Generator.Emit
         {
             return
 $@"#nullable enable
-#pragma warning disable 0162, 0219
 namespace {type.TypeName.Namespace};
 partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICliParsed<{type.TypeName.FullName}>
 {{
@@ -134,7 +133,8 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
             for (var i = 0; i < type.Arguments.Length; i++)
             {
                 var argument = type.Arguments[i];
-                lines.Append("        var ").Append(GetSeenName(i)).AppendLine(" = false;");
+                if (!argument.IsArray)
+                    lines.Append("        var ").Append(GetSeenName(i)).AppendLine(" = false;");
                 lines.Append("        ").Append(GetLocalType(argument)).Append(' ').Append(GetValueName(i));
                 if (argument.IsArray)
                     lines.AppendLine(" = new();");
@@ -142,7 +142,8 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
                     lines.AppendLine(" = default;");
             }
 
-            lines.AppendLine("        var positionalIndex = 0;");
+            if (positional.Length > 0)
+                lines.AppendLine("        var positionalIndex = 0;");
             lines.AppendLine("        global::Lokad.Cli.ITokenizedArguments? current;");
             lines.AppendLine("        while ((current = tokenized.Shift()) != null)");
             lines.AppendLine("        {");
@@ -150,22 +151,17 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
             lines.AppendLine("            {");
             lines.AppendLine("                case global::Lokad.Cli.LongArgWithValue longArgWithValue:");
             lines.Append(EmitLongWithValueBinding(type));
-            lines.AppendLine("                    break;");
             lines.AppendLine("                case global::Lokad.Cli.LongArg longArg:");
             lines.Append(EmitLongBinding(type));
-            lines.AppendLine("                    break;");
             lines.AppendLine("                case global::Lokad.Cli.ShortArgWithValue shortArgWithValue:");
             lines.Append(EmitShortWithValueBinding(type));
-            lines.AppendLine("                    break;");
             lines.AppendLine("                case global::Lokad.Cli.ShortArgSet shortArgSet:");
             lines.Append(EmitShortBinding(type));
             lines.AppendLine("                    break;");
             lines.AppendLine("                case global::Lokad.Cli.NumericShortArg numericShortArg:");
             lines.Append(EmitNumericShortBinding(type));
-            lines.AppendLine("                    break;");
             lines.AppendLine("                case global::Lokad.Cli.ValueArg valueArg:");
             lines.Append(EmitPositionalBinding(type, positional));
-            lines.AppendLine("                    break;");
             lines.AppendLine("            }");
             lines.AppendLine("        }");
 
@@ -453,7 +449,8 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
                     .Append(GetParseExpression(argument, valueExpression, labelExpression))
                     .AppendLine(";");
             }
-            lines.Append(indent).Append(GetSeenName(index)).AppendLine(" = true;");
+            if (!argument.IsArray)
+                lines.Append(indent).Append(GetSeenName(index)).AppendLine(" = true;");
             return lines.ToString();
         }
 

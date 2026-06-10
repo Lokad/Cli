@@ -1,5 +1,4 @@
 #nullable enable
-#pragma warning disable 0162, 0219
 namespace Test;
 partial record AddCommand : global::Lokad.Cli.ICliParsed<global::Test.AddCommand>
 {
@@ -35,7 +34,6 @@ partial record AddCommand : global::Lokad.Cli.ICliParsed<global::Test.AddCommand
         // Binding
         var arg0Seen = false;
         string? arg0Value = default;
-        var positionalIndex = 0;
         global::Lokad.Cli.ITokenizedArguments? current;
         while ((current = tokenized.Shift()) != null)
         {
@@ -51,7 +49,6 @@ partial record AddCommand : global::Lokad.Cli.ICliParsed<global::Test.AddCommand
                     if (longArgWithValue.Name == @"add")
                         break;
                     throw new global::Lokad.Cli.ParseException($"unexpected option `--{longArgWithValue.Name}`");
-                    break;
                 case global::Lokad.Cli.LongArg longArg:
                     if (longArg.Name == @"name")
                     {
@@ -65,10 +62,8 @@ partial record AddCommand : global::Lokad.Cli.ICliParsed<global::Test.AddCommand
                     if (longArg.Name == @"add")
                         break;
                     throw new global::Lokad.Cli.ParseException($"unexpected option `--{longArg.Name}`");
-                    break;
                 case global::Lokad.Cli.ShortArgWithValue shortArgWithValue:
                     throw new global::Lokad.Cli.ParseException($"unexpected option `-{shortArgWithValue.Name}`");
-                    break;
                 case global::Lokad.Cli.ShortArgSet shortArgSet:
                     foreach (var shortOption in shortArgSet.Options)
                     {
@@ -77,12 +72,10 @@ partial record AddCommand : global::Lokad.Cli.ICliParsed<global::Test.AddCommand
                     break;
                 case global::Lokad.Cli.NumericShortArg numericShortArg:
                     throw new global::Lokad.Cli.ParseException($"unexpected argument `-{numericShortArg.Value}`");
-                    break;
                 case global::Lokad.Cli.ValueArg valueArg:
                     if (tokenized.MaybeSkipPositional(valueArg.Value))
                         break;
                     throw new global::Lokad.Cli.ParseException($"unexpected argument `{valueArg.Value}`");
-                    break;
             }
         }
 
