@@ -18,6 +18,13 @@ namespace Lokad.Cli
         ///     Indicates whether numeric short-argument forms such as <c>-10</c> should be recognized.
         /// </param>
         /// <returns> Tokenized argument stream. </returns>
+        /// <remarks>
+        ///     When a multi-character short argument such as <c>-abc</c> is encountered and the first
+        ///     character (<c>a</c>) is a recognized short option but one or more of the remaining
+        ///     characters are not, the argument is interpreted as option <c>-a</c> with an inline
+        ///     value of <c>bc</c>, equivalent to <c>-a=bc</c>.  This mirrors the convention used
+        ///     by tools such as <c>tar</c> and <c>grep</c>.
+        /// </remarks>
         public static TokenizedArguments Tokenize(
             IReadOnlyList<string> arguments,
             char[] shortOptions,
@@ -167,7 +174,7 @@ namespace Lokad.Cli
                 return true;
             }
 
-            if (set.Length > 1 && shortOptions.Contains(set[0]) && IsDigits(set, 1))
+            if (set.Length > 1 && shortOptions.Contains(set[0]))
             {
                 tokens.Add(new ShortArgWithValue(set[0], set.Substring(1)));
                 return true;

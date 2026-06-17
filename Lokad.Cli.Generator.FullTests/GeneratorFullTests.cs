@@ -48,6 +48,8 @@ public class GeneratorFullTests
         { new[] { "hello", "world" }, new[] { "--xval", "hello", "--xval", "world" } },
         { new[] { "hello", "world" }, new[] { "-x", "hello", "--xval=world" } },
         { new[] { "hello" }, new[] { "-x=hello" } },
+        { new[] { "hello" }, new[] { "-xhello" } },
+        { new[] { "helloworld" }, new[] { "-xhelloworld" } },
     };
 
     [Theory]
@@ -57,6 +59,24 @@ public class GeneratorFullTests
         var parsed = Parser.Parse<StringArrayOptions>(arguments);
 
         Assert.Equal(expected, parsed.X);
+    }
+
+    [Theory]
+    [InlineData("-abc", "a", "bc")]
+    [InlineData("-nfoo", "n", "foo")]
+    public void ParsesShortOptionWithInlineStringValue(string argument, string shortName, string expectedValue)
+    {
+        var parsed = Parser.Parse<InlineValueArgs>(new[] { argument });
+
+        Assert.Equal(expectedValue, shortName == "a" ? parsed.Alpha : parsed.Name);
+    }
+
+    [Fact]
+    public void RejectsInlineValueForBoolShortFlag()
+    {
+        var ex = Assert.Throws<ParseException>(() => Parser.Parse<BoolFlags>(new[] { "-ac" }));
+
+        Assert.Equal("unexpected option `-a`", ex.Message);
     }
 
     [Theory]
@@ -356,6 +376,16 @@ public class GeneratorFullTests
         Assert.NotEmpty(typeName);
         Assert.Equal(expected.Replace("\n", System.Environment.NewLine), actual);
     }
+}
+
+[Arguments("Inline value command.")]
+public partial record InlineValueArgs
+{
+    [Argument("Alpha value.", Short = 'a')]
+    public string? Alpha { get; init; }
+
+    [Argument("Name value.", Short = 'n')]
+    public string? Name { get; init; }
 }
 
 [Arguments("Boolean flags command.")]
