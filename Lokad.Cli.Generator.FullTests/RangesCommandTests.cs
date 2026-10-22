@@ -16,6 +16,16 @@ public sealed class RangesCommandTests
         Assert.Equal((int.MinValue, 10), parsed.Ranges[3]);
         Assert.Equal((20, int.MaxValue), parsed.Ranges[4]);
     }
+
+    [Theory]
+    [InlineData("--ranges=invalid", "invalid value `invalid` for `--ranges`")]
+    [InlineData("-r=1,,2", "invalid value `1,,2` for `-r`")]
+    public void ReportsInvalidRangeOptionAsParseException(string argument, string expectedMessage)
+    {
+        var error = Assert.Throws<ParseException>(() => Parser.Parse<RangesArgs>(new[] { argument }));
+
+        Assert.Equal(expectedMessage, error.Message);
+    }
 }
 
 [Arguments("ranges command.")]

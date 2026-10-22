@@ -42,7 +42,7 @@ partial record RangeOptions : global::Lokad.Cli.ICliParsed<global::Test.RangeOpt
                 case global::Lokad.Cli.LongArgWithValue longArgWithValue:
                     if (longArgWithValue.Name == @"ranges")
                     {
-                        arg0Value = global::Lokad.Cli.Ranges.Parse(longArgWithValue.Value, null);
+                        arg0Value = ParseCustom<global::Lokad.Cli.Ranges>(longArgWithValue.Value, @"--ranges");
                         arg0Seen = true;
                         break;
                     }
@@ -53,7 +53,7 @@ partial record RangeOptions : global::Lokad.Cli.ICliParsed<global::Test.RangeOpt
                         var valueToken = tokenized.Shift();
                         if (!(valueToken is global::Lokad.Cli.ValueArg optionValue))
                             throw new global::Lokad.Cli.ParseException(@"option `--ranges` expects a value");
-                        arg0Value = global::Lokad.Cli.Ranges.Parse(optionValue.Value, null);
+                        arg0Value = ParseCustom<global::Lokad.Cli.Ranges>(optionValue.Value, @"--ranges");
                         arg0Seen = true;
                         break;
                     }
@@ -61,7 +61,7 @@ partial record RangeOptions : global::Lokad.Cli.ICliParsed<global::Test.RangeOpt
                 case global::Lokad.Cli.ShortArgWithValue shortArgWithValue:
                     if (shortArgWithValue.Name == 'r')
                     {
-                        arg0Value = global::Lokad.Cli.Ranges.Parse(shortArgWithValue.Value, null);
+                        arg0Value = ParseCustom<global::Lokad.Cli.Ranges>(shortArgWithValue.Value, @"-r");
                         arg0Seen = true;
                         break;
                     }
@@ -74,7 +74,7 @@ partial record RangeOptions : global::Lokad.Cli.ICliParsed<global::Test.RangeOpt
                             var valueToken = tokenized.Shift();
                             if (!(valueToken is global::Lokad.Cli.ValueArg optionValue))
                                 throw new global::Lokad.Cli.ParseException(@"option `-r` expects a value");
-                            arg0Value = global::Lokad.Cli.Ranges.Parse(optionValue.Value, null);
+                            arg0Value = ParseCustom<global::Lokad.Cli.Ranges>(optionValue.Value, @"-r");
                             arg0Seen = true;
                             continue;
                         }
@@ -115,4 +115,15 @@ partial record RangeOptions : global::Lokad.Cli.ICliParsed<global::Test.RangeOpt
 
         return commandName + ": " + documentation;
     }
+
+
+    private static TValue ParseCustom<TValue>(string value, string label)
+        where TValue : global::System.IParsable<TValue>
+    {
+        if (TValue.TryParse(value, null, out var parsed))
+            return parsed;
+
+        throw new global::Lokad.Cli.ParseException($"invalid value `{value}` for `{label}`");
+    }
+
 }

@@ -458,33 +458,42 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
         private static string GetParseExpression(CliArgumentInfo argument, string valueExpression, string labelExpression)
         {
             var type = argument.TypeName.FullName;
+            var method = GetBuiltInParseMethod(type);
+            if (method == string.Empty)
+                return valueExpression;
+
+            if (method == null)
+                method = argument.IsEnum ? "ParseEnum<" + type + ">" : "ParseCustom<" + type + ">";
+
+            return method + "(" + valueExpression + ", " + labelExpression + ")";
+        }
+
+        private static string? GetBuiltInParseMethod(string type)
+        {
             switch (type)
             {
                 case "string":
                 case "global::System.String":
-                    return valueExpression;
+                    return string.Empty;
                 case "int":
                 case "global::System.Int32":
-                    return "ParseInt32(" + valueExpression + ", " + labelExpression + ")";
+                    return "ParseInt32";
                 case "uint":
                 case "global::System.UInt32":
-                    return "ParseUInt32(" + valueExpression + ", " + labelExpression + ")";
+                    return "ParseUInt32";
                 case "long":
                 case "global::System.Int64":
-                    return "ParseInt64(" + valueExpression + ", " + labelExpression + ")";
+                    return "ParseInt64";
                 case "ulong":
                 case "global::System.UInt64":
-                    return "ParseUInt64(" + valueExpression + ", " + labelExpression + ")";
+                    return "ParseUInt64";
                 case "double":
                 case "global::System.Double":
-                    return "ParseDouble(" + valueExpression + ", " + labelExpression + ")";
+                    return "ParseDouble";
                 case "global::System.DateTime":
-                    return "ParseDateTime(" + valueExpression + ", " + labelExpression + ")";
+                    return "ParseDateTime";
                 default:
-                    if (argument.IsEnum)
-                        return "ParseEnum<" + type + ">(" + valueExpression + ", " + labelExpression + ")";
-
-                    return type + ".Parse(" + valueExpression + ", null)";
+                    return null;
             }
         }
 
@@ -658,6 +667,20 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
         where TEnum : struct, global::System.Enum
     {
         if (global::System.Enum.TryParse<TEnum>(value, ignoreCase: false, out var parsed))
+            return parsed;
+
+        throw new global::Lokad.Cli.ParseException($""invalid value `{value}` for `{label}`"");
+    }
+");
+
+            if (Array.Exists(type.Arguments, argument => !argument.IsBoolean && !argument.IsEnum &&
+                    GetBuiltInParseMethod(argument.TypeName.FullName) == null))
+                helpers.Append(
+@"
+    private static TValue ParseCustom<TValue>(string value, string label)
+        where TValue : global::System.IParsable<TValue>
+    {
+        if (TValue.TryParse(value, null, out var parsed))
             return parsed;
 
         throw new global::Lokad.Cli.ParseException($""invalid value `{value}` for `{label}`"");
