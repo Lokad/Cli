@@ -18,6 +18,12 @@ namespace Lokad.Cli.Generator
         private readonly TypeRecognizer _choiceAttribute =
             Recognize.Type("Lokad.Cli.ChoiceAttribute");
 
+        private readonly TypeRecognizer _readOnlyList =
+            Recognize.Type("System.Collections.Generic.IReadOnlyList`1");
+
+        private readonly TypeRecognizer _readOnlyMemory =
+            Recognize.Type("System.ReadOnlyMemory`1");
+
         public LokadCliGenerator()
             : base("lkc")
         {
@@ -92,7 +98,7 @@ namespace Lokad.Cli.Generator
                     foreach (var name in argument.Options.LongOptions)
                         hasNamedOption |= name.Length > 0;
 
-                    if (!argument.IsBoolean || argument.IsArray || argument.ShortNumeric || !hasNamedOption)
+                    if (!argument.IsBoolean || argument.IsCollection || argument.ShortNumeric || !hasNamedOption)
                         throw new GeneratorException(GeneratorException.InvalidRepeatedFlag, argument.Name);
                 }
 
@@ -217,6 +223,7 @@ namespace Lokad.Cli.Generator
 
                     if (arguments != null &&
                         TryGetBindableMemberArgument(
+                            compilation,
                             parameter,
                             argument,
                             optionNames,
@@ -237,7 +244,7 @@ namespace Lokad.Cli.Generator
                 {
                     var optionNames = CollectArgumentNames(argument, shortOptions, longOptions, ref hasShortNumericArguments);
                     if (arguments != null &&
-                        TryGetBindableMemberArgument(member, argument, optionNames, isConstructorParameter: false, out var memberArgument))
+                        TryGetBindableMemberArgument(compilation, member, argument, optionNames, isConstructorParameter: false, out var memberArgument))
                     {
                         arguments.Add(memberArgument);
                     }
@@ -257,7 +264,8 @@ namespace Lokad.Cli.Generator
             return null;
         }
 
-        private static bool TryGetBindableMemberArgument(
+        private bool TryGetBindableMemberArgument(
+            Compilation compilation,
             ISymbol symbol,
             AttributeData attribute,
             CliOptionNames optionNames,
@@ -288,13 +296,35 @@ namespace Lokad.Cli.Generator
                 return false;
             }
 
+            var collectionKind = CliCollectionKind.None;
+            var containerType = UnwrapNullable(type);
+            var valueType = type;
+            if (containerType is IArrayTypeSymbol array && array.Rank == 1)
+            {
+                collectionKind = CliCollectionKind.Array;
+                valueType = array.ElementType;
+            }
+            else if (containerType is INamedTypeSymbol named && named.TypeArguments.Length == 1)
+            {
+                if (_readOnlyList(compilation, named.OriginalDefinition))
+                    collectionKind = CliCollectionKind.ReadOnlyList;
+                else if (_readOnlyMemory(compilation, named.OriginalDefinition))
+                    collectionKind = CliCollectionKind.ReadOnlyMemory;
+
+                if (collectionKind != CliCollectionKind.None)
+                    valueType = named.TypeArguments[0];
+            }
+
+            var bindableType = UnwrapNullable(valueType);
+            var isNullable = !SymbolEqualityComparer.Default.Equals(bindableType, valueType) ||
+                             valueType.NullableAnnotation == NullableAnnotation.Annotated;
             argument = new CliArgumentInfo(
                 symbol.Name,
-                GetBindableTypeName(type, out var isNullable, out var isArray),
+                GetTypeName(bindableType),
                 isNullable,
-                IsBooleanType(type),
-                GetBindableType(type).TypeKind == TypeKind.Enum,
-                isArray,
+                collectionKind == CliCollectionKind.None && bindableType.SpecialType == SpecialType.System_Boolean,
+                bindableType.TypeKind == TypeKind.Enum,
+                collectionKind,
                 isConstructorParameter,
                 isSettableMember,
                 GetConstructorString(attribute, 0) ?? string.Empty,
@@ -304,41 +334,18 @@ namespace Lokad.Cli.Generator
                 GetNamedBool(attribute, "AllowRepeated"));
 
             return true;
-        }
 
-        private static TypeName GetBindableTypeName(ITypeSymbol typeSymbol)
-        {
-            var bindableType = GetBindableType(typeSymbol);
-            return GetTypeName(bindableType);
-        }
-
-        private static TypeName GetBindableTypeName(ITypeSymbol typeSymbol, out bool isNullable, out bool isArray)
-        {
-            var bindableType = GetBindableType(typeSymbol);
-            isArray = typeSymbol is IArrayTypeSymbol;
-            isNullable = !isArray &&
-                         !SymbolEqualityComparer.Default.Equals(bindableType, typeSymbol) ||
-                         typeSymbol.NullableAnnotation == NullableAnnotation.Annotated;
-            return GetTypeName(bindableType);
-        }
-
-        private static ITypeSymbol GetBindableType(ITypeSymbol typeSymbol)
-        {
-            if (typeSymbol is INamedTypeSymbol named &&
-                named.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T &&
-                named.TypeArguments.Length == 1)
+            static ITypeSymbol UnwrapNullable(ITypeSymbol value)
             {
-                return named.TypeArguments[0];
+                if (value is INamedTypeSymbol nullable &&
+                    nullable.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+                {
+                    return nullable.TypeArguments[0];
+                }
+
+                return value;
             }
-
-            if (typeSymbol is IArrayTypeSymbol array && array.Rank == 1)
-                return GetBindableType(array.ElementType);
-
-            return typeSymbol;
         }
-
-        private static bool IsBooleanType(ITypeSymbol typeSymbol) =>
-            GetBindableType(typeSymbol).SpecialType == SpecialType.System_Boolean;
 
         private static CliOptionNames CollectArgumentNames(
             AttributeData attribute,

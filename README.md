@@ -188,9 +188,9 @@ The `Ranges` type is an `IReadOnlyList<(int First, int Last)>` parsed from comma
 
 Given a primitive type `T`, the type `T?` behaves the same, but the property is optional and does not fail if no value was provided. 
 
-Given a primitive type `T`, the types `T[]`, `IReadOnlyList<T>`, `ReadOnlyMemory<T>` are able to capture multiple values. If short or long option names are used, then each use of the option appends one value to the property (e.g. `--value 10 --value 11` or `-vv 10 11` would produce `[10, 11]`). If the property is positional, then it consumes all values. Special case for a positional property that is NOT the last positional property: the value array is considered closed when:
-  - parsing reaches the next optionto the next option, so `10 11 --verbose 12` (assuming `--verbose` has arity zero) would capture `[10, 11]` in the property, and move `12` to the next positional property. 
-  - the next value cannot be parsed. So, `10 11 hello 12` for a `int[]` would capture `[10, 11]` and leave `hello` and `12` for subsequent properties.
+For a supported element type `T`, `T[]`, `IReadOnlyList<T>`, and `ReadOnlyMemory<T>` capture multiple values. Repeated named options append in order (`--value 10 --value 11` or `-vv 10 11`); a final positional collection captures the remaining operands. Omitted collections are empty. Elements use the same conversions as scalar values; boolean collections take explicit `true` or `false` values.
+
+A nonfinal positional collection currently captures one value before binding continues to the next positional member. Consumption until an option or conversion boundary remains unimplemented.
 
 ### Reusable option groups
   

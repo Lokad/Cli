@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using Lokad.Cli;
 
 namespace Test;
@@ -7,7 +9,7 @@ public partial record TokenizationOptions(
     [property: Argument("Constructor property value.", Long = "from-ctor", ShortNames = new[] { 'c' })]
     string FromConstructor,
     [Argument("Raw constructor parameter.", LongNames = new[] { "raw-param" }, Short = 'p')]
-    string RawParameter)
+    ReadOnlyMemory<int> RawParameter)
 {
     [Argument("Enable verbose output.", AllowRepeated = true,
         LongNames = new[] { "verbose", "chatty", "verbose", "chatty" }, ShortNames = new[] { 'v', 'V', 'v', 'V' })]
@@ -17,5 +19,5 @@ public partial record TokenizationOptions(
     public int? Depth { get; init; }
 
     [Argument("Field value.", LongNames = new[] { "field" }, ShortNames = new[] { 'f' })]
-    public string? Field;
+    public IReadOnlyList<string> Field = Array.Empty<string>();
 }

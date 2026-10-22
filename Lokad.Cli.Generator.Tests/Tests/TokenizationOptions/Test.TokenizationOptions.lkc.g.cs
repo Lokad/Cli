@@ -48,13 +48,11 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
         // Binding
         var arg0Seen = false;
         string? arg0Value = default;
-        var arg1Seen = false;
-        string? arg1Value = default;
+        global::System.Collections.Generic.List<int> arg1Value = new();
         bool arg2Value = default;
         var arg3Seen = false;
         int arg3Value = default;
-        var arg4Seen = false;
-        string? arg4Value = default;
+        global::System.Collections.Generic.List<string> arg4Value = new();
         global::Lokad.Cli.ITokenizedArguments? current;
         while ((current = tokenized.Shift()) != null)
         {
@@ -69,14 +67,12 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
                     }
                     if (longArgWithValue.Name == @"raw-param")
                     {
-                        arg1Value = longArgWithValue.Value;
-                        arg1Seen = true;
+                        arg1Value.Add(ParseInt32(longArgWithValue.Value, @"--raw-param"));
                         break;
                     }
                     if (longArgWithValue.Name == @"field")
                     {
-                        arg4Value = longArgWithValue.Value;
-                        arg4Seen = true;
+                        arg4Value.Add(longArgWithValue.Value);
                         break;
                     }
                     if (longArgWithValue.Name == @"mode")
@@ -97,8 +93,7 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
                         var valueToken = tokenized.Shift();
                         if (!(valueToken is global::Lokad.Cli.ValueArg optionValue))
                             throw new global::Lokad.Cli.ParseException(@"option `--raw-param` expects a value");
-                        arg1Value = optionValue.Value;
-                        arg1Seen = true;
+                        arg1Value.Add(ParseInt32(optionValue.Value, @"--raw-param"));
                         break;
                     }
                     if (longArg.Name == @"verbose" || longArg.Name == @"chatty")
@@ -111,8 +106,7 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
                         var valueToken = tokenized.Shift();
                         if (!(valueToken is global::Lokad.Cli.ValueArg optionValue))
                             throw new global::Lokad.Cli.ParseException(@"option `--field` expects a value");
-                        arg4Value = optionValue.Value;
-                        arg4Seen = true;
+                        arg4Value.Add(optionValue.Value);
                         break;
                     }
                     if (longArg.Name == @"mode")
@@ -127,14 +121,12 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
                     }
                     if (shortArgWithValue.Name == 'p')
                     {
-                        arg1Value = shortArgWithValue.Value;
-                        arg1Seen = true;
+                        arg1Value.Add(ParseInt32(shortArgWithValue.Value, @"-p"));
                         break;
                     }
                     if (shortArgWithValue.Name == 'f')
                     {
-                        arg4Value = shortArgWithValue.Value;
-                        arg4Seen = true;
+                        arg4Value.Add(shortArgWithValue.Value);
                         break;
                     }
                     if (shortArgWithValue.Name == 'm')
@@ -157,8 +149,7 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
                             var valueToken = tokenized.Shift();
                             if (!(valueToken is global::Lokad.Cli.ValueArg optionValue))
                                 throw new global::Lokad.Cli.ParseException(@"option `-p` expects a value");
-                            arg1Value = optionValue.Value;
-                            arg1Seen = true;
+                            arg1Value.Add(ParseInt32(optionValue.Value, @"-p"));
                             continue;
                         }
                         if (shortOption == 'v' || shortOption == 'V')
@@ -171,8 +162,7 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
                             var valueToken = tokenized.Shift();
                             if (!(valueToken is global::Lokad.Cli.ValueArg optionValue))
                                 throw new global::Lokad.Cli.ParseException(@"option `-f` expects a value");
-                            arg4Value = optionValue.Value;
-                            arg4Seen = true;
+                            arg4Value.Add(optionValue.Value);
                             continue;
                         }
                         if (shortOption == 'm')
@@ -196,14 +186,11 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
         if (!arg0Seen)
             throw new global::Lokad.Cli.ParseException(@"missing option `--from-ctor`");
 
-        if (!arg1Seen)
-            throw new global::Lokad.Cli.ParseException(@"missing option `--raw-param`");
-
-        return new global::Test.TokenizationOptions(arg0Value!, arg1Value!)
+        return new global::Test.TokenizationOptions(arg0Value!, new global::System.ReadOnlyMemory<int>(arg1Value.ToArray()))
         {
             Verbose = arg2Value,
             Depth = arg3Seen ? arg3Value : default(global::System.Nullable<int>),
-            Field = arg4Seen ? arg4Value : default,
+            Field = arg4Value.ToArray(),
         };
     }
 

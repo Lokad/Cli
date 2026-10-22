@@ -158,7 +158,7 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
                 if (argument.NeedsSeen)
                     lines.Append("        var ").Append(GetSeenName(i)).AppendLine(" = false;");
                 lines.Append("        ").Append(GetLocalType(argument)).Append(' ').Append(GetValueName(i));
-                if (argument.IsArray)
+                if (argument.IsCollection)
                     lines.AppendLine(" = new();");
                 else
                     lines.AppendLine(" = default;");
@@ -384,7 +384,7 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
                 lines.Append("                    if (positionalIndex == ").Append(p).AppendLine(")");
                 lines.AppendLine("                    {");
                 lines.Append(EmitAssign(argumentIndex, positional[p], "valueArg.Value", "\"argument\"", "                        "));
-                if (!positional[p].IsArray || p < positional.Length - 1)
+                if (!positional[p].IsCollection || p < positional.Length - 1)
                     lines.AppendLine("                        positionalIndex++;");
                 lines.AppendLine("                        break;");
                 lines.AppendLine("                    }");
@@ -400,7 +400,7 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
             for (var i = 0; i < type.Arguments.Length; i++)
             {
                 var argument = type.Arguments[i];
-                if (argument.IsNullable || argument.IsBoolean || argument.IsArray)
+                if (argument.IsNullable || argument.IsBoolean || argument.IsCollection)
                     continue;
 
                 lines.AppendLine();
@@ -478,7 +478,7 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
             }
 
             lines.Append(indent).Append(GetValueName(index));
-            if (argument.IsArray)
+            if (argument.IsCollection)
             {
                 lines.Append(".Add(")
                     .Append(GetParseExpression(argument, valueExpression, labelExpression))
@@ -540,7 +540,7 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
         private static string GetLocalType(CliArgumentInfo argument)
         {
             var type = argument.TypeName.FullName;
-            if (argument.IsArray)
+            if (argument.IsCollection)
                 return "global::System.Collections.Generic.List<" + GetValueType(argument) + ">";
 
             if (type == "string" || type == "global::System.String")
@@ -553,17 +553,22 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
         {
             var type = argument.TypeName.FullName;
             if (type == "string" || type == "global::System.String")
-                return "string";
+                type = "string";
 
-            return type;
+            return argument.IsNullable ? type + "?" : type;
         }
 
         private static string GetResultValueExpression(int index, CliArgumentInfo argument)
         {
             var value = GetValueName(index);
             var type = argument.TypeName.FullName;
-            if (argument.IsArray)
-                return value + ".ToArray()";
+            if (argument.IsCollection)
+            {
+                var array = value + ".ToArray()";
+                return argument.CollectionKind == CliCollectionKind.ReadOnlyMemory
+                    ? "new global::System.ReadOnlyMemory<" + GetValueType(argument) + ">(" + array + ")"
+                    : array;
+            }
 
             if (!argument.IsNullable)
             {
@@ -852,7 +857,7 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
         private static string GetPositionalDocumentationPlaceholder(CliArgumentInfo argument)
         {
             var name = string.IsNullOrEmpty(argument.DocumentationName) ? argument.Name : argument.DocumentationName!;
-            if (argument.IsArray)
+            if (argument.IsCollection)
                 return "<" + name + "...>";
 
             if (argument.IsNullable)

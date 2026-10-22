@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using Lokad.Cli;
 
 namespace Test;
@@ -35,4 +37,18 @@ public partial record EmptyLongRepeatedFlag
 {
     [Argument("Flag.", Long = "", AllowRepeated = true)]
     public bool Flag { get; init; }
+}
+
+[Arguments("List argument.")]
+public partial record ListRepeatedFlag
+{
+    [Argument("Flags.", Long = "flags", AllowRepeated = true)]
+    public IReadOnlyList<bool> Flags { get; init; } = Array.Empty<bool>();
+}
+
+[Arguments("Memory argument.")]
+public partial record MemoryRepeatedFlag
+{
+    [Argument("Flags.", Long = "flags", AllowRepeated = true)]
+    public ReadOnlyMemory<bool> Flags { get; init; }
 }

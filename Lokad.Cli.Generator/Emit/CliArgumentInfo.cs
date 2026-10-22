@@ -8,7 +8,7 @@ namespace Lokad.Cli.Generator.Emit
             bool isNullable,
             bool isBoolean,
             bool isEnum,
-            bool isArray,
+            CliCollectionKind collectionKind,
             bool isConstructorParameter,
             bool isSettableMember,
             string documentation,
@@ -22,7 +22,7 @@ namespace Lokad.Cli.Generator.Emit
             IsNullable = isNullable;
             IsBoolean = isBoolean;
             IsEnum = isEnum;
-            IsArray = isArray;
+            CollectionKind = collectionKind;
             IsConstructorParameter = isConstructorParameter;
             IsSettableMember = isSettableMember;
             Documentation = documentation;
@@ -36,13 +36,17 @@ namespace Lokad.Cli.Generator.Emit
 
         public TypeName TypeName { get; }
 
+        /// <summary>Whether the scalar value or collection element is nullable.</summary>
         public bool IsNullable { get; }
 
+        /// <summary>Whether the argument is a scalar boolean flag.</summary>
         public bool IsBoolean { get; }
 
         public bool IsEnum { get; }
 
-        public bool IsArray { get; }
+        public CliCollectionKind CollectionKind { get; }
+
+        public bool IsCollection => CollectionKind != CliCollectionKind.None;
 
         public bool IsConstructorParameter { get; }
 
@@ -60,6 +64,6 @@ namespace Lokad.Cli.Generator.Emit
 
         public bool IsOption => Options.Labels.Count > 0 || ShortNumeric;
 
-        public bool NeedsSeen => !IsArray && (!IsBoolean || !AllowRepeated || IsNullable);
+        public bool NeedsSeen => !IsCollection && (!IsBoolean || !AllowRepeated || IsNullable);
     }
 }
