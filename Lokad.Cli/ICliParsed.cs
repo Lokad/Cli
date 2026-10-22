@@ -16,6 +16,13 @@ namespace Lokad.Cli
         static abstract T Parse(IReadOnlyList<string> arguments);
 
         /// <summary>
+        ///     Tokenizes arguments using this type's generated schema without binding values.
+        /// </summary>
+        /// <param name="arguments"> Raw command-line argument strings. </param>
+        /// <returns> A fresh token cursor for inspection or rewriting. </returns>
+        static abstract TokenizedArguments Tokenize(IReadOnlyList<string> arguments);
+
+        /// <summary>
         ///     Parses tokenized command-line arguments into an instance of <typeparamref name="T"/>.
         /// </summary>
         /// <param name="arguments"> Tokenized command-line argument stream. </param>

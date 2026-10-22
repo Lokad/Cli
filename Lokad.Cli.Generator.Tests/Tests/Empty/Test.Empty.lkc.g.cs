@@ -2,16 +2,21 @@
 namespace Test;
 partial record Empty : global::Lokad.Cli.ICliParsed<global::Test.Empty>
 {
+    // A separate holder allows parsing from the argument type's static initializers.
+    private static class __CliOptionNames
+    {
+        public static readonly char[] Short = global::System.Array.Empty<char>();
+        public static readonly string[] Long = global::System.Array.Empty<string>();
+    }
+
     public static global::Test.Empty Parse(global::System.Collections.Generic.IReadOnlyList<string> arguments)
     {
-        // Tokenization
-        var tokenized = global::Lokad.Cli.ArgumentTokenizer.Tokenize(
-            arguments,
-            global::System.Array.Empty<char>(),
-            global::System.Array.Empty<string>(),
-            false);
+        return ParseTokenizedCore(TokenizeCore(arguments));
+    }
 
-        return ParseTokenizedCore(tokenized);
+    public static global::Lokad.Cli.TokenizedArguments Tokenize(global::System.Collections.Generic.IReadOnlyList<string> arguments)
+    {
+        return TokenizeCore(arguments);
     }
 
     public static global::Test.Empty ParseTokenized(global::Lokad.Cli.TokenizedArguments arguments)
@@ -24,6 +29,15 @@ partial record Empty : global::Lokad.Cli.ICliParsed<global::Test.Empty>
     public static string Document(string commandName)
     {
         return DocumentCore(commandName);
+    }
+
+    private static global::Lokad.Cli.TokenizedArguments TokenizeCore(global::System.Collections.Generic.IReadOnlyList<string> arguments)
+    {
+        return global::Lokad.Cli.ArgumentTokenizer.Tokenize(
+            arguments,
+            __CliOptionNames.Short,
+            __CliOptionNames.Long,
+            false);
     }
 
     private static global::Test.Empty ParseTokenizedCore(global::Lokad.Cli.TokenizedArguments tokenized)

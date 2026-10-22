@@ -63,6 +63,22 @@ public int Main(string[] args)
 }
 ``` 
 
+### Tokenization and token rewriting
+
+`Parser.Tokenize<T>(IReadOnlyList<string>)` uses the same generated option names and lexical rules as `Parser.Parse<T>`, without binding values or resolving choices:
+
+```csharp
+var tokens = Lokad.Cli.Parser.Tokenize<MyArgs>(new[] { "input.txt", "--max-depth=10" });
+var hasDepthOption = tokens.HasLongOption("max-depth") || tokens.HasShortOption('d');
+var parsed = Lokad.Cli.Parser.ParseTokenized<MyArgs>(tokens);
+```
+
+Each call returns a fresh mutable cursor. Presence checks do not advance it; `Shift` and `ParseTokenized` consume it. Unknown option names still produce `ParseException`, but missing arguments, invalid converted values, duplicate flags, and choice conflicts are checked during binding or discrimination.
+
+Callers can rewrite token records and pass a new `TokenizedArguments` to `ParseTokenized<T>`. Preserve option-value boundaries: the tokens do not expose option arity. Reconstructing raw argument strings and tokenizing them again can change their interpretation, so normalize tokens directly. Reusable option names remain private to the generated type.
+
+Handwritten implementations of `ICliParsed<T>` must implement its static `Tokenize` member; annotated types receive it from the generator.
+
 ### Choices and Discriminators
 
 A discriminator can be requested as part of the `[Arguments]` itself:

@@ -11,16 +11,21 @@ $@"#nullable enable
 namespace {type.TypeName.Namespace};
 partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICliParsed<{type.TypeName.FullName}>
 {{
+    // A separate holder allows parsing from the argument type's static initializers.
+    private static class __CliOptionNames
+    {{
+        public static readonly char[] Short = {FormatCharArray(type.ShortOptions)};
+        public static readonly string[] Long = {FormatStringArray(type.LongOptions)};
+    }}
+
     {GetParseMethodDeclaration(type)}
     {{
-        // Tokenization
-        var tokenized = global::Lokad.Cli.ArgumentTokenizer.Tokenize(
-            arguments,
-            {FormatCharArray(type.ShortOptions)},
-            {FormatStringArray(type.LongOptions)},
-            {FormatBoolean(type.HasShortNumericArguments)});
+        return ParseTokenizedCore(TokenizeCore(arguments));
+    }}
 
-        return ParseTokenizedCore(tokenized);
+    {GetTokenizeMethodDeclaration(type)}
+    {{
+        return TokenizeCore(arguments);
     }}
 
     {GetParseTokenizedMethodDeclaration(type)}
@@ -35,6 +40,15 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
         return DocumentCore(commandName);
     }}
 
+    private static global::Lokad.Cli.TokenizedArguments TokenizeCore(global::System.Collections.Generic.IReadOnlyList<string> arguments)
+    {{
+        return global::Lokad.Cli.ArgumentTokenizer.Tokenize(
+            arguments,
+            __CliOptionNames.Short,
+            __CliOptionNames.Long,
+            {FormatBoolean(type.HasShortNumericArguments)});
+    }}
+
     private static {type.TypeName.FullName} ParseTokenizedCore(global::Lokad.Cli.TokenizedArguments tokenized)
     {{{EmitTokenizedParseArguments(type)}
         // Discrimination
@@ -47,6 +61,14 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
 {EmitParseHelpers(type)}
 }}
 ";
+
+            static string GetTokenizeMethodDeclaration(CliTypeInfo parserType)
+            {
+                if (parserType.Kind == CliTypeKind.Interface)
+                    return "static global::Lokad.Cli.TokenizedArguments global::Lokad.Cli.ICliParsed<" + parserType.TypeName.FullName + ">.Tokenize(global::System.Collections.Generic.IReadOnlyList<string> arguments)";
+
+                return "public static global::Lokad.Cli.TokenizedArguments Tokenize(global::System.Collections.Generic.IReadOnlyList<string> arguments)";
+            }
         }
 
         private static string GetTypeDeclaration(CliTypeInfo type)

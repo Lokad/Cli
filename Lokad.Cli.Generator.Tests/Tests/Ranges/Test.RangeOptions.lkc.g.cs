@@ -2,16 +2,21 @@
 namespace Test;
 partial record RangeOptions : global::Lokad.Cli.ICliParsed<global::Test.RangeOptions>
 {
+    // A separate holder allows parsing from the argument type's static initializers.
+    private static class __CliOptionNames
+    {
+        public static readonly char[] Short = new char[] { 'r' };
+        public static readonly string[] Long = new string[] { @"ranges" };
+    }
+
     public static global::Test.RangeOptions Parse(global::System.Collections.Generic.IReadOnlyList<string> arguments)
     {
-        // Tokenization
-        var tokenized = global::Lokad.Cli.ArgumentTokenizer.Tokenize(
-            arguments,
-            new char[] { 'r' },
-            new string[] { @"ranges" },
-            false);
+        return ParseTokenizedCore(TokenizeCore(arguments));
+    }
 
-        return ParseTokenizedCore(tokenized);
+    public static global::Lokad.Cli.TokenizedArguments Tokenize(global::System.Collections.Generic.IReadOnlyList<string> arguments)
+    {
+        return TokenizeCore(arguments);
     }
 
     public static global::Test.RangeOptions ParseTokenized(global::Lokad.Cli.TokenizedArguments arguments)
@@ -24,6 +29,15 @@ partial record RangeOptions : global::Lokad.Cli.ICliParsed<global::Test.RangeOpt
     public static string Document(string commandName)
     {
         return DocumentCore(commandName);
+    }
+
+    private static global::Lokad.Cli.TokenizedArguments TokenizeCore(global::System.Collections.Generic.IReadOnlyList<string> arguments)
+    {
+        return global::Lokad.Cli.ArgumentTokenizer.Tokenize(
+            arguments,
+            __CliOptionNames.Short,
+            __CliOptionNames.Long,
+            false);
     }
 
     private static global::Test.RangeOptions ParseTokenizedCore(global::Lokad.Cli.TokenizedArguments tokenized)

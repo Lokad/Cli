@@ -2,16 +2,21 @@
 namespace Test;
 partial record ListCommand : global::Lokad.Cli.ICliParsed<global::Test.ListCommand>
 {
+    // A separate holder allows parsing from the argument type's static initializers.
+    private static class __CliOptionNames
+    {
+        public static readonly char[] Short = new char[] { 'r', 'i' };
+        public static readonly string[] Long = new string[] { @"add", @"name" };
+    }
+
     public static global::Test.ListCommand Parse(global::System.Collections.Generic.IReadOnlyList<string> arguments)
     {
-        // Tokenization
-        var tokenized = global::Lokad.Cli.ArgumentTokenizer.Tokenize(
-            arguments,
-            new char[] { 'r', 'i' },
-            new string[] { @"add", @"name" },
-            false);
+        return ParseTokenizedCore(TokenizeCore(arguments));
+    }
 
-        return ParseTokenizedCore(tokenized);
+    public static global::Lokad.Cli.TokenizedArguments Tokenize(global::System.Collections.Generic.IReadOnlyList<string> arguments)
+    {
+        return TokenizeCore(arguments);
     }
 
     public static global::Test.ListCommand ParseTokenized(global::Lokad.Cli.TokenizedArguments arguments)
@@ -24,6 +29,15 @@ partial record ListCommand : global::Lokad.Cli.ICliParsed<global::Test.ListComma
     public static string Document(string commandName)
     {
         return DocumentCore(commandName);
+    }
+
+    private static global::Lokad.Cli.TokenizedArguments TokenizeCore(global::System.Collections.Generic.IReadOnlyList<string> arguments)
+    {
+        return global::Lokad.Cli.ArgumentTokenizer.Tokenize(
+            arguments,
+            __CliOptionNames.Short,
+            __CliOptionNames.Long,
+            false);
     }
 
     private static global::Test.ListCommand ParseTokenizedCore(global::Lokad.Cli.TokenizedArguments tokenized)

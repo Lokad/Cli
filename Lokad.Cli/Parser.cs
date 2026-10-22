@@ -64,6 +64,18 @@ namespace Lokad.Cli
         }
 
         /// <summary>
+        ///     Tokenizes arguments using the requested type's generated schema without binding values.
+        /// </summary>
+        /// <param name="arguments"> Raw command-line argument strings. </param>
+        /// <typeparam name="T"> Generated argument type. </typeparam>
+        /// <returns> A fresh token cursor for inspection or rewriting. </returns>
+        public static TokenizedArguments Tokenize<T>(IReadOnlyList<string> arguments)
+            where T : ICliParsed<T>
+        {
+            return T.Tokenize(arguments);
+        }
+
+        /// <summary>
         ///     Parses tokenized command-line arguments into the requested generated argument type.
         /// </summary>
         /// <param name="arguments"> Tokenized command-line argument stream. </param>

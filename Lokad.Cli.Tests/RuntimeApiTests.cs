@@ -6,6 +6,7 @@ public class RuntimeApiTests
     public void ParserDelegatesToStaticInterfaceMembers()
     {
         Assert.Throws<System.NotImplementedException>(() => Parser.Parse<Parsed>(System.Array.Empty<string>()));
+        Assert.Throws<System.NotImplementedException>(() => Parser.Tokenize<Parsed>(System.Array.Empty<string>()));
         Assert.Throws<System.NotImplementedException>(() => Parser.Document<Parsed>("cmd"));
     }
 
@@ -72,6 +73,11 @@ public class RuntimeApiTests
 
     private sealed class Parsed : ICliParsed<Parsed>
     {
+        public static TokenizedArguments Tokenize(System.Collections.Generic.IReadOnlyList<string> arguments)
+        {
+            throw new System.NotImplementedException();
+        }
+
         public static Parsed Parse(System.Collections.Generic.IReadOnlyList<string> arguments)
         {
             throw new System.NotImplementedException();
@@ -96,6 +102,11 @@ public class RuntimeApiTests
         }
 
         public System.Collections.Generic.IReadOnlyList<string> Arguments { get; }
+
+        public static TokenizedArguments Tokenize(System.Collections.Generic.IReadOnlyList<string> arguments)
+        {
+            throw new System.NotImplementedException();
+        }
 
         public static CapturedParsed Parse(System.Collections.Generic.IReadOnlyList<string> arguments)
         {
