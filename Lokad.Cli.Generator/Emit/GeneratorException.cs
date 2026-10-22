@@ -51,5 +51,37 @@ namespace Lokad.Cli.Generator.Emit
             category: "SourceGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor InvalidOptionName = new DiagnosticDescriptor(
+            id: "LKC0004",
+            title: "Invalid option name",
+            messageFormat: "Invalid {0}: use an array of nonempty names without leading dashes, '=', whitespace or control characters",
+            category: "SourceGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor OptionNameCollision = new DiagnosticDescriptor(
+            id: "LKC0005",
+            title: "Option name collision",
+            messageFormat: "Option '{0}' is assigned to both '{1}' and '{2}' in the same command",
+            category: "SourceGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor DiscriminatorAliases = new DiagnosticDescriptor(
+            id: "LKC0006",
+            title: "Unsupported discriminator aliases",
+            messageFormat: "Argument '{0}' has aliases and shares '{1}' with a reachable option discriminator; discriminator aliases are not supported",
+            category: "SourceGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor ConflictingOptionNames = new DiagnosticDescriptor(
+            id: "LKC0007",
+            title: "Conflicting option name declarations",
+            messageFormat: "Use either {0} or {1} on an argument, not both",
+            category: "SourceGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
     }
 }

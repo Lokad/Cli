@@ -29,3 +29,10 @@ public partial record NumericRepeatedFlag
     [Argument("Flag.", Short = 'f', ShortNumeric = true, AllowRepeated = true)]
     public bool Flag { get; init; }
 }
+
+[Arguments("Empty long option name.")]
+public partial record EmptyLongRepeatedFlag
+{
+    [Argument("Flag.", Long = "", AllowRepeated = true)]
+    public bool Flag { get; init; }
+}

@@ -4,17 +4,18 @@ namespace Test;
 
 [Arguments("Tokenization mode.", Long = "mode", Short = 'm')]
 public partial record TokenizationOptions(
-    [property: Argument("Constructor property value.", Long = "from-ctor", Short = 'c')]
+    [property: Argument("Constructor property value.", Long = "from-ctor", ShortNames = new[] { 'c' })]
     string FromConstructor,
-    [Argument("Raw constructor parameter.", Long = "raw-param", Short = 'p')]
+    [Argument("Raw constructor parameter.", LongNames = new[] { "raw-param" }, Short = 'p')]
     string RawParameter)
 {
-    [Argument("Enable verbose output.", Long = "verbose", Short = 'v', AllowRepeated = true)]
+    [Argument("Enable verbose output.", AllowRepeated = true,
+        LongNames = new[] { "verbose", "chatty", "verbose", "chatty" }, ShortNames = new[] { 'v', 'V', 'v', 'V' })]
     public bool Verbose { get; init; }
 
     [Argument("Numeric depth.", ShortNumeric = true)]
     public int? Depth { get; init; }
 
-    [Argument("Field value.", Long = "field", Short = 'f')]
+    [Argument("Field value.", LongNames = new[] { "field" }, ShortNames = new[] { 'f' })]
     public string? Field;
 }

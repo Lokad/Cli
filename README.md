@@ -92,6 +92,20 @@ For this declaration, `-vv`, `-v -v`, `--verbose --verbose`, and `-v --verbose` 
 
 `AllowRepeated` applies to properties, fields, and constructor parameters. Using it on a value-taking argument, a positional argument, a collection, or an argument with `ShortNumeric` produces generator diagnostic `LKC0003`.
 
+### Option aliases
+
+Use `ShortNames` and `LongNames` to give an argument multiple spellings:
+
+```csharp
+[Argument("Recursive traversal.", ShortNames = new[] { 'r', 'R' },
+    LongNames = new[] { "recursive", "recurse" }, AllowRepeated = true)]
+public bool Recursive { get; init; }
+```
+
+Here `-r`, `-R`, `--recursive`, and `--recurse` share one value and repetition policy; help lists them together. Choose `Short` or `ShortNames`, and independently `Long` or `LongNames`. Combining either pair produces a compiler diagnostic.
+
+For aliased arguments, binding errors use the first long name, or the first short name if none exists. Invalid names and collisions within one command are diagnosed; aliases on option discriminators are currently unsupported.
+
 ### Choices and Discriminators
 
 A discriminator can be requested as part of the `[Arguments]` itself:

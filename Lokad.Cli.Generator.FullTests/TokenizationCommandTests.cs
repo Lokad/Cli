@@ -130,7 +130,7 @@ public partial record FormattingArgs
 
 [Arguments("Constructor options.")]
 public partial record struct TokenizationConstructorArgs(
-    [property: Argument("Item count.", Long = "count", Short = 'n')] int Count)
+    [property: Argument("Item count.", LongNames = new[] { "count", "number" }, ShortNames = new[] { 'n', 'N' })] int Count)
 {
     public static readonly TokenizationConstructorArgs Default =
         Parser.Parse<TokenizationConstructorArgs>(new[] { "--count=7" });

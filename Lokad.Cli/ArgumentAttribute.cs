@@ -29,14 +29,27 @@ namespace Lokad.Cli
         public string? Name { get; set; }
 
         /// <summary>
-        ///     Long option name, without the leading <c>--</c>.
+        ///     Long option name, without the leading <c>--</c>. Mutually exclusive with <see cref="LongNames"/>.
         /// </summary>
         public string? Long { get; set; }
 
         /// <summary>
-        ///     Short option name, without the leading <c>-</c>.
+        ///     Short option name, without the leading <c>-</c>. Mutually exclusive with <see cref="ShortNames"/>.
         /// </summary>
         public char Short { get; set; }
+
+        /// <summary>
+        ///     Complete list of long option names, without leading <c>--</c>.
+        ///     Mutually exclusive with <see cref="Long"/>. Aliased arguments use the first name in binding errors.
+        /// </summary>
+        public string[] LongNames { get; set; } = Array.Empty<string>();
+
+        /// <summary>
+        ///     Complete list of short option names, without leading <c>-</c>.
+        ///     Mutually exclusive with <see cref="Short"/>. Aliased arguments use the first name in binding errors
+        ///     when no long name exists.
+        /// </summary>
+        public char[] ShortNames { get; set; } = Array.Empty<char>();
 
         /// <summary>
         ///     Indicates whether numeric short-argument forms should be recognized for this argument.

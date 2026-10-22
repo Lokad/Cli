@@ -13,8 +13,7 @@ namespace Lokad.Cli.Generator.Emit
             bool isSettableMember,
             string documentation,
             string? documentationName,
-            string? longOption,
-            char shortOption,
+            CliOptionNames options,
             bool shortNumeric,
             bool allowRepeated)
         {
@@ -28,8 +27,7 @@ namespace Lokad.Cli.Generator.Emit
             IsSettableMember = isSettableMember;
             Documentation = documentation;
             DocumentationName = documentationName;
-            LongOption = longOption;
-            ShortOption = shortOption;
+            Options = options;
             ShortNumeric = shortNumeric;
             AllowRepeated = allowRepeated;
         }
@@ -54,15 +52,13 @@ namespace Lokad.Cli.Generator.Emit
 
         public string? DocumentationName { get; }
 
-        public string? LongOption { get; }
-
-        public char ShortOption { get; }
+        public CliOptionNames Options { get; }
 
         public bool ShortNumeric { get; }
 
         public bool AllowRepeated { get; }
 
-        public bool IsOption => LongOption != null || ShortOption != '\0' || ShortNumeric;
+        public bool IsOption => Options.Labels.Count > 0 || ShortNumeric;
 
         public bool NeedsSeen => !IsArray && (!IsBoolean || !AllowRepeated || IsNullable);
     }

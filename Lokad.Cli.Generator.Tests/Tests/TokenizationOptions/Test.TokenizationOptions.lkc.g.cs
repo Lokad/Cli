@@ -5,8 +5,8 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
     // A separate holder allows parsing from the argument type's static initializers.
     private static class __CliOptionNames
     {
-        public static readonly char[] Short = new char[] { 'm', 'c', 'p', 'v', 'f' };
-        public static readonly string[] Long = new string[] { @"mode", @"from-ctor", @"raw-param", @"verbose", @"field" };
+        public static readonly char[] Short = new char[] { 'm', 'c', 'p', 'v', 'V', 'f' };
+        public static readonly string[] Long = new string[] { @"mode", @"from-ctor", @"raw-param", @"verbose", @"chatty", @"field" };
     }
 
     public static global::Test.TokenizationOptions Parse(global::System.Collections.Generic.IReadOnlyList<string> arguments)
@@ -101,7 +101,7 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
                         arg1Seen = true;
                         break;
                     }
-                    if (longArg.Name == @"verbose")
+                    if (longArg.Name == @"verbose" || longArg.Name == @"chatty")
                     {
                         arg2Value = true;
                         break;
@@ -161,7 +161,7 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
                             arg1Seen = true;
                             continue;
                         }
-                        if (shortOption == 'v')
+                        if (shortOption == 'v' || shortOption == 'V')
                         {
                             arg2Value = true;
                             continue;
@@ -214,7 +214,7 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
         var lines = new global::System.Collections.Generic.List<string> { FormatDocumentationLine(commandName + @" --mode", @"Tokenization mode.") };
         lines.Add(@"  --from-ctor, -c: Constructor property value.");
         lines.Add(@"  --raw-param, -p: Raw constructor parameter.");
-        lines.Add(@"  --verbose, -v: Enable verbose output.");
+        lines.Add(@"  --verbose, --chatty, -v, -V: Enable verbose output.");
         lines.Add(@"  -<number>: Numeric depth.");
         lines.Add(@"  --field, -f: Field value.");
         return string.Join(global::System.Environment.NewLine, lines);
