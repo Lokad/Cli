@@ -43,5 +43,13 @@ namespace Lokad.Cli.Generator.Emit
             category: "SourceGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor InvalidRepeatedFlag = new DiagnosticDescriptor(
+            id: "LKC0003",
+            title: "Invalid repeated flag",
+            messageFormat: "Argument '{0}' uses AllowRepeated, which requires a named bool or bool? flag without ShortNumeric",
+            category: "SourceGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
     }
 }

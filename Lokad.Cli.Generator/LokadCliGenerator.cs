@@ -65,6 +65,16 @@ namespace Lokad.Cli.Generator
                 ref hasShortNumericArguments,
                 arguments);
 
+            foreach (var argument in arguments)
+            {
+                if (argument.AllowRepeated &&
+                    (!argument.IsBoolean || argument.IsArray || argument.ShortNumeric ||
+                     (string.IsNullOrEmpty(argument.LongOption) && argument.ShortOption == '\0')))
+                {
+                    throw new GeneratorException(GeneratorException.InvalidRepeatedFlag, argument.Name);
+                }
+            }
+
             foreach (var implementedInterface in typeSymbol.AllInterfaces)
             {
                 if (!HasCliAnnotation(compilation, implementedInterface))
@@ -267,7 +277,9 @@ namespace Lokad.Cli.Generator
                 GetNamedString(attribute, "Name"),
                 GetNamedString(attribute, "Long"),
                 GetNamedChar(attribute, "Short"),
-                GetNamedBool(attribute, "ShortNumeric"));
+                GetNamedBool(attribute, "ShortNumeric"),
+                GetNamedBool(attribute, "AllowRepeated"));
+
             return true;
         }
 

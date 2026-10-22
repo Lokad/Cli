@@ -214,7 +214,7 @@ public static class GeneratorTestFixture
             return "NoSource";
 
         var lineSpan = location.GetLineSpan();
-        var path = string.IsNullOrWhiteSpace(lineSpan.Path) ? "Unknown" : lineSpan.Path;
+        var path = string.IsNullOrWhiteSpace(lineSpan.Path) ? "Unknown" : lineSpan.Path.Replace('\\', '/');
         var line = lineSpan.StartLinePosition.Line + 1;
         var column = lineSpan.StartLinePosition.Character + 1;
         return $"{path}:{line}:{column}";

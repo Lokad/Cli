@@ -9,7 +9,7 @@ public partial record TokenizationOptions(
     [Argument("Raw constructor parameter.", Long = "raw-param", Short = 'p')]
     string RawParameter)
 {
-    [Argument("Enable verbose output.", Long = "verbose", Short = 'v')]
+    [Argument("Enable verbose output.", Long = "verbose", Short = 'v', AllowRepeated = true)]
     public bool Verbose { get; init; }
 
     [Argument("Numeric depth.", ShortNumeric = true)]

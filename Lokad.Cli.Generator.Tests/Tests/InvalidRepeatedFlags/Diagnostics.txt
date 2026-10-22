@@ -1,0 +1,4 @@
+Error LKC0003: Argument 'Count' uses AllowRepeated, which requires a named bool or bool? flag without ShortNumeric (InvalidRepeatedFlags/Input.cs:6:23)
+Error LKC0003: Argument 'Flag' uses AllowRepeated, which requires a named bool or bool? flag without ShortNumeric (InvalidRepeatedFlags/Input.cs:13:23)
+Error LKC0003: Argument 'Flags' uses AllowRepeated, which requires a named bool or bool? flag without ShortNumeric (InvalidRepeatedFlags/Input.cs:20:23)
+Error LKC0003: Argument 'Flag' uses AllowRepeated, which requires a named bool or bool? flag without ShortNumeric (InvalidRepeatedFlags/Input.cs:27:23)

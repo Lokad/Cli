@@ -155,7 +155,7 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
             for (var i = 0; i < type.Arguments.Length; i++)
             {
                 var argument = type.Arguments[i];
-                if (!argument.IsArray)
+                if (argument.NeedsSeen)
                     lines.Append("        var ").Append(GetSeenName(i)).AppendLine(" = false;");
                 lines.Append("        ").Append(GetLocalType(argument)).Append(' ').Append(GetValueName(i));
                 if (argument.IsArray)
@@ -230,12 +230,7 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
                 lines.AppendLine("                    {");
                 if (argument.IsBoolean)
                 {
-                    lines.Append("                        if (").Append(GetSeenName(i)).AppendLine(")");
-                    lines.Append("                            throw new global::Lokad.Cli.ParseException(")
-                        .Append(FormatStringLiteral("duplicate option `--" + argument.LongOption + "`"))
-                        .AppendLine(");");
-                    lines.Append("                        ").Append(GetSeenName(i)).AppendLine(" = true;");
-                    lines.Append("                        ").Append(GetValueName(i)).AppendLine(" = true;");
+                    lines.Append(EmitBooleanFlag(i, argument, "--" + argument.LongOption, "                        "));
                 }
                 else
                 {
@@ -301,12 +296,7 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
                 lines.AppendLine("                        {");
                 if (argument.IsBoolean)
                 {
-                    lines.Append("                            if (").Append(GetSeenName(i)).AppendLine(")");
-                    lines.Append("                                throw new global::Lokad.Cli.ParseException(")
-                        .Append(FormatStringLiteral("duplicate option `-" + argument.ShortOption + "`"))
-                        .AppendLine(");");
-                    lines.Append("                            ").Append(GetSeenName(i)).AppendLine(" = true;");
-                    lines.Append("                            ").Append(GetValueName(i)).AppendLine(" = true;");
+                    lines.Append(EmitBooleanFlag(i, argument, "-" + argument.ShortOption, "                            "));
                 }
                 else
                 {
@@ -332,6 +322,21 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
 
             lines.AppendLine("                        throw new global::Lokad.Cli.ParseException($\"unexpected option `-{shortOption}`\");");
             lines.AppendLine("                    }");
+            return lines.ToString();
+        }
+
+        private static string EmitBooleanFlag(int index, CliArgumentInfo argument, string label, string indent)
+        {
+            var lines = new System.Text.StringBuilder();
+            if (!argument.AllowRepeated)
+            {
+                lines.Append(indent).Append("if (").Append(GetSeenName(index)).AppendLine(")");
+                lines.Append(indent).Append("    throw new global::Lokad.Cli.ParseException(")
+                    .Append(FormatStringLiteral("duplicate option `" + label + "`"))
+                    .AppendLine(");");
+            }
+
+            lines.Append(EmitAssign(index, argument, "true", FormatStringLiteral(label), indent));
             return lines.ToString();
         }
 
@@ -454,7 +459,8 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
             var lines = new System.Text.StringBuilder();
             if (argument.IsBoolean)
             {
-                lines.Append(indent).Append(GetSeenName(index)).AppendLine(" = true;");
+                if (argument.NeedsSeen)
+                    lines.Append(indent).Append(GetSeenName(index)).AppendLine(" = true;");
                 lines.Append(indent).Append(GetValueName(index)).AppendLine(" = true;");
                 return lines.ToString();
             }
@@ -472,7 +478,7 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
                     .Append(GetParseExpression(argument, valueExpression, labelExpression))
                     .AppendLine(";");
             }
-            if (!argument.IsArray)
+            if (argument.NeedsSeen)
                 lines.Append(indent).Append(GetSeenName(index)).AppendLine(" = true;");
             return lines.ToString();
         }

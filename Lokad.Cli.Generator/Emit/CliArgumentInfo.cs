@@ -15,7 +15,8 @@ namespace Lokad.Cli.Generator.Emit
             string? documentationName,
             string? longOption,
             char shortOption,
-            bool shortNumeric)
+            bool shortNumeric,
+            bool allowRepeated)
         {
             Name = name;
             TypeName = typeName;
@@ -30,6 +31,7 @@ namespace Lokad.Cli.Generator.Emit
             LongOption = longOption;
             ShortOption = shortOption;
             ShortNumeric = shortNumeric;
+            AllowRepeated = allowRepeated;
         }
 
         public string Name { get; }
@@ -58,6 +60,10 @@ namespace Lokad.Cli.Generator.Emit
 
         public bool ShortNumeric { get; }
 
+        public bool AllowRepeated { get; }
+
         public bool IsOption => LongOption != null || ShortOption != '\0' || ShortNumeric;
+
+        public bool NeedsSeen => !IsArray && (!IsBoolean || !AllowRepeated || IsNullable);
     }
 }

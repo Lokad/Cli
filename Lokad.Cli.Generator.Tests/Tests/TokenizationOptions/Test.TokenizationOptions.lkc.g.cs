@@ -50,7 +50,6 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
         string? arg0Value = default;
         var arg1Seen = false;
         string? arg1Value = default;
-        var arg2Seen = false;
         bool arg2Value = default;
         var arg3Seen = false;
         int arg3Value = default;
@@ -104,9 +103,6 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
                     }
                     if (longArg.Name == @"verbose")
                     {
-                        if (arg2Seen)
-                            throw new global::Lokad.Cli.ParseException(@"duplicate option `--verbose`");
-                        arg2Seen = true;
                         arg2Value = true;
                         break;
                     }
@@ -167,9 +163,6 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
                         }
                         if (shortOption == 'v')
                         {
-                            if (arg2Seen)
-                                throw new global::Lokad.Cli.ParseException(@"duplicate option `-v`");
-                            arg2Seen = true;
                             arg2Value = true;
                             continue;
                         }

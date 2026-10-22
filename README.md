@@ -79,6 +79,19 @@ Callers can rewrite token records and pass a new `TokenizedArguments` to `ParseT
 
 Handwritten implementations of `ICliParsed<T>` must implement its static `Tokenize` member; annotated types receive it from the generator.
 
+### Repeated boolean flags
+
+Boolean flags reject duplicate occurrences by default. Set `AllowRepeated = true` on a named `bool` or `bool?` argument to accept repetition as a single occurrence:
+
+```csharp
+[Argument("Enable verbose output.", Short = 'v', Long = "verbose", AllowRepeated = true)]
+public bool Verbose { get; init; }
+```
+
+For this declaration, `-vv`, `-v -v`, `--verbose --verbose`, and `-v --verbose` all set `Verbose` to `true`. A nullable flag remains `null` when absent. Repetition does not count occurrences or choose between different flags. Explicit values such as `--verbose=false` are still rejected; option values and operands after `--` retain their existing interpretation.
+
+`AllowRepeated` applies to properties, fields, and constructor parameters. Using it on a value-taking argument, a positional argument, a collection, or an argument with `ShortNumeric` produces generator diagnostic `LKC0003`.
+
 ### Choices and Discriminators
 
 A discriminator can be requested as part of the `[Arguments]` itself:

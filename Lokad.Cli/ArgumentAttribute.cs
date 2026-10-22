@@ -42,5 +42,11 @@ namespace Lokad.Cli
         ///     Indicates whether numeric short-argument forms should be recognized for this argument.
         /// </summary>
         public bool ShortNumeric { get; set; }
+
+        /// <summary>
+        ///     Allows repeated occurrences of a named <see cref="bool"/> or nullable boolean flag.
+        ///     Repetition has the same effect as a single occurrence. Defaults to <c>false</c>.
+        /// </summary>
+        public bool AllowRepeated { get; set; }
     }
 }
