@@ -16,12 +16,16 @@ namespace Lokad.Cli.Generator.Emit
         private bool? _allowSingleDashLongOptions;
         private bool _hasVerbatimOrOptionalValues;
         private bool _hasOptionalShortValues;
+        private bool? _stopAtFirstOperand;
+        private bool _hasDeclaredBoundaries;
 
         public IReadOnlyDictionary<char, CliOptionValueMode> ShortOptions => _shortOptions;
         public IReadOnlyDictionary<string, CliOptionValueMode> LongOptions => _longOptions;
         public CliShortOptionSyntax ShortOptionSyntax => _shortOptionSyntax ?? CliShortOptionSyntax.GroupedValues;
         public bool AllowSingleDashLongOptions => _allowSingleDashLongOptions ?? true;
-        public bool UsesArity => ShortOptionSyntax == CliShortOptionSyntax.AttachedValues || _hasVerbatimOrOptionalValues;
+        public bool StopAtFirstOperand => _stopAtFirstOperand ?? false;
+        public bool RequiresBoundaries => StopAtFirstOperand || _hasDeclaredBoundaries;
+        public bool UsesArity => ShortOptionSyntax == CliShortOptionSyntax.AttachedValues || _hasVerbatimOrOptionalValues || RequiresBoundaries;
         public bool RequiresSchema => UsesArity || !AllowSingleDashLongOptions;
 
         public void ConfigureShortOptions(CliShortOptionSyntax syntax)
@@ -39,6 +43,15 @@ namespace Lokad.Cli.Generator.Emit
                 throw new GeneratorException(GeneratorException.ConflictingTokenizationPolicy, "AllowSingleDashLongOptions");
             _allowSingleDashLongOptions = allow;
         }
+
+        public void ConfigureStopAtFirstOperand(bool stop)
+        {
+            if (_stopAtFirstOperand.HasValue && _stopAtFirstOperand.Value != stop)
+                throw new GeneratorException(GeneratorException.ConflictingTokenizationPolicy, "StopAtFirstOperand");
+            _stopAtFirstOperand = stop;
+        }
+
+        public void RequireBoundaries() => _hasDeclaredBoundaries = true;
 
         public void AddOptions(CliOptionNames names, CliOptionValueMode mode)
         {

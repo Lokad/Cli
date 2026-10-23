@@ -14,7 +14,8 @@ namespace Lokad.Cli.Generator.Emit
                 new CliArgumentInfo[0],
                 null,
                 null,
-                new CliTokenizationInfo())
+                new CliTokenizationInfo(),
+                null)
         {
         }
 
@@ -29,7 +30,8 @@ namespace Lokad.Cli.Generator.Emit
             CliArgumentInfo[] arguments,
             CliDiscriminatorInfo? discriminator,
             string? documentation,
-            CliTokenizationInfo tokenization)
+            CliTokenizationInfo tokenization,
+            CliCommandBoundaryInfo? commandBoundary)
         {
             TypeName = typeName;
             Kind = kind;
@@ -42,6 +44,7 @@ namespace Lokad.Cli.Generator.Emit
             Discriminator = discriminator;
             Documentation = documentation;
             Tokenization = tokenization;
+            CommandBoundary = commandBoundary;
         }
 
         public TypeName TypeName { get; }
@@ -65,5 +68,7 @@ namespace Lokad.Cli.Generator.Emit
         public string? Documentation { get; }
 
         public CliTokenizationInfo Tokenization { get; }
+
+        public CliCommandBoundaryInfo? CommandBoundary { get; }
     }
 }

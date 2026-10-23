@@ -8,6 +8,33 @@ namespace Lokad.Cli.Generator.FullTests;
 public sealed class TokenizationCommandTests
 {
     [Fact]
+    public void BindsLiteralArgumentsWithoutDeclaredBoundaries()
+    {
+        var tokens = new TokenizedArguments(new ITokenizedArguments[]
+        {
+            new LongArgWithValue("indent", "2"),
+            new LiteralArg("--compact-output"), new LiteralArg("--"), new ValueArg("ordinary")
+        });
+        var parsed = Parser.ParseTokenized<FormattingArgs>(tokens);
+
+        Assert.Equal(2, parsed.Indent);
+        Assert.False(parsed.Compact);
+        Assert.Equal(new[] { "--compact-output", "--", "ordinary" }, parsed.Operands);
+        Assert.Null(tokens.Peek());
+    }
+
+    [Fact]
+    public void RejectsUnexpectedLiteralArguments()
+    {
+        var tokens = new TokenizedArguments(new ITokenizedArguments[]
+        {
+            new LongArgWithValue("count", "7"), new LiteralArg("extra")
+        });
+        Assert.Equal("unexpected argument `extra`", Assert.Throws<ParseException>(() =>
+            Parser.ParseTokenized<TokenizationConstructorArgs>(tokens)).Message);
+    }
+
+    [Fact]
     public void TokenizesWithoutBindingValuesOrResolvingChoices()
     {
         Assert.Null(Parser.Tokenize<RangesArgs>(Array.Empty<string>()).Shift());

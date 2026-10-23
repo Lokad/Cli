@@ -15,4 +15,7 @@ namespace Lokad.Cli
     public sealed record ShortArgWithValue(char Name, string Value) : ITokenizedArguments;
 
     public sealed record ValueArg(string Value) : ITokenizedArguments;
+
+    /// <summary>A literal suffix value, excluded from option and command-discriminator inspection.</summary>
+    public sealed record LiteralArg(string Value) : ITokenizedArguments;
 }

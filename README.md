@@ -127,6 +127,26 @@ public OptionalValue<string> Format { get; init; }
 
 Omission is absent; `--format` is present without a value; `--format=json` supplies `"json"`. Check `IsPresent` and `HasValue`, then read `Value` or use `TryGetValue`. Explicit values use the existing scalar conversions. A bare occurrence never consumes the next argument; `--format=` supplies empty text. Short names require `ShortOptionSyntax.AttachedValues`: `-F` is bare, `-Fjson` has a value. Scalar repeats keep the last occurrence; collections retain every bare or valued occurrence in order. Existing `T?` options still require an operand when present.
 
+### Literal remainders
+
+Use `[Arguments(..., StopAtFirstOperand = true)]` to forward the suffix in
+`app -v file --child-option`. Command prefixes and option values do not count as
+operands. Options remain interspersed by default.
+
+For an explicit boundary, mark a final positional string collection with
+`Remainder = true`: parsing stops after its preceding scalar operands.
+Alternatively, `StopOptionParsing = true` on a named scalar option forwards
+everything after its required value, as in `app -c code --child-option`.
+Short option boundaries require `ShortOptionSyntax.AttachedValues`.
+
+The suffix becomes `LiteralArg` tokens, excluded from option and command
+inspection; strings such as `--help` and `--` remain data. A leading `--` still
+acts as the normal terminator and can start a declared remainder. Select the
+command before its operands or option boundary. Ambiguous selectors and
+variable-length collections before a declared remainder are diagnosed.
+A remainder without preceding operands needs an option boundary or
+`StopAtFirstOperand`.
+
 ### Choices and Discriminators
 
 A discriminator can be requested as part of the `[Arguments]` itself:

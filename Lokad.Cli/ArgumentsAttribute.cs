@@ -42,5 +42,8 @@ namespace Lokad.Cli
 
         /// <summary>Whether known long names also accept one leading dash. Defaults to <c>true</c>.</summary>
         public bool AllowSingleDashLongOptions { get; set; } = true;
+
+        /// <summary>Stops recognizing options after the first operand, excluding command prefixes. Defaults to <c>false</c>.</summary>
+        public bool StopAtFirstOperand { get; set; }
     }
 }

@@ -62,7 +62,7 @@ namespace Lokad.Cli.Generator
             var documentation = default(string);
             var discriminatorOptions = new HashSet<string>(StringComparer.Ordinal);
             var tokenization = new CliTokenizationInfo();
-            var collected = new Dictionary<ITypeSymbol, CliDiscriminatorInfo?>(SymbolEqualityComparer.Default);
+            var collected = new Dictionary<ITypeSymbol, CollectedDeclaration>(SymbolEqualityComparer.Default);
             var discriminator = Collect(typeSymbol);
 
             var owners = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -96,6 +96,9 @@ namespace Lokad.Cli.Generator
             }
 
             tokenization.Validate();
+            var builtBoundaries = new Dictionary<ITypeSymbol, CliCommandBoundaryInfo>(SymbolEqualityComparer.Default);
+            var activeBoundaries = new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
+            var boundary = tokenization.RequiresBoundaries ? BuildBoundary(typeSymbol) : null;
             return new CliTypeInfo(
                 type.TypeName,
                 type.Kind,
@@ -107,12 +110,79 @@ namespace Lokad.Cli.Generator
                 arguments.ToArray(),
                 discriminator,
                 documentation,
-                tokenization);
+                tokenization,
+                boundary);
+
+            CliCommandBoundaryInfo BuildBoundary(ITypeSymbol declaration)
+            {
+                if (builtBoundaries.TryGetValue(declaration, out var cached))
+                    return cached;
+                if (!activeBoundaries.Add(declaration))
+                    throw new GeneratorException(GeneratorException.AmbiguousCommandBoundary, "cyclic choices");
+                var info = collected[declaration];
+                var operands = new List<CliArgumentInfo>();
+                var stopShort = new List<char>();
+                var stopLong = new List<string>();
+                foreach (var argument in info.Arguments)
+                {
+                    if (!argument.IsOption)
+                        operands.Add(argument);
+                    if (argument.StopOptionParsing)
+                    {
+                        stopShort.AddRange(argument.Options.ShortOptions);
+                        stopLong.AddRange(argument.Options.LongOptions);
+                    }
+                }
+                if (stopShort.Count > 0 && tokenization.ShortOptionSyntax != CliShortOptionSyntax.AttachedValues)
+                    throw new GeneratorException(GeneratorException.ShortBoundarySyntax);
+                int? remainderAfter = null;
+                for (var i = 0; i < operands.Count; i++)
+                {
+                    if (!operands[i].IsRemainder)
+                        continue;
+                    if (i != operands.Count - 1 || operands.Exists(a => a != operands[i] && a.IsCollection) ||
+                        (i == 0 && stopShort.Count == 0 && stopLong.Count == 0 && !tokenization.StopAtFirstOperand))
+                        throw new GeneratorException(GeneratorException.InvalidRemainderLayout, operands[i].Name);
+                    remainderAfter = i;
+                }
+
+                var childBoundaries = new List<CliCommandBoundaryInfo>();
+                var selectors = new HashSet<string>(StringComparer.Ordinal);
+                var hasDefault = false;
+                foreach (var choice in info.Choices)
+                {
+                    var child = BuildBoundary(choice);
+                    var selector = child.Discriminator;
+                    if (selector == null)
+                    {
+                        if (hasDefault || child.Choices.Count > 0)
+                            throw new GeneratorException(GeneratorException.AmbiguousCommandBoundary, "multiple defaults or a default with nested choices");
+                        hasDefault = true;
+                    }
+                    else
+                    {
+                        if (selector.Prefix != null) AddSelector("prefix:" + selector.Prefix);
+                        if (selector.LongOption != null) AddSelector("--" + selector.LongOption);
+                        if (selector.ShortOption != '\0') AddSelector("-" + selector.ShortOption);
+                    }
+                    childBoundaries.Add(child);
+                }
+                var result = new CliCommandBoundaryInfo(info.Discriminator, childBoundaries, remainderAfter, stopShort, stopLong);
+                activeBoundaries.Remove(declaration);
+                builtBoundaries.Add(declaration, result);
+                return result;
+
+                void AddSelector(string selector)
+                {
+                    if (!selectors.Add(selector))
+                        throw new GeneratorException(GeneratorException.AmbiguousCommandBoundary, "duplicate selector " + selector);
+                }
+            }
 
             CliDiscriminatorInfo? Collect(ITypeSymbol declaration)
             {
                 if (collected.TryGetValue(declaration, out var cached))
-                    return cached;
+                    return cached.Discriminator;
 
                 var isRoot = SymbolEqualityComparer.Default.Equals(declaration, typeSymbol);
                 var ownDiscriminator = default(CliDiscriminatorInfo);
@@ -129,23 +199,29 @@ namespace Lokad.Cli.Generator
                             tokenization.ConfigureShortOptions((CliShortOptionSyntax)syntax);
                         if (setting.Key == "AllowSingleDashLongOptions" && setting.Value.Value is bool allow)
                             tokenization.ConfigureSingleDashLongOptions(allow);
+                        if (setting.Key == "StopAtFirstOperand" && setting.Value.Value is bool stop)
+                            tokenization.ConfigureStopAtFirstOperand(stop);
                     }
                 }
 
-                // Both choices and implemented interfaces can lead back to this declaration.
-                // Keep its discriminator available even while the rest of the graph is being collected.
-                collected.Add(declaration, ownDiscriminator);
                 var members = isRoot ? arguments : new List<CliArgumentInfo>();
                 if (declaration.TypeKind != TypeKind.Interface)
                     CollectMembers();
                 CollectTokenizationOptions(members, ownDiscriminator, tokenization);
 
+                var choiceTypes = new List<ITypeSymbol>();
                 foreach (var choice in declaration.GetAttributes(compilation, _choiceAttribute))
                 {
                     if (choice.ConstructorArguments.Length == 0 ||
                         !(choice.ConstructorArguments[0].Value is ITypeSymbol choiceType))
                         continue;
 
+                    choiceTypes.Add(choiceType);
+                }
+                // Cache before following choices and implemented interfaces, which can lead back here.
+                collected.Add(declaration, new CollectedDeclaration(ownDiscriminator, members, choiceTypes));
+                foreach (var choiceType in choiceTypes)
+                {
                     var choiceDiscriminator = Collect(choiceType);
                     if (isRoot)
                         choices.Add(new CliChoiceInfo(GetTypeName(choiceType), choiceDiscriminator));
@@ -209,6 +285,8 @@ namespace Lokad.Cli.Generator
                     var owned = new HashSet<string>(StringComparer.Ordinal);
                     foreach (var argument in arguments)
                     {
+                        if (argument.IsRemainder || argument.StopOptionParsing)
+                            tokenization.RequireBoundaries();
                         var mode = argument.IsOptionalValue ? CliOptionValueMode.OptionalAttached :
                             argument.IsBoolean ? CliOptionValueMode.None :
                             argument.ConsumeNextValueVerbatim ? CliOptionValueMode.Verbatim : CliOptionValueMode.Required;
@@ -255,6 +333,21 @@ namespace Lokad.Cli.Generator
                     return null;
                 }
             }
+        }
+
+        private sealed class CollectedDeclaration
+        {
+            public CollectedDeclaration(CliDiscriminatorInfo? discriminator,
+                IReadOnlyList<CliArgumentInfo> arguments, IReadOnlyList<ITypeSymbol> choices)
+            {
+                Discriminator = discriminator;
+                Arguments = arguments;
+                Choices = choices;
+            }
+
+            public CliDiscriminatorInfo? Discriminator { get; }
+            public IReadOnlyList<CliArgumentInfo> Arguments { get; }
+            public IReadOnlyList<ITypeSymbol> Choices { get; }
         }
 
         private bool TryGetBindableMemberArgument(
@@ -340,7 +433,17 @@ namespace Lokad.Cli.Generator
                 GetNamedBool(attribute, "AllowRepeated"),
                 GetNamedBool(attribute, "ConsumeUntilBoundary"),
                 GetNamedBool(attribute, "ConsumeNextValueVerbatim"),
-                isOptionalValue);
+                isOptionalValue,
+                GetNamedBool(attribute, "Remainder"),
+                GetNamedBool(attribute, "StopOptionParsing"));
+
+            if (argument.IsRemainder && (argument.IsOption || !argument.IsCollection || isOptionalValue ||
+                bindableType.SpecialType != SpecialType.System_String || argument.ConsumeUntilBoundary))
+                throw new GeneratorException(GeneratorException.InvalidRemainder, argument.Name);
+
+            if (argument.StopOptionParsing && (argument.IsBoolean || argument.IsCollection || isOptionalValue ||
+                argument.ShortNumeric || !optionNames.HasNamedOption))
+                throw new GeneratorException(GeneratorException.InvalidStopOption, argument.Name);
 
             if (isOptionalValue && (!optionNames.HasNamedOption || argument.ShortNumeric || argument.AllowRepeated || argument.ConsumeNextValueVerbatim))
                 throw new GeneratorException(GeneratorException.InvalidOptionalValue, argument.Name);

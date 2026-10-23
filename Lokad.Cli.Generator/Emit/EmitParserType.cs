@@ -84,7 +84,39 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
     {{
         public static readonly {shortDeclaration};
         public static readonly {longDeclaration};
-    }}";
+{EmitBoundaries()}    }}";
+
+                string EmitBoundaries()
+                {
+                    if (parserType.CommandBoundary == null)
+                        return string.Empty;
+                    var lines = new System.Text.StringBuilder();
+                    var names = new System.Collections.Generic.Dictionary<CliCommandBoundaryInfo, string>();
+                    Visit(parserType.CommandBoundary);
+                    return lines.ToString();
+
+                    string Visit(CliCommandBoundaryInfo boundary)
+                    {
+                        if (names.TryGetValue(boundary, out var cached))
+                            return cached;
+                        var name = boundary == parserType.CommandBoundary ? "Boundary" : "Boundary" + names.Count;
+                        names.Add(boundary, name);
+                        var children = new System.Collections.Generic.List<string>();
+                        foreach (var child in boundary.Choices)
+                            children.Add(Visit(child));
+                        var shorts = new System.Collections.Generic.List<char>(boundary.StopAfterShortOptions).ToArray();
+                        var longs = new System.Collections.Generic.List<string>(boundary.StopAfterLongOptions).ToArray();
+                        lines.Append("        public static readonly global::Lokad.Cli.CommandBoundary ").Append(name)
+                            .Append(" = new global::Lokad.Cli.CommandBoundary(")
+                            .Append(boundary.Discriminator?.Prefix is string prefix ? FormatStringLiteral(prefix) : "null").Append(", ")
+                            .Append(boundary.Discriminator?.LongOption is string option ? FormatStringLiteral(option) : "null").Append(", ")
+                            .Append(FormatCharLiteral(boundary.Discriminator?.ShortOption ?? '\0')).Append(", ")
+                            .Append("new global::Lokad.Cli.CommandBoundary[] { ").Append(string.Join(", ", children)).Append(" }, ")
+                            .Append(boundary.RemainderAfterOperands?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "null").Append(", ")
+                            .Append(FormatCharArray(shorts)).Append(", ").Append(FormatStringArray(longs)).AppendLine(");");
+                        return name;
+                    }
+                }
 
                 string FormatOptions<T>(string keyType, string name, System.Collections.Generic.IReadOnlyDictionary<T, CliOptionValueMode> options, Func<T, string> format)
                 {
@@ -102,6 +134,8 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
             static string GetLexicalPolicies(CliTypeInfo parserType) => parserType.Tokenization.RequiresSchema
                 ? "," + Environment.NewLine + "            global::Lokad.Cli.ShortOptionSyntax." + parserType.Tokenization.ShortOptionSyntax +
                   "," + Environment.NewLine + "            " + FormatBoolean(parserType.Tokenization.AllowSingleDashLongOptions)
+                  + (parserType.CommandBoundary == null ? string.Empty : "," + Environment.NewLine + "            " +
+                      FormatBoolean(parserType.Tokenization.StopAtFirstOperand) + ", __CliOptionNames.Boundary")
                 : string.Empty;
         }
 
@@ -208,7 +242,7 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
             lines.AppendLine("        {");
             if (useCollectionBoundaries)
             {
-                lines.AppendLine("            if (!(current is global::Lokad.Cli.ValueArg))");
+                lines.AppendLine("            if (!(current is global::Lokad.Cli.ValueArg) && !(current is global::Lokad.Cli.LiteralArg))");
                 lines.AppendLine("                tokenized.Shift();");
                 lines.AppendLine("            if (current is global::Lokad.Cli.LongArg || current is global::Lokad.Cli.LongArgWithValue ||");
                 lines.AppendLine("                current is global::Lokad.Cli.ShortArgSet || current is global::Lokad.Cli.ShortArgWithValue ||");
@@ -238,7 +272,9 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
             lines.AppendLine("                    break;");
             lines.AppendLine("                case global::Lokad.Cli.NumericShortArg numericShortArg:");
             lines.Append(EmitNumericShortBinding(type));
-            lines.AppendLine("                case global::Lokad.Cli.ValueArg valueArg:");
+            lines.AppendLine("                case global::Lokad.Cli.ValueArg:");
+            lines.AppendLine("                case global::Lokad.Cli.LiteralArg:");
+            lines.AppendLine("                    var positionalValue = current is global::Lokad.Cli.ValueArg valueArg ? valueArg.Value : ((global::Lokad.Cli.LiteralArg)current).Value;");
             lines.Append(EmitPositionalBinding(type, positional, useCollectionBoundaries));
             lines.AppendLine("            }");
             lines.AppendLine("        }");
@@ -293,7 +329,7 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
             static string EmitPositionalBinding(CliTypeInfo type, CliArgumentInfo[] positional, bool useCollectionBoundaries)
             {
                 var lines = new System.Text.StringBuilder();
-                lines.AppendLine("                    if (tokenized.MaybeSkipPositional(valueArg.Value))");
+                lines.AppendLine("                    if (current is global::Lokad.Cli.ValueArg && tokenized.MaybeSkipPositional(positionalValue))");
                 if (useCollectionBoundaries)
                 {
                     lines.AppendLine("                    {");
@@ -308,17 +344,22 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
                     var argumentIndex = Array.IndexOf(type.Arguments, positional[p]);
                     lines.Append("                    if (positionalIndex == ").Append(p).AppendLine(")");
                     lines.AppendLine("                    {");
+                    if (positional[p].IsRemainder)
+                    {
+                        lines.AppendLine("                        if (!(current is global::Lokad.Cli.LiteralArg))");
+                        lines.AppendLine("                            throw new global::Lokad.Cli.ParseException(\"expected an option boundary before the remainder\");");
+                    }
                     if (positional[p].ConsumeUntilBoundary)
                     {
                         var method = GetParseMethod(positional[p]);
                         if (method.Length == 0)
                         {
                             lines.AppendLine("                        tokenized.Shift();");
-                            lines.Append("                        ").Append(GetValueName(argumentIndex)).AppendLine(".Add(valueArg.Value);");
+                            lines.Append("                        ").Append(GetValueName(argumentIndex)).AppendLine(".Add(positionalValue);");
                         }
                         else
                         {
-                            lines.Append("                        if (Try").Append(method).AppendLine("(valueArg.Value, out var parsedElement))");
+                            lines.Append("                        if (Try").Append(method).AppendLine("(positionalValue, out var parsedElement))");
                             lines.AppendLine("                        {");
                             lines.AppendLine("                            tokenized.Shift();");
                             lines.Append("                            ").Append(GetValueName(argumentIndex)).AppendLine(".Add(parsedElement);");
@@ -332,7 +373,7 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
                     }
                     if (useCollectionBoundaries)
                         lines.AppendLine("                        tokenized.Shift();");
-                    lines.Append(EmitAssign(argumentIndex, positional[p], "valueArg.Value", "\"argument\"", "                        "));
+                    lines.Append(EmitAssign(argumentIndex, positional[p], "positionalValue", "\"argument\"", "                        "));
                     if (!positional[p].IsCollection || p < positional.Length - 1)
                         lines.AppendLine("                        positionalIndex++;");
                     lines.AppendLine("                        break;");
@@ -341,7 +382,7 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
 
                 if (useCollectionBoundaries)
                     lines.AppendLine("                    tokenized.Shift();");
-                lines.AppendLine("                    throw new global::Lokad.Cli.ParseException($\"unexpected argument `{valueArg.Value}`\");");
+                lines.AppendLine("                    throw new global::Lokad.Cli.ParseException($\"unexpected argument `{positionalValue}`\");");
                 return lines.ToString();
             }
         }

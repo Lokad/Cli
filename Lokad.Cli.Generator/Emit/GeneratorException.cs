@@ -147,5 +147,30 @@ namespace Lokad.Cli.Generator.Emit
             category: "SourceGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor InvalidRemainder = new DiagnosticDescriptor(
+            "LKC0016", "Invalid literal remainder",
+            "Argument '{0}' uses Remainder, which requires a positional string collection without ConsumeUntilBoundary",
+            "SourceGenerator", DiagnosticSeverity.Error, true);
+
+        public static readonly DiagnosticDescriptor InvalidStopOption = new DiagnosticDescriptor(
+            "LKC0017", "Invalid option boundary",
+            "Argument '{0}' uses StopOptionParsing, which requires a named scalar option with a required value",
+            "SourceGenerator", DiagnosticSeverity.Error, true);
+
+        public static readonly DiagnosticDescriptor InvalidRemainderLayout = new DiagnosticDescriptor(
+            "LKC0018", "Invalid remainder layout",
+            "Remainder '{0}' must be the final positional argument, follow only scalars, and have a preceding operand, a StopOptionParsing option or StopAtFirstOperand",
+            "SourceGenerator", DiagnosticSeverity.Error, true);
+
+        public static readonly DiagnosticDescriptor AmbiguousCommandBoundary = new DiagnosticDescriptor(
+            "LKC0019", "Ambiguous command boundary",
+            "Literal boundaries require unambiguous command selectors: {0}",
+            "SourceGenerator", DiagnosticSeverity.Error, true);
+
+        public static readonly DiagnosticDescriptor ShortBoundarySyntax = new DiagnosticDescriptor(
+            "LKC0020", "Unsupported short option boundary",
+            "Short options using StopOptionParsing require ShortOptionSyntax.AttachedValues",
+            "SourceGenerator", DiagnosticSeverity.Error, true);
     }
 }

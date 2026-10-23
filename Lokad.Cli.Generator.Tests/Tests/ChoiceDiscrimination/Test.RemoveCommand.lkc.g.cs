@@ -86,10 +86,12 @@ partial record RemoveCommand : global::Lokad.Cli.ICliParsed<global::Test.RemoveC
                     break;
                 case global::Lokad.Cli.NumericShortArg numericShortArg:
                     throw new global::Lokad.Cli.ParseException($"unexpected argument `-{numericShortArg.Value}`");
-                case global::Lokad.Cli.ValueArg valueArg:
-                    if (tokenized.MaybeSkipPositional(valueArg.Value))
+                case global::Lokad.Cli.ValueArg:
+                case global::Lokad.Cli.LiteralArg:
+                    var positionalValue = current is global::Lokad.Cli.ValueArg valueArg ? valueArg.Value : ((global::Lokad.Cli.LiteralArg)current).Value;
+                    if (current is global::Lokad.Cli.ValueArg && tokenized.MaybeSkipPositional(positionalValue))
                         break;
-                    throw new global::Lokad.Cli.ParseException($"unexpected argument `{valueArg.Value}`");
+                    throw new global::Lokad.Cli.ParseException($"unexpected argument `{positionalValue}`");
             }
         }
 

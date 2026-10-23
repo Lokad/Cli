@@ -73,5 +73,18 @@ namespace Lokad.Cli
         ///     Applies only when no value is attached. Defaults to <c>false</c>.
         /// </summary>
         public bool ConsumeNextValueVerbatim { get; set; }
+
+        /// <summary>
+        ///     Captures a literal suffix in a final positional string collection after its preceding scalar operands.
+        ///     Without preceding operands, requires a <see cref="StopOptionParsing"/> option or
+        ///     <see cref="ArgumentsAttribute.StopAtFirstOperand"/>. Defaults to <c>false</c>.
+        /// </summary>
+        public bool Remainder { get; set; }
+
+        /// <summary>
+        ///     Stops option recognition after this named scalar option's required value has been consumed.
+        ///     Short names require <see cref="ShortOptionSyntax.AttachedValues"/>. Defaults to <c>false</c>.
+        /// </summary>
+        public bool StopOptionParsing { get; set; }
     }
 }

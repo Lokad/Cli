@@ -61,24 +61,58 @@ namespace Lokad.Cli
             bool hasShortNumericArguments,
             ShortOptionSyntax shortOptionSyntax,
             bool allowSingleDashLongOptions)
+            => Tokenize(arguments, shortOptions, longOptions, hasShortNumericArguments,
+                shortOptionSyntax, allowSingleDashLongOptions, false, CommandBoundary.Empty);
+
+        /// <summary>Tokenizes arguments with command selectors and literal-suffix boundaries.</summary>
+        /// <param name="arguments">Raw command-line arguments.</param>
+        /// <param name="shortOptions">Short names and their value modes.</param>
+        /// <param name="longOptions">Long names and their value modes.</param>
+        /// <param name="hasShortNumericArguments">Whether numeric short forms are recognized.</param>
+        /// <param name="shortOptionSyntax">How short groups supply values.</param>
+        /// <param name="allowSingleDashLongOptions">Whether known long names accept one leading dash.</param>
+        /// <param name="stopAtFirstOperand">Whether the first operand starts a literal suffix, excluding command prefixes and option values.</param>
+        /// <param name="boundary">Generated command selectors and explicit boundaries.</param>
+        /// <returns>A fresh token cursor; literal suffix strings are represented by <see cref="LiteralArg"/>.</returns>
+        public static TokenizedArguments Tokenize(
+            IReadOnlyList<string> arguments,
+            IReadOnlyDictionary<char, OptionValueMode> shortOptions,
+            IReadOnlyDictionary<string, OptionValueMode> longOptions,
+            bool hasShortNumericArguments,
+            ShortOptionSyntax shortOptionSyntax,
+            bool allowSingleDashLongOptions,
+            bool stopAtFirstOperand,
+            CommandBoundary boundary)
         {
             if (arguments == null) throw new ArgumentNullException(nameof(arguments));
             if (shortOptions == null) throw new ArgumentNullException(nameof(shortOptions));
             if (longOptions == null) throw new ArgumentNullException(nameof(longOptions));
+            if (boundary == null) throw new ArgumentNullException(nameof(boundary));
             if (shortOptionSyntax != ShortOptionSyntax.GroupedValues && shortOptionSyntax != ShortOptionSyntax.AttachedValues)
                 throw new ArgumentOutOfRangeException(nameof(shortOptionSyntax));
             if (shortOptionSyntax != ShortOptionSyntax.AttachedValues)
+            {
+                if (boundary.HasShortBoundaries)
+                    throw new ArgumentException("Short option boundaries require AttachedValues syntax.", nameof(boundary));
                 foreach (var mode in shortOptions.Values)
                     if (mode == OptionValueMode.OptionalAttached)
                         throw new ArgumentException("Optional short values require AttachedValues syntax.", nameof(shortOptions));
+            }
 
             var tokens = new List<ITokenizedArguments>(arguments.Count);
             var pendingValues = new Queue<int>();
             var classified = new List<ITokenizedArguments>(2);
             var valuesOnly = false;
+            var state = stopAtFirstOperand || boundary.HasBoundaries
+                ? new ArgumentBoundaryState(boundary, stopAtFirstOperand) : null;
 
             foreach (var argument in arguments)
             {
+                if (state?.IsLiteral == true)
+                {
+                    tokens.Add(new LiteralArg(argument));
+                    continue;
+                }
                 if (pendingValues.Count > 0 && GetValueMode(tokens[pendingValues.Peek()]) == OptionValueMode.Verbatim)
                 {
                     SupplyValue(argument);
@@ -111,6 +145,14 @@ namespace Lokad.Cli
                         pendingValues.Clear();
                     }
 
+                    if (token is ValueArg operand)
+                    {
+                        var literal = state != null && !state.TryConsumePrefix(operand.Value) && state.PositionalValue(valuesOnly);
+                        tokens.Add(literal ? new LiteralArg(operand.Value) : token);
+                        continue;
+                    }
+
+                    state?.ObserveOption(token);
                     if (token is ShortArgSet group)
                     {
                         var start = 0;
@@ -135,6 +177,8 @@ namespace Lokad.Cli
                         if (token is LongArg && NeedsFollowingValue(GetValueMode(token)))
                             pendingValues.Enqueue(tokens.Count);
                         tokens.Add(token);
+                        if (token is LongArgWithValue || token is ShortArgWithValue)
+                            state?.OptionValueConsumed(token);
                     }
                 }
             }
@@ -160,6 +204,7 @@ namespace Lokad.Cli
                     ShortArgSet option => new ShortArgWithValue(option.Options[0], value),
                     _ => throw new InvalidOperationException("Expected an option awaiting a value.")
                 };
+                state?.OptionValueConsumed(tokens[index]);
             }
         }
 

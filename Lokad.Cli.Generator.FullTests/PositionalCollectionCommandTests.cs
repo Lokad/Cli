@@ -85,6 +85,21 @@ public sealed class PositionalCollectionCommandTests
     }
 
     [Fact]
+    public void ConvertsLiteralCollectionElementsAndKeepsPrefixLookingData()
+    {
+        var tokens = new TokenizedArguments(new ITokenizedArguments[]
+        {
+            new LiteralArg("10"), new LiteralArg("11"), new LiteralArg("numbers"), new LiteralArg("12")
+        });
+        var parsed = Parser.ParseTokenized<ArrayBoundaryArgs>(tokens);
+
+        Assert.Equal(new[] { 10, 11 }, parsed.Numbers);
+        Assert.Equal("numbers", parsed.Label);
+        Assert.Equal(12, parsed.Count);
+        Assert.Null(tokens.Peek());
+    }
+
+    [Fact]
     public void DoesNotReserveTrailingValuesFromAnAlwaysConvertibleCollection()
     {
         var error = Assert.Throws<ParseException>(() => Parser.Parse<StringBoundaryArgs>(new[] { "one", "two", "label" }));

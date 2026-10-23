@@ -5,7 +5,8 @@ using Lokad.Cli;
 namespace Test;
 
 [Arguments("Tokenization mode.", Long = "mode", Short = 'm',
-    ShortOptionSyntax = ShortOptionSyntax.AttachedValues, AllowSingleDashLongOptions = false)]
+    ShortOptionSyntax = ShortOptionSyntax.AttachedValues, AllowSingleDashLongOptions = false,
+    StopAtFirstOperand = true)]
 public partial record TokenizationOptions(
     [property: Argument("Constructor property value.", Long = "from-ctor", ShortNames = new[] { 'c' })]
     SnapshotReferenceValue<string?> FromConstructor,
@@ -36,6 +37,9 @@ public partial record TokenizationOptions(
 
     [Argument("Optional flag values.", Long = "flag-value", Name = "bool")]
     public IReadOnlyList<OptionalValue<bool?>> FlagValues { get; init; } = Array.Empty<OptionalValue<bool?>>();
+
+    [Argument("Code boundary.", Long = "code", Short = 'e', StopOptionParsing = true)]
+    public string? Code { get; init; }
 }
 
 public sealed record SnapshotReferenceValue<T>(string Value) : IParsable<SnapshotReferenceValue<T>>
