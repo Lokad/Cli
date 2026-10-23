@@ -116,12 +116,18 @@ partial record RemoveCommand : global::Lokad.Cli.ICliParsed<global::Test.RemoveC
         return commandName + ": " + documentation;
     }
 
+
     private static int ParseInt32(string value, string label)
     {
-        if (global::System.Int32.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+        if (TryParseInt32(value, out var parsed))
             return parsed;
 
         throw new global::Lokad.Cli.ParseException($"invalid value `{value}` for `{label}`");
+    }
+
+    private static bool TryParseInt32(string value, out int parsed)
+    {
+        return global::System.Int32.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out parsed);
     }
 
 }

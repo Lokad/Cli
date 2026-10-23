@@ -53,9 +53,21 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
         int arg3Value = default;
         global::System.Collections.Generic.List<string> arg4Value = new();
         global::Test.SnapshotReferenceValue<string?>? arg5Value = default;
+        global::System.Collections.Generic.List<int> arg6Value = new();
+        string? arg7Value = default;
+        var positionalIndex = 0;
         global::Lokad.Cli.ITokenizedArguments? current;
-        while ((current = tokenized.Shift()) != null)
+        while ((current = tokenized.Peek()) != null)
         {
+            if (!(current is global::Lokad.Cli.ValueArg))
+                tokenized.Shift();
+            if (current is global::Lokad.Cli.LongArg || current is global::Lokad.Cli.LongArgWithValue ||
+                current is global::Lokad.Cli.ShortArgSet || current is global::Lokad.Cli.ShortArgWithValue ||
+                current is global::Lokad.Cli.NumericShortArg)
+            {
+                if (positionalIndex == 0 && arg6Value.Count > 0)
+                    positionalIndex++;
+            }
             switch (current)
             {
                 case global::Lokad.Cli.LongArgWithValue longArgWithValue:
@@ -187,7 +199,29 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
                     }
                 case global::Lokad.Cli.ValueArg valueArg:
                     if (tokenized.MaybeSkipPositional(valueArg.Value))
+                    {
+                        tokenized.Shift();
                         break;
+                    }
+                    if (positionalIndex == 0)
+                    {
+                        if (TryParseInt32(valueArg.Value, out var parsedElement))
+                        {
+                            tokenized.Shift();
+                            arg6Value.Add(parsedElement);
+                            break;
+                        }
+                        positionalIndex++;
+                        break;
+                    }
+                    if (positionalIndex == 1)
+                    {
+                        tokenized.Shift();
+                        arg7Value = valueArg.Value;
+                        positionalIndex++;
+                        break;
+                    }
+                    tokenized.Shift();
                     throw new global::Lokad.Cli.ParseException($"unexpected argument `{valueArg.Value}`");
             }
         }
@@ -195,12 +229,17 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
         if (arg0Value is null)
             throw new global::Lokad.Cli.ParseException(@"missing option `--from-ctor`");
 
+        if (arg7Value is null)
+            throw new global::Lokad.Cli.ParseException("missing argument");
+
         return new global::Test.TokenizationOptions(arg0Value, new global::System.ReadOnlyMemory<int>(arg1Value.ToArray()))
         {
             Verbose = arg2Value,
             Depth = arg3Seen ? arg3Value : default(global::System.Nullable<int>),
             Field = arg4Value.ToArray(),
             Optional = arg5Value,
+            Numbers = arg6Value.ToArray(),
+            Label = arg7Value,
         };
     }
 
@@ -208,13 +247,15 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
     {
         if (commandName == null) throw new global::System.ArgumentNullException(nameof(commandName));
 
-        var lines = new global::System.Collections.Generic.List<string> { FormatDocumentationLine(commandName + @" --mode", @"Tokenization mode.") };
+        var lines = new global::System.Collections.Generic.List<string> { FormatDocumentationLine(commandName + @" --mode" + @" <number...>" + @" <label>", @"Tokenization mode.") };
         lines.Add(@"  --from-ctor, -c: Constructor property value.");
         lines.Add(@"  --raw-param, -p: Raw constructor parameter.");
         lines.Add(@"  --verbose, --chatty, -v, -V: Enable verbose output.");
         lines.Add(@"  -<number>: Numeric depth.");
         lines.Add(@"  --field, -f: Field value.");
         lines.Add(@"  --optional: Optional reference value.");
+        lines.Add(@"  <number...>: Numbers.");
+        lines.Add(@"  <label>: Label.");
         return string.Join(global::System.Environment.NewLine, lines);
     }
 
@@ -226,21 +267,33 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
         return commandName + ": " + documentation;
     }
 
+
     private static int ParseInt32(string value, string label)
     {
-        if (global::System.Int32.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+        if (TryParseInt32(value, out var parsed))
             return parsed;
 
         throw new global::Lokad.Cli.ParseException($"invalid value `{value}` for `{label}`");
     }
 
+    private static bool TryParseInt32(string value, out int parsed)
+    {
+        return global::System.Int32.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out parsed);
+    }
+
     private static TValue ParseCustom<TValue>(string value, string label)
         where TValue : global::System.IParsable<TValue>
     {
-        if (TValue.TryParse(value, null, out var parsed))
+        if (TryParseCustom<TValue>(value, out var parsed))
             return parsed;
 
         throw new global::Lokad.Cli.ParseException($"invalid value `{value}` for `{label}`");
+    }
+
+    private static bool TryParseCustom<TValue>(string value, [global::System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TValue parsed)
+        where TValue : global::System.IParsable<TValue>
+    {
+        return TValue.TryParse(value, null, out parsed);
     }
 
 }

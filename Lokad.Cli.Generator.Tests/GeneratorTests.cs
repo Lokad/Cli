@@ -13,6 +13,7 @@ public class GeneratorTests
 
     [Fact] public void ChoiceDiscrimination() => Run();
     [Fact] public void Empty() => Run();
+    [Fact] public void InvalidCollectionBoundaries() => Run();
     [Fact] public void InvalidOptionAliases() => Run();
     [Fact] public void InvalidRepeatedFlags() => Run();
     [Fact] public void Ranges() => Run();

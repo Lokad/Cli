@@ -83,5 +83,21 @@ namespace Lokad.Cli.Generator.Emit
             category: "SourceGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor InvalidCollectionBoundary = new DiagnosticDescriptor(
+            id: "LKC0008",
+            title: "Invalid positional collection boundary",
+            messageFormat: "Argument '{0}' uses ConsumeUntilBoundary, which requires a nonfinal positional collection",
+            category: "SourceGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor AdjacentCollectionBoundary = new DiagnosticDescriptor(
+            id: "LKC0009",
+            title: "Unsupported adjacent positional collections",
+            messageFormat: "Argument '{0}' uses ConsumeUntilBoundary immediately before collection '{1}'; adjacent positional collections are not supported in this mode",
+            category: "SourceGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
     }
 }

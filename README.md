@@ -190,7 +190,7 @@ Given a primitive type `T`, the type `T?` behaves the same, but the property is 
 
 For a supported element type `T`, `T[]`, `IReadOnlyList<T>`, and `ReadOnlyMemory<T>` capture multiple values. Repeated named options append in order (`--value 10 --value 11` or `-vv 10 11`); a final positional collection captures the remaining operands. Omitted collections are empty. Elements use the same conversions as scalar values; boolean collections take explicit `true` or `false` values.
 
-A nonfinal positional collection currently captures one value before binding continues to the next positional member. Consumption until an option or conversion boundary remains unimplemented.
+A nonfinal positional collection captures one value by default. Set `ConsumeUntilBoundary = true` on its `[Argument]` to collect until conversion fails or an option follows its first element. The next positional member receives the unconverted value. For `int[] numbers`, `string label`, and `int count`, input `10 11 label 12` then binds `[10, 11]`, `"label"`, and `12`. No trailing values are reserved: a string collection needs an option boundary to pass values to later members. This mode requires a nonfinal positional collection followed by a scalar; invalid declarations produce `LKC0008` or `LKC0009`.
 
 ### Reusable option groups
   

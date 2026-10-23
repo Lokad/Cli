@@ -134,10 +134,16 @@ partial record RangeOptions : global::Lokad.Cli.ICliParsed<global::Test.RangeOpt
     private static TValue ParseCustom<TValue>(string value, string label)
         where TValue : global::System.IParsable<TValue>
     {
-        if (TValue.TryParse(value, null, out var parsed))
+        if (TryParseCustom<TValue>(value, out var parsed))
             return parsed;
 
         throw new global::Lokad.Cli.ParseException($"invalid value `{value}` for `{label}`");
+    }
+
+    private static bool TryParseCustom<TValue>(string value, [global::System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TValue parsed)
+        where TValue : global::System.IParsable<TValue>
+    {
+        return TValue.TryParse(value, null, out parsed);
     }
 
 }

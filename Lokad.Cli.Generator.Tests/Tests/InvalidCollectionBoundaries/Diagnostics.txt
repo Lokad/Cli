@@ -1,0 +1,5 @@
+Error LKC0008: Argument 'Number' uses ConsumeUntilBoundary, which requires a nonfinal positional collection (InvalidCollectionBoundaries/Input.cs:6:23)
+Error LKC0008: Argument 'Numbers' uses ConsumeUntilBoundary, which requires a nonfinal positional collection (InvalidCollectionBoundaries/Input.cs:13:23)
+Error LKC0008: Argument 'Numbers' uses ConsumeUntilBoundary, which requires a nonfinal positional collection (InvalidCollectionBoundaries/Input.cs:20:23)
+Error LKC0008: Argument 'Numbers' uses ConsumeUntilBoundary, which requires a nonfinal positional collection (InvalidCollectionBoundaries/Input.cs:26:23)
+Error LKC0009: Argument 'Numbers' uses ConsumeUntilBoundary immediately before collection 'Labels'; adjacent positional collections are not supported in this mode (InvalidCollectionBoundaries/Input.cs:33:23)

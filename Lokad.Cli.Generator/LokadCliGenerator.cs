@@ -95,8 +95,18 @@ namespace Lokad.Cli.Generator
             }
 
             var owners = new Dictionary<string, string>(StringComparer.Ordinal);
+            var positional = arguments.FindAll(argument => !argument.IsOption);
             foreach (var argument in arguments)
             {
+                if (argument.ConsumeUntilBoundary)
+                {
+                    var position = positional.IndexOf(argument);
+                    if (!argument.IsCollection || position < 0 || position == positional.Count - 1)
+                        throw new GeneratorException(GeneratorException.InvalidCollectionBoundary, argument.Name);
+                    if (positional[position + 1].IsCollection)
+                        throw new GeneratorException(GeneratorException.AdjacentCollectionBoundary, argument.Name, positional[position + 1].Name);
+                }
+
                 if (argument.AllowRepeated)
                 {
                     var hasNamedOption = argument.Options.ShortOptions.Count > 0;
@@ -337,7 +347,8 @@ namespace Lokad.Cli.Generator
                 GetNamedString(attribute, "Name"),
                 optionNames,
                 GetNamedBool(attribute, "ShortNumeric"),
-                GetNamedBool(attribute, "AllowRepeated"));
+                GetNamedBool(attribute, "AllowRepeated"),
+                GetNamedBool(attribute, "ConsumeUntilBoundary"));
 
             return true;
 

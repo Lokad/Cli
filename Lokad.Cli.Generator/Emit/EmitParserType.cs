@@ -151,6 +151,7 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
 
             var lines = new System.Text.StringBuilder();
             var positional = GetPositionalArguments(type);
+            var useCollectionBoundaries = Array.Exists(positional, argument => argument.ConsumeUntilBoundary);
 
             for (var i = 0; i < type.Arguments.Length; i++)
             {
@@ -167,8 +168,29 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
             if (positional.Length > 0)
                 lines.AppendLine("        var positionalIndex = 0;");
             lines.AppendLine("        global::Lokad.Cli.ITokenizedArguments? current;");
-            lines.AppendLine("        while ((current = tokenized.Shift()) != null)");
+            lines.AppendLine(useCollectionBoundaries
+                ? "        while ((current = tokenized.Peek()) != null)"
+                : "        while ((current = tokenized.Shift()) != null)");
             lines.AppendLine("        {");
+            if (useCollectionBoundaries)
+            {
+                lines.AppendLine("            if (!(current is global::Lokad.Cli.ValueArg))");
+                lines.AppendLine("                tokenized.Shift();");
+                lines.AppendLine("            if (current is global::Lokad.Cli.LongArg || current is global::Lokad.Cli.LongArgWithValue ||");
+                lines.AppendLine("                current is global::Lokad.Cli.ShortArgSet || current is global::Lokad.Cli.ShortArgWithValue ||");
+                lines.AppendLine("                current is global::Lokad.Cli.NumericShortArg)");
+                lines.AppendLine("            {");
+                for (var p = 0; p < positional.Length; p++)
+                {
+                    if (!positional[p].ConsumeUntilBoundary)
+                        continue;
+                    var argumentIndex = Array.IndexOf(type.Arguments, positional[p]);
+                    lines.Append("                if (positionalIndex == ").Append(p)
+                        .Append(" && ").Append(GetValueName(argumentIndex)).AppendLine(".Count > 0)");
+                    lines.AppendLine("                    positionalIndex++;");
+                }
+                lines.AppendLine("            }");
+            }
             lines.AppendLine("            switch (current)");
             lines.AppendLine("            {");
             lines.AppendLine("                case global::Lokad.Cli.LongArgWithValue longArgWithValue:");
@@ -183,7 +205,7 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
             lines.AppendLine("                case global::Lokad.Cli.NumericShortArg numericShortArg:");
             lines.Append(EmitNumericShortBinding(type));
             lines.AppendLine("                case global::Lokad.Cli.ValueArg valueArg:");
-            lines.Append(EmitPositionalBinding(type, positional));
+            lines.Append(EmitPositionalBinding(type, positional, useCollectionBoundaries));
             lines.AppendLine("            }");
             lines.AppendLine("        }");
 
@@ -229,6 +251,61 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
                     return type + "?";
 
                 return type;
+            }
+
+            static string EmitPositionalBinding(CliTypeInfo type, CliArgumentInfo[] positional, bool useCollectionBoundaries)
+            {
+                var lines = new System.Text.StringBuilder();
+                lines.AppendLine("                    if (tokenized.MaybeSkipPositional(valueArg.Value))");
+                if (useCollectionBoundaries)
+                {
+                    lines.AppendLine("                    {");
+                    lines.AppendLine("                        tokenized.Shift();");
+                }
+                lines.AppendLine("                        break;");
+                if (useCollectionBoundaries)
+                    lines.AppendLine("                    }");
+
+                for (var p = 0; p < positional.Length; p++)
+                {
+                    var argumentIndex = Array.IndexOf(type.Arguments, positional[p]);
+                    lines.Append("                    if (positionalIndex == ").Append(p).AppendLine(")");
+                    lines.AppendLine("                    {");
+                    if (positional[p].ConsumeUntilBoundary)
+                    {
+                        var method = GetParseMethod(positional[p]);
+                        if (method.Length == 0)
+                        {
+                            lines.AppendLine("                        tokenized.Shift();");
+                            lines.Append("                        ").Append(GetValueName(argumentIndex)).AppendLine(".Add(valueArg.Value);");
+                        }
+                        else
+                        {
+                            lines.Append("                        if (Try").Append(method).AppendLine("(valueArg.Value, out var parsedElement))");
+                            lines.AppendLine("                        {");
+                            lines.AppendLine("                            tokenized.Shift();");
+                            lines.Append("                            ").Append(GetValueName(argumentIndex)).AppendLine(".Add(parsedElement);");
+                            lines.AppendLine("                            break;");
+                            lines.AppendLine("                        }");
+                            lines.AppendLine("                        positionalIndex++;");
+                        }
+                        lines.AppendLine("                        break;");
+                        lines.AppendLine("                    }");
+                        continue;
+                    }
+                    if (useCollectionBoundaries)
+                        lines.AppendLine("                        tokenized.Shift();");
+                    lines.Append(EmitAssign(argumentIndex, positional[p], "valueArg.Value", "\"argument\"", "                        "));
+                    if (!positional[p].IsCollection || p < positional.Length - 1)
+                        lines.AppendLine("                        positionalIndex++;");
+                    lines.AppendLine("                        break;");
+                    lines.AppendLine("                    }");
+                }
+
+                if (useCollectionBoundaries)
+                    lines.AppendLine("                    tokenized.Shift();");
+                lines.AppendLine("                    throw new global::Lokad.Cli.ParseException($\"unexpected argument `{valueArg.Value}`\");");
+                return lines.ToString();
             }
         }
 
@@ -412,28 +489,6 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
             return lines.ToString();
         }
 
-        private static string EmitPositionalBinding(CliTypeInfo type, CliArgumentInfo[] positional)
-        {
-            var lines = new System.Text.StringBuilder();
-            lines.AppendLine("                    if (tokenized.MaybeSkipPositional(valueArg.Value))");
-            lines.AppendLine("                        break;");
-
-            for (var p = 0; p < positional.Length; p++)
-            {
-                var argumentIndex = Array.IndexOf(type.Arguments, positional[p]);
-                lines.Append("                    if (positionalIndex == ").Append(p).AppendLine(")");
-                lines.AppendLine("                    {");
-                lines.Append(EmitAssign(argumentIndex, positional[p], "valueArg.Value", "\"argument\"", "                        "));
-                if (!positional[p].IsCollection || p < positional.Length - 1)
-                    lines.AppendLine("                        positionalIndex++;");
-                lines.AppendLine("                        break;");
-                lines.AppendLine("                    }");
-            }
-
-            lines.AppendLine("                    throw new global::Lokad.Cli.ParseException($\"unexpected argument `{valueArg.Value}`\");");
-            return lines.ToString();
-        }
-
         private static string EmitConstruction(CliTypeInfo type)
         {
             var lines = new System.Text.StringBuilder();
@@ -525,20 +580,20 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
             if (argument.NeedsSeen)
                 lines.Append(indent).Append(GetSeenName(index)).AppendLine(" = true;");
             return lines.ToString();
+
+            static string GetParseExpression(CliArgumentInfo argument, string valueExpression, string labelExpression)
+            {
+                var method = GetParseMethod(argument);
+                if (method == string.Empty)
+                    return valueExpression;
+
+                return method + "(" + valueExpression + ", " + labelExpression + ")";
+            }
         }
 
-        private static string GetParseExpression(CliArgumentInfo argument, string valueExpression, string labelExpression)
-        {
-            var type = argument.TypeName.FullName;
-            var method = GetBuiltInParseMethod(type);
-            if (method == string.Empty)
-                return valueExpression;
-
-            if (method == null)
-                method = argument.IsEnum ? "ParseEnum<" + type + ">" : "ParseCustom<" + type + ">";
-
-            return method + "(" + valueExpression + ", " + labelExpression + ")";
-        }
+        private static string GetParseMethod(CliArgumentInfo argument) =>
+            GetBuiltInParseMethod(argument.TypeName.FullName) ??
+            (argument.IsEnum ? "ParseEnum<" + argument.TypeName.FullName + ">" : "ParseCustom<" + argument.TypeName.FullName + ">");
 
         private static string? GetBuiltInParseMethod(string type)
         {
@@ -618,102 +673,45 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
             var helpers = new System.Text.StringBuilder();
 
             if (UsesType(type, "int", "global::System.Int32"))
-                helpers.Append(
-@"    private static int ParseInt32(string value, string label)
-    {
-        if (global::System.Int32.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out var parsed))
-            return parsed;
-
-        throw new global::Lokad.Cli.ParseException($""invalid value `{value}` for `{label}`"");
-    }
-");
+                helpers.Append(EmitValueParser("int", "ParseInt32",
+                    "global::System.Int32.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out parsed)",
+                    string.Empty, string.Empty));
 
             if (UsesType(type, "uint", "global::System.UInt32"))
-                helpers.Append(
-@"
-    private static uint ParseUInt32(string value, string label)
-    {
-        if (global::System.UInt32.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out var parsed))
-            return parsed;
-
-        throw new global::Lokad.Cli.ParseException($""invalid value `{value}` for `{label}`"");
-    }
-");
+                helpers.Append(EmitValueParser("uint", "ParseUInt32",
+                    "global::System.UInt32.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out parsed)",
+                    string.Empty, string.Empty));
 
             if (UsesType(type, "long", "global::System.Int64"))
-                helpers.Append(
-@"
-    private static long ParseInt64(string value, string label)
-    {
-        if (global::System.Int64.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out var parsed))
-            return parsed;
-
-        throw new global::Lokad.Cli.ParseException($""invalid value `{value}` for `{label}`"");
-    }
-");
+                helpers.Append(EmitValueParser("long", "ParseInt64",
+                    "global::System.Int64.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out parsed)",
+                    string.Empty, string.Empty));
 
             if (UsesType(type, "ulong", "global::System.UInt64"))
-                helpers.Append(
-@"
-    private static ulong ParseUInt64(string value, string label)
-    {
-        if (global::System.UInt64.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out var parsed))
-            return parsed;
-
-        throw new global::Lokad.Cli.ParseException($""invalid value `{value}` for `{label}`"");
-    }
-");
+                helpers.Append(EmitValueParser("ulong", "ParseUInt64",
+                    "global::System.UInt64.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out parsed)",
+                    string.Empty, string.Empty));
 
             if (UsesType(type, "double", "global::System.Double"))
-                helpers.Append(
-@"
-    private static double ParseDouble(string value, string label)
-    {
-        if (global::System.Double.TryParse(value, global::System.Globalization.NumberStyles.Float | global::System.Globalization.NumberStyles.AllowThousands, global::System.Globalization.CultureInfo.InvariantCulture, out var parsed))
-            return parsed;
-
-        throw new global::Lokad.Cli.ParseException($""invalid value `{value}` for `{label}`"");
-    }
-");
+                helpers.Append(EmitValueParser("double", "ParseDouble",
+                    "global::System.Double.TryParse(value, global::System.Globalization.NumberStyles.Float | global::System.Globalization.NumberStyles.AllowThousands, global::System.Globalization.CultureInfo.InvariantCulture, out parsed)",
+                    string.Empty, string.Empty));
 
             if (UsesType(type, "global::System.DateTime"))
-                helpers.Append(
-@"
-    private static global::System.DateTime ParseDateTime(string value, string label)
-    {
-        if (global::System.DateTime.TryParse(value, global::System.Globalization.CultureInfo.InvariantCulture, global::System.Globalization.DateTimeStyles.None, out var parsed))
-            return parsed;
-
-        throw new global::Lokad.Cli.ParseException($""invalid value `{value}` for `{label}`"");
-    }
-");
+                helpers.Append(EmitValueParser("global::System.DateTime", "ParseDateTime",
+                    "global::System.DateTime.TryParse(value, global::System.Globalization.CultureInfo.InvariantCulture, global::System.Globalization.DateTimeStyles.None, out parsed)",
+                    string.Empty, string.Empty));
 
             if (UsesEnum(type))
-                helpers.Append(
-@"
-    private static TEnum ParseEnum<TEnum>(string value, string label)
-        where TEnum : struct, global::System.Enum
-    {
-        if (global::System.Enum.TryParse<TEnum>(value, ignoreCase: false, out var parsed))
-            return parsed;
-
-        throw new global::Lokad.Cli.ParseException($""invalid value `{value}` for `{label}`"");
-    }
-");
+                helpers.Append(EmitValueParser("TEnum", "ParseEnum<TEnum>",
+                    "global::System.Enum.TryParse<TEnum>(value, ignoreCase: false, out parsed)",
+                    "where TEnum : struct, global::System.Enum", string.Empty));
 
             if (Array.Exists(type.Arguments, argument => !argument.IsBoolean && !argument.IsEnum &&
                     GetBuiltInParseMethod(argument.TypeName.FullName) == null))
-                helpers.Append(
-@"
-    private static TValue ParseCustom<TValue>(string value, string label)
-        where TValue : global::System.IParsable<TValue>
-    {
-        if (TValue.TryParse(value, null, out var parsed))
-            return parsed;
-
-        throw new global::Lokad.Cli.ParseException($""invalid value `{value}` for `{label}`"");
-    }
-");
+                helpers.Append(EmitValueParser("TValue", "ParseCustom<TValue>",
+                    "TValue.TryParse(value, null, out parsed)", "where TValue : global::System.IParsable<TValue>",
+                    "[global::System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] "));
 
             if (helpers.Length == 0)
                 return lines.ToString().TrimEnd();
@@ -723,6 +721,25 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
 
             lines.Append(helpers);
             return lines.ToString();
+
+            static string EmitValueParser(string returnType, string method, string tryExpression, string constraints, string outAnnotation)
+            {
+                var constraintLine = constraints.Length == 0 ? string.Empty : "        " + constraints + Environment.NewLine;
+                return $@"
+    private static {returnType} {method}(string value, string label)
+{constraintLine}    {{
+        if (Try{method}(value, out var parsed))
+            return parsed;
+
+        throw new global::Lokad.Cli.ParseException($""invalid value `{{value}}` for `{{label}}`"");
+    }}
+
+    private static bool Try{method}(string value, {outAnnotation}out {returnType} parsed)
+{constraintLine}    {{
+        return {tryExpression};
+    }}
+";
+            }
         }
 
         private static string EmitDocumentHelpers(CliTypeInfo type)

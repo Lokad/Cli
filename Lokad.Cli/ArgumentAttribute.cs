@@ -61,5 +61,11 @@ namespace Lokad.Cli
         ///     Repetition has the same effect as a single occurrence. Defaults to <c>false</c>.
         /// </summary>
         public bool AllowRepeated { get; set; }
+
+        /// <summary>
+        ///     Collects a nonfinal positional collection until conversion fails or an option follows its first value.
+        ///     The failed value is left for the next positional member. Defaults to <c>false</c>.
+        /// </summary>
+        public bool ConsumeUntilBoundary { get; set; }
     }
 }
