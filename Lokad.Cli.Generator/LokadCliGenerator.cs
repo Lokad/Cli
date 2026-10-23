@@ -29,6 +29,9 @@ namespace Lokad.Cli.Generator
         private readonly TypeRecognizer _readOnlyMemory =
             Recognize.Type("System.ReadOnlyMemory`1");
 
+        private readonly TypeRecognizer _optionalValue =
+            Recognize.Type("Lokad.Cli.OptionalValue`1");
+
         public LokadCliGenerator()
             : base("lkc")
         {
@@ -206,7 +209,8 @@ namespace Lokad.Cli.Generator
                     var owned = new HashSet<string>(StringComparer.Ordinal);
                     foreach (var argument in arguments)
                     {
-                        var mode = argument.IsBoolean ? CliOptionValueMode.None :
+                        var mode = argument.IsOptionalValue ? CliOptionValueMode.OptionalAttached :
+                            argument.IsBoolean ? CliOptionValueMode.None :
                             argument.ConsumeNextValueVerbatim ? CliOptionValueMode.Verbatim : CliOptionValueMode.Required;
                         tokenization.AddOptions(argument.Options, mode);
                         foreach (var label in argument.Options.Labels)
@@ -304,6 +308,18 @@ namespace Lokad.Cli.Generator
                     valueType = named.TypeArguments[0];
             }
 
+            var isOptionalValue = false;
+            var optionalContainer = UnwrapNullable(valueType);
+            if (optionalContainer is INamedTypeSymbol optional && _optionalValue(compilation, optional.OriginalDefinition))
+            {
+                if (!SymbolEqualityComparer.Default.Equals(optionalContainer, valueType))
+                    throw new GeneratorException(GeneratorException.InvalidOptionalValue, symbol.Name);
+                isOptionalValue = true;
+                valueType = optional.TypeArguments[0];
+                if (UnwrapNullable(valueType) is INamedTypeSymbol nested && _optionalValue(compilation, nested.OriginalDefinition))
+                    throw new GeneratorException(GeneratorException.InvalidOptionalValue, symbol.Name);
+            }
+
             var bindableType = UnwrapNullable(valueType);
             var isNullable = !SymbolEqualityComparer.Default.Equals(bindableType, valueType) ||
                              valueType.NullableAnnotation == NullableAnnotation.Annotated;
@@ -312,7 +328,7 @@ namespace Lokad.Cli.Generator
                 GetTypeName(bindableType),
                 bindableType.IsReferenceType,
                 isNullable,
-                collectionKind == CliCollectionKind.None && bindableType.SpecialType == SpecialType.System_Boolean,
+                !isOptionalValue && collectionKind == CliCollectionKind.None && bindableType.SpecialType == SpecialType.System_Boolean,
                 bindableType.TypeKind == TypeKind.Enum,
                 collectionKind,
                 isConstructorParameter,
@@ -323,7 +339,11 @@ namespace Lokad.Cli.Generator
                 GetNamedBool(attribute, "ShortNumeric"),
                 GetNamedBool(attribute, "AllowRepeated"),
                 GetNamedBool(attribute, "ConsumeUntilBoundary"),
-                GetNamedBool(attribute, "ConsumeNextValueVerbatim"));
+                GetNamedBool(attribute, "ConsumeNextValueVerbatim"),
+                isOptionalValue);
+
+            if (isOptionalValue && (!optionNames.HasNamedOption || argument.ShortNumeric || argument.AllowRepeated || argument.ConsumeNextValueVerbatim))
+                throw new GeneratorException(GeneratorException.InvalidOptionalValue, argument.Name);
 
             if (argument.ConsumeNextValueVerbatim &&
                 (argument.IsBoolean || argument.ShortNumeric || !argument.Options.HasNamedOption))

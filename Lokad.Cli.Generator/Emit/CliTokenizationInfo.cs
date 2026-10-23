@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace Lokad.Cli.Generator.Emit
 {
     // The generator targets netstandard2.0 independently of the runtime library.
-    public enum CliOptionValueMode { None, Required, Verbatim }
+    public enum CliOptionValueMode { None, Required, Verbatim, OptionalAttached }
     public enum CliShortOptionSyntax { GroupedValues, AttachedValues }
 
     public sealed class CliTokenizationInfo
@@ -14,13 +14,14 @@ namespace Lokad.Cli.Generator.Emit
         private readonly SortedSet<string> _ambiguousOptions = new SortedSet<string>(StringComparer.Ordinal);
         private CliShortOptionSyntax? _shortOptionSyntax;
         private bool? _allowSingleDashLongOptions;
-        private bool _hasVerbatimValues;
+        private bool _hasVerbatimOrOptionalValues;
+        private bool _hasOptionalShortValues;
 
         public IReadOnlyDictionary<char, CliOptionValueMode> ShortOptions => _shortOptions;
         public IReadOnlyDictionary<string, CliOptionValueMode> LongOptions => _longOptions;
         public CliShortOptionSyntax ShortOptionSyntax => _shortOptionSyntax ?? CliShortOptionSyntax.GroupedValues;
         public bool AllowSingleDashLongOptions => _allowSingleDashLongOptions ?? true;
-        public bool UsesArity => ShortOptionSyntax == CliShortOptionSyntax.AttachedValues || _hasVerbatimValues;
+        public bool UsesArity => ShortOptionSyntax == CliShortOptionSyntax.AttachedValues || _hasVerbatimOrOptionalValues;
         public bool RequiresSchema => UsesArity || !AllowSingleDashLongOptions;
 
         public void ConfigureShortOptions(CliShortOptionSyntax syntax)
@@ -41,7 +42,8 @@ namespace Lokad.Cli.Generator.Emit
 
         public void AddOptions(CliOptionNames names, CliOptionValueMode mode)
         {
-            _hasVerbatimValues |= mode == CliOptionValueMode.Verbatim;
+            _hasVerbatimOrOptionalValues |= mode == CliOptionValueMode.Verbatim || mode == CliOptionValueMode.OptionalAttached;
+            _hasOptionalShortValues |= mode == CliOptionValueMode.OptionalAttached && names.ShortOptions.Count > 0;
             foreach (var name in names.ShortOptions)
                 Add(_shortOptions, name, "-" + name);
             foreach (var name in names.LongOptions)
@@ -61,6 +63,8 @@ namespace Lokad.Cli.Generator.Emit
 
         public void Validate()
         {
+            if (_hasOptionalShortValues && ShortOptionSyntax != CliShortOptionSyntax.AttachedValues)
+                throw new GeneratorException(GeneratorException.OptionalShortSyntax);
             if (UsesArity && _ambiguousOptions.Count > 0)
                 throw new GeneratorException(GeneratorException.AmbiguousOptionArity, _ambiguousOptions.Min);
         }

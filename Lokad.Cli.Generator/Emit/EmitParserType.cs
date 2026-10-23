@@ -253,7 +253,7 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
                 for (var i = 0; i < type.Arguments.Length; i++)
                 {
                     var argument = type.Arguments[i];
-                    if (argument.IsNullable || argument.IsBoolean || argument.IsCollection)
+                    if (argument.IsOptionalValue || argument.IsNullable || argument.IsBoolean || argument.IsCollection)
                         continue;
 
                     lines.AppendLine();
@@ -279,7 +279,10 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
             {
                 var type = argument.TypeName.FullName;
                 if (argument.IsCollection)
-                    return "global::System.Collections.Generic.List<" + GetValueType(argument) + ">";
+                    return "global::System.Collections.Generic.List<" + GetBoundValueType(argument) + ">";
+
+                if (argument.IsOptionalValue)
+                    return GetBoundValueType(argument);
 
                 if (argument.IsReferenceType)
                     return type + "?";
@@ -379,7 +382,11 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
                     .Append(FormatOptionMatch("longArg.Name", argument.Options.LongOptions, FormatStringLiteral))
                     .AppendLine(")");
                 lines.AppendLine("                    {");
-                if (argument.IsBoolean)
+                if (argument.IsOptionalValue)
+                {
+                    lines.Append(EmitStore(i, argument, GetBoundValueType(argument) + ".Bare", "                        "));
+                }
+                else if (argument.IsBoolean)
                 {
                     lines.Append(EmitBooleanFlag(i, argument, GetOptionLabel(argument, argument.Options.LongOptions, "--"), "                        "));
                 }
@@ -445,7 +452,11 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
 
                 lines.Append("                        if (").Append(FormatOptionMatch("shortOption", argument.Options.ShortOptions, FormatCharLiteral)).AppendLine(")");
                 lines.AppendLine("                        {");
-                if (argument.IsBoolean)
+                if (argument.IsOptionalValue)
+                {
+                    lines.Append(EmitStore(i, argument, GetBoundValueType(argument) + ".Bare", "                            "));
+                }
+                else if (argument.IsBoolean)
                 {
                     lines.Append(EmitBooleanFlag(i, argument, GetOptionLabel(argument, argument.Options.ShortOptions, "-"), "                            "));
                 }
@@ -576,11 +587,11 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
                 {
                     var array = value + ".ToArray()";
                     return argument.CollectionKind == CliCollectionKind.ReadOnlyMemory
-                        ? "new global::System.ReadOnlyMemory<" + GetValueType(argument) + ">(" + array + ")"
+                        ? "new global::System.ReadOnlyMemory<" + GetBoundValueType(argument) + ">(" + array + ")"
                         : array;
                 }
 
-                if (argument.IsReferenceType || !argument.IsNullable)
+                if (argument.IsOptionalValue || argument.IsReferenceType || !argument.IsNullable)
                     return value;
 
                 return GetSeenName(index) + " ? " + value + " : default(global::System.Nullable<" + type + ">)";
@@ -589,31 +600,19 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
 
         private static string EmitAssign(int index, CliArgumentInfo argument, string valueExpression, string labelExpression, string indent)
         {
-            var lines = new System.Text.StringBuilder();
             if (argument.IsBoolean)
             {
+                var lines = new System.Text.StringBuilder();
                 if (argument.NeedsSeen)
                     lines.Append(indent).Append(GetSeenName(index)).AppendLine(" = true;");
                 lines.Append(indent).Append(GetValueName(index)).AppendLine(" = true;");
                 return lines.ToString();
             }
 
-            lines.Append(indent).Append(GetValueName(index));
-            if (argument.IsCollection)
-            {
-                lines.Append(".Add(")
-                    .Append(GetParseExpression(argument, valueExpression, labelExpression))
-                    .AppendLine(");");
-            }
-            else
-            {
-                lines.Append(" = ")
-                    .Append(GetParseExpression(argument, valueExpression, labelExpression))
-                    .AppendLine(";");
-            }
-            if (argument.NeedsSeen)
-                lines.Append(indent).Append(GetSeenName(index)).AppendLine(" = true;");
-            return lines.ToString();
+            var expression = GetParseExpression(argument, valueExpression, labelExpression);
+            if (argument.IsOptionalValue)
+                expression = "new " + GetBoundValueType(argument) + "(" + expression + ")";
+            return EmitStore(index, argument, expression, indent);
 
             static string GetParseExpression(CliArgumentInfo argument, string valueExpression, string labelExpression)
             {
@@ -623,6 +622,19 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
 
                 return method + "(" + valueExpression + ", " + labelExpression + ")";
             }
+        }
+
+        private static string EmitStore(int index, CliArgumentInfo argument, string expression, string indent)
+        {
+            var lines = new System.Text.StringBuilder();
+            lines.Append(indent).Append(GetValueName(index));
+            if (argument.IsCollection)
+                lines.Append(".Add(").Append(expression).AppendLine(");");
+            else
+                lines.Append(" = ").Append(expression).AppendLine(";");
+            if (argument.NeedsSeen)
+                lines.Append(indent).Append(GetSeenName(index)).AppendLine(" = true;");
+            return lines.ToString();
         }
 
         private static string GetParseMethod(CliArgumentInfo argument) =>
@@ -666,6 +678,10 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
 
             return argument.IsNullable ? type + "?" : type;
         }
+
+        private static string GetBoundValueType(CliArgumentInfo argument) => argument.IsOptionalValue
+            ? "global::Lokad.Cli.OptionalValue<" + GetValueType(argument) + ">"
+            : GetValueType(argument);
 
         private static string EmitLongDiscriminatorSkip(CliTypeInfo type, string nameExpression, string indent)
         {
@@ -889,6 +905,14 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
         {
             if (argument.Options.Labels.Count > 0)
             {
+                if (argument.IsOptionalValue)
+                {
+                    var names = new System.Collections.Generic.List<string>();
+                    var valueName = GetDocumentationName(argument);
+                    foreach (var label in argument.Options.Labels)
+                        names.Add(label + (label.StartsWith("--", StringComparison.Ordinal) ? "[=" : "[") + valueName + "]");
+                    return string.Join(", ", names);
+                }
                 var labels = string.Join(", ", argument.Options.Labels);
                 return argument.ShortNumeric && argument.Options.HasAliases ? labels + ", -<number>" : labels;
             }
@@ -901,7 +925,7 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
 
         private static string GetPositionalDocumentationPlaceholder(CliArgumentInfo argument)
         {
-            var name = string.IsNullOrEmpty(argument.DocumentationName) ? argument.Name : argument.DocumentationName!;
+            var name = GetDocumentationName(argument);
             if (argument.IsCollection)
                 return "<" + name + "...>";
 
@@ -909,6 +933,12 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
                 return "<" + name + "?>";
 
             return "<" + name + ">";
+        }
+
+        private static string GetDocumentationName(CliArgumentInfo argument)
+        {
+            var name = argument.DocumentationName;
+            return name == null || name.Length == 0 ? argument.Name : name;
         }
 
         private static bool UsesType(CliTypeInfo type, params string[] typeNames)

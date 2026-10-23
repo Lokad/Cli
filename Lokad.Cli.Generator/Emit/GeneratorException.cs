@@ -111,7 +111,7 @@ namespace Lokad.Cli.Generator.Emit
         public static readonly DiagnosticDescriptor AmbiguousOptionArity = new DiagnosticDescriptor(
             id: "LKC0011",
             title: "Ambiguous option value mode",
-            messageFormat: "Option '{0}' has conflicting value modes across reachable choices; attached short values and verbatim operands require an unambiguous mode",
+            messageFormat: "Option '{0}' has conflicting value modes across reachable choices; value-aware tokenization requires an unambiguous mode",
             category: "SourceGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
@@ -128,6 +128,22 @@ namespace Lokad.Cli.Generator.Emit
             id: "LKC0013",
             title: "Invalid tokenization policy",
             messageFormat: "Invalid value for '{0}'",
+            category: "SourceGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor InvalidOptionalValue = new DiagnosticDescriptor(
+            id: "LKC0014",
+            title: "Invalid optional option value",
+            messageFormat: "Argument '{0}' uses OptionalValue<T>, which requires a named option without a nullable wrapper, nested OptionalValue<T>, ShortNumeric, AllowRepeated or ConsumeNextValueVerbatim",
+            category: "SourceGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor OptionalShortSyntax = new DiagnosticDescriptor(
+            id: "LKC0015",
+            title: "Optional short values require attached syntax",
+            messageFormat: "Short options using OptionalValue<T> require ShortOptionSyntax.AttachedValues on the argument shape or a reachable choice interface",
             category: "SourceGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);

@@ -1,6 +1,6 @@
 namespace Lokad.Cli
 {
-    /// <summary>Describes whether a tokenized option takes a following value.</summary>
+    /// <summary>Describes how a tokenized option supplies a value.</summary>
     public enum OptionValueMode
     {
         /// <summary>A flag, or an option whose arity is unspecified by the legacy names-only API.</summary>
@@ -10,6 +10,9 @@ namespace Lokad.Cli
         Required,
 
         /// <summary>Requires the next raw argument verbatim, including a leading dash or a literal <c>--</c>.</summary>
-        Verbatim
+        Verbatim,
+
+        /// <summary>Accepts an optional attached value and never consumes a following argument.</summary>
+        OptionalAttached
     }
 }

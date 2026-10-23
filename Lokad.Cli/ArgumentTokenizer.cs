@@ -67,6 +67,10 @@ namespace Lokad.Cli
             if (longOptions == null) throw new ArgumentNullException(nameof(longOptions));
             if (shortOptionSyntax != ShortOptionSyntax.GroupedValues && shortOptionSyntax != ShortOptionSyntax.AttachedValues)
                 throw new ArgumentOutOfRangeException(nameof(shortOptionSyntax));
+            if (shortOptionSyntax != ShortOptionSyntax.AttachedValues)
+                foreach (var mode in shortOptions.Values)
+                    if (mode == OptionValueMode.OptionalAttached)
+                        throw new ArgumentException("Optional short values require AttachedValues syntax.", nameof(shortOptions));
 
             var tokens = new List<ITokenizedArguments>(arguments.Count);
             var pendingValues = new Queue<int>();
@@ -113,7 +117,7 @@ namespace Lokad.Cli
                         for (var i = 0; i < group.Options.Length; i++)
                         {
                             var name = group.Options[i];
-                            if (shortOptions[name] == OptionValueMode.None)
+                            if (!NeedsFollowingValue(shortOptions[name]))
                                 continue;
                             if (i > start)
                                 tokens.Add(new ShortArgSet(group.Options.Substring(start, i - start)));
@@ -128,7 +132,7 @@ namespace Lokad.Cli
                     }
                     else
                     {
-                        if (token is LongArg && GetValueMode(token) != OptionValueMode.None)
+                        if (token is LongArg && NeedsFollowingValue(GetValueMode(token)))
                             pendingValues.Enqueue(tokens.Count);
                         tokens.Add(token);
                     }
@@ -136,6 +140,9 @@ namespace Lokad.Cli
             }
 
             return new TokenizedArguments(tokens);
+
+            static bool NeedsFollowingValue(OptionValueMode mode) =>
+                mode == OptionValueMode.Required || mode == OptionValueMode.Verbatim;
 
             OptionValueMode GetValueMode(ITokenizedArguments token) => token switch
             {

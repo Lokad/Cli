@@ -118,6 +118,15 @@ These controls are independent opt-ins:
 
 Defaults preserve grouped values such as `-ee first second`. Explicit shape settings must agree across reachable choices and their annotated interfaces; unspecified settings inherit them. Value-aware modes require unambiguous option arities across those choices. Consumed operands become attached-value tokens before choice discrimination.
 
+Use `OptionalValue<T>` for a named option whose value is optional:
+
+```csharp
+[Argument("Output format.", Long = "format", Name = "style")]
+public OptionalValue<string> Format { get; init; }
+```
+
+Omission is absent; `--format` is present without a value; `--format=json` supplies `"json"`. Check `IsPresent` and `HasValue`, then read `Value` or use `TryGetValue`. Explicit values use the existing scalar conversions. A bare occurrence never consumes the next argument; `--format=` supplies empty text. Short names require `ShortOptionSyntax.AttachedValues`: `-F` is bare, `-Fjson` has a value. Scalar repeats keep the last occurrence; collections retain every bare or valued occurrence in order. Existing `T?` options still require an operand when present.
+
 ### Choices and Discriminators
 
 A discriminator can be requested as part of the `[Arguments]` itself:

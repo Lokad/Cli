@@ -30,6 +30,12 @@ public partial record TokenizationOptions(
 
     [Argument("Label.", Name = "label")]
     public string Label { get; init; } = "";
+
+    [Argument("Optional attached value.", Long = "format", Short = 'o', Name = "style")]
+    public OptionalValue<SnapshotReferenceValue<string?>?> Format { get; init; }
+
+    [Argument("Optional flag values.", Long = "flag-value", Name = "bool")]
+    public IReadOnlyList<OptionalValue<bool?>> FlagValues { get; init; } = Array.Empty<OptionalValue<bool?>>();
 }
 
 public sealed record SnapshotReferenceValue<T>(string Value) : IParsable<SnapshotReferenceValue<T>>

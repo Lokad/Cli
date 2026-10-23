@@ -24,7 +24,7 @@ namespace Lokad.Cli
         public string Documentation { get; }
 
         /// <summary>
-        ///     Positional argument name shown in generated command documentation, without angle brackets.
+        ///     Value placeholder shown in generated command documentation, without angle brackets.
         /// </summary>
         public string? Name { get; set; }
 

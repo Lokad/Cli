@@ -18,7 +18,8 @@ namespace Lokad.Cli.Generator.Emit
             bool shortNumeric,
             bool allowRepeated,
             bool consumeUntilBoundary,
-            bool consumeNextValueVerbatim)
+            bool consumeNextValueVerbatim,
+            bool isOptionalValue)
         {
             Name = name;
             TypeName = typeName;
@@ -36,16 +37,17 @@ namespace Lokad.Cli.Generator.Emit
             AllowRepeated = allowRepeated;
             ConsumeUntilBoundary = consumeUntilBoundary;
             ConsumeNextValueVerbatim = consumeNextValueVerbatim;
+            IsOptionalValue = isOptionalValue;
         }
 
         public string Name { get; }
 
         public TypeName TypeName { get; }
 
-        /// <summary>Whether the scalar value or collection element is a reference type.</summary>
+        /// <summary>Whether the converted input value is a reference type.</summary>
         public bool IsReferenceType { get; }
 
-        /// <summary>Whether the scalar value or collection element is nullable.</summary>
+        /// <summary>Whether the converted input value is nullable.</summary>
         public bool IsNullable { get; }
 
         /// <summary>Whether the argument is a scalar boolean flag.</summary>
@@ -75,8 +77,10 @@ namespace Lokad.Cli.Generator.Emit
 
         public bool ConsumeNextValueVerbatim { get; }
 
+        public bool IsOptionalValue { get; }
+
         public bool IsOption => Options.Labels.Count > 0 || ShortNumeric;
 
-        public bool NeedsSeen => !IsCollection && !IsReferenceType && (!IsBoolean || !AllowRepeated || IsNullable);
+        public bool NeedsSeen => !IsOptionalValue && !IsCollection && !IsReferenceType && (!IsBoolean || !AllowRepeated || IsNullable);
     }
 }
