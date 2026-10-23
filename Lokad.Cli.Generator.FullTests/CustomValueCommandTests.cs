@@ -1,4 +1,6 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Globalization;
 using Lokad.Cli;
 
@@ -88,6 +90,110 @@ public sealed class CustomValueCommandTests
 
         Assert.Equal("Custom TryParse failure.", error.Message);
     }
+
+    [Theory]
+    [InlineData("--value=alpha")]
+    [InlineData("--value", "alpha")]
+    [InlineData("--label=alpha")]
+    [InlineData("-valpha")]
+    [InlineData("-v=alpha")]
+    [InlineData("-V", "alpha")]
+    public void BindsRequiredAndOptionalReferenceConstructors(params string[] arguments)
+    {
+        var optional = Parser.Parse<CustomReferenceValueArgs>(arguments);
+        var requiredArguments = new List<string>(arguments) { "beta", "--field=gamma" };
+        var required = Parser.Parse<RequiredReferenceValueArgs>(requiredArguments);
+
+        Assert.Equal("alpha", optional.Value?.Value);
+        Assert.Equal("alpha", required.Value.Value);
+        Assert.Equal("beta", required.Input.Value);
+        Assert.Equal("gamma", required.Field.Value);
+    }
+
+    [Fact]
+    public void BindsReferenceFieldsPropertiesAndCollections()
+    {
+        var parsed = Parser.Parse<CustomReferenceValueArgs>(new[]
+        {
+            "--value=alpha", "--other=gamma", "--many=one", "--many=two", "beta"
+        });
+
+        Assert.Equal("alpha", parsed.Value?.Value);
+        Assert.Equal("beta", parsed.Input?.Value);
+        Assert.Equal("gamma", parsed.Other?.Value);
+        Assert.Equal(new[] { new LabelValue("one"), new LabelValue("two") }, parsed.Many);
+    }
+
+    [Fact]
+    public void LeavesAbsentReferenceValuesNull()
+    {
+        var parsed = Parser.Parse<CustomReferenceValueArgs>(Array.Empty<string>());
+
+        Assert.Null(parsed.Value);
+        Assert.Null(parsed.Input);
+        Assert.Null(parsed.Other);
+        Assert.Empty(parsed.Many);
+    }
+
+    [Theory]
+    [InlineData("missing option `--value`")]
+    [InlineData("missing argument", "--value=alpha")]
+    [InlineData("missing option `--field`", "--value=alpha", "beta")]
+    [InlineData("option `--value` expects a value", "--value")]
+    [InlineData("option `--value` expects a value", "--label", "--field=gamma")]
+    public void ReportsMissingRequiredReferences(string expectedMessage, params string[] arguments)
+    {
+        var error = Assert.Throws<ParseException>(() => Parser.Parse<RequiredReferenceValueArgs>(arguments));
+
+        Assert.Equal(expectedMessage, error.Message);
+    }
+
+    [Theory]
+    [InlineData("invalid value `bad` for `--value`", "--label=bad")]
+    [InlineData("invalid value `bad` for `--value`", "-V", "bad")]
+    [InlineData("invalid value `` for `--value`", "--value=")]
+    [InlineData("invalid value `bad` for `argument`", "bad")]
+    [InlineData("invalid value `bad` for `--other`", "--other=bad")]
+    [InlineData("invalid value `bad` for `--many`", "--many=bad")]
+    public void ReportsInvalidReferenceValues(string expectedMessage, params string[] arguments)
+    {
+        var error = Assert.Throws<ParseException>(() => Parser.Parse<CustomReferenceValueArgs>(arguments));
+
+        Assert.Equal(expectedMessage, error.Message);
+    }
+
+    [Fact]
+    public void PreservesReferenceScalarOverwriteAndTokenizedBinding()
+    {
+        var tokens = Parser.Tokenize<CustomReferenceValueArgs>(new[] { "--value=alpha", "--label=beta" });
+
+        Assert.Equal("beta", Parser.ParseTokenized<CustomReferenceValueArgs>(tokens).Value?.Value);
+    }
+
+    [Fact]
+    public void PreservesExceptionsThrownByReferenceTryParse()
+    {
+        var error = Assert.Throws<FormatException>(() =>
+            Parser.Parse<CustomReferenceValueArgs>(new[] { "--value=throw" }));
+
+        Assert.Equal("Custom reference TryParse failure.", error.Message);
+    }
+
+    [Fact]
+    public void DocumentsReferencePresenceLikeValueTypePresence()
+    {
+        Assert.Contains("<input?>", Parser.Document<CustomReferenceValueArgs>("cmd"));
+        Assert.Contains("<input>", Parser.Document<RequiredReferenceValueArgs>("cmd"));
+    }
+
+    [Fact]
+    public void PreservesRequiredEmptyStringValues()
+    {
+        var parsed = Parser.Parse<PatternAndPathsArgs>(new[] { string.Empty });
+
+        Assert.Equal(string.Empty, parsed.Pattern);
+        Assert.Empty(parsed.Paths);
+    }
 }
 
 [Arguments("Custom value command.")]
@@ -123,6 +229,68 @@ public readonly record struct UnsignedId(uint Value) : IParsable<UnsignedId>
 
         var success = uint.TryParse(value, NumberStyles.None, provider, out var parsed);
         result = new UnsignedId(parsed);
+        return success;
+    }
+}
+
+[Arguments("Custom reference value command.")]
+public partial record CustomReferenceValueArgs(
+    [property: Argument("Value.", LongNames = new[] { "value", "label" }, ShortNames = new[] { 'v', 'V' })] LabelValue? Value)
+{
+    [Argument("Positional value.", Name = "input")]
+    public LabelValue? Input;
+
+    [Argument("Other value.", Long = "other")]
+    public GenericLabelValue<string?>? Other { get; init; }
+
+    [Argument("Repeated values.", Long = "many")]
+    public IReadOnlyList<LabelValue> Many { get; init; } = Array.Empty<LabelValue>();
+}
+
+[Arguments("Required reference value command.")]
+public partial record RequiredReferenceValueArgs(
+    [Argument("Value.", LongNames = new[] { "value", "label" }, ShortNames = new[] { 'v', 'V' })] LabelValue Value)
+{
+    [Argument("Positional value.", Name = "input")]
+    public LabelValue Input { get; init; } = new("initial");
+
+    [Argument("Field value.", Long = "field")]
+    public LabelValue Field = new("initial");
+}
+
+public sealed record LabelValue(string Value) : IParsable<LabelValue>, IReadOnlyList<char>
+{
+    public int Count => Value.Length;
+
+    public char this[int index] => Value[index];
+
+    public IEnumerator<char> GetEnumerator() => ((IEnumerable<char>)Value).GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    public static LabelValue Parse(string value, IFormatProvider? provider) =>
+        throw new InvalidOperationException("Parse must not be called.");
+
+    public static bool TryParse(string? value, IFormatProvider? provider, out LabelValue result)
+    {
+        Assert.Null(provider);
+        if (value == "throw")
+            throw new FormatException("Custom reference TryParse failure.");
+
+        result = new LabelValue(value ?? string.Empty);
+        return !string.IsNullOrEmpty(value) && value != "bad";
+    }
+}
+
+public sealed record GenericLabelValue<T>(string Value) : IParsable<GenericLabelValue<T>>
+{
+    public static GenericLabelValue<T> Parse(string value, IFormatProvider? provider) =>
+        throw new InvalidOperationException("Parse must not be called.");
+
+    public static bool TryParse(string? value, IFormatProvider? provider, out GenericLabelValue<T> result)
+    {
+        var success = LabelValue.TryParse(value, provider, out var parsed);
+        result = new GenericLabelValue<T>(parsed.Value);
         return success;
     }
 }

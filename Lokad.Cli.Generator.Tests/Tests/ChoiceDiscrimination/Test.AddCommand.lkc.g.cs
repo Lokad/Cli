@@ -46,7 +46,6 @@ partial record AddCommand : global::Lokad.Cli.ICliParsed<global::Test.AddCommand
         _ = tokenized;
 
         // Binding
-        var arg0Seen = false;
         string? arg0Value = default;
         global::Lokad.Cli.ITokenizedArguments? current;
         while ((current = tokenized.Shift()) != null)
@@ -57,7 +56,6 @@ partial record AddCommand : global::Lokad.Cli.ICliParsed<global::Test.AddCommand
                     if (longArgWithValue.Name == @"name")
                     {
                         arg0Value = longArgWithValue.Value;
-                        arg0Seen = true;
                         break;
                     }
                     if (longArgWithValue.Name == @"add")
@@ -70,7 +68,6 @@ partial record AddCommand : global::Lokad.Cli.ICliParsed<global::Test.AddCommand
                         if (!(valueToken is global::Lokad.Cli.ValueArg optionValue))
                             throw new global::Lokad.Cli.ParseException(@"option `--name` expects a value");
                         arg0Value = optionValue.Value;
-                        arg0Seen = true;
                         break;
                     }
                     if (longArg.Name == @"add")
@@ -95,7 +92,7 @@ partial record AddCommand : global::Lokad.Cli.ICliParsed<global::Test.AddCommand
 
         return new global::Test.AddCommand()
         {
-            Name = arg0Seen ? arg0Value : default,
+            Name = arg0Value,
         };
     }
 

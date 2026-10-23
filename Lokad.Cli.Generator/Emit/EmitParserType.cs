@@ -190,6 +190,46 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
             lines.Append(EmitRequiredChecks(type));
             lines.Append(EmitConstruction(type));
             return lines.ToString().TrimEnd();
+
+            static string EmitRequiredChecks(CliTypeInfo type)
+            {
+                var lines = new System.Text.StringBuilder();
+                for (var i = 0; i < type.Arguments.Length; i++)
+                {
+                    var argument = type.Arguments[i];
+                    if (argument.IsNullable || argument.IsBoolean || argument.IsCollection)
+                        continue;
+
+                    lines.AppendLine();
+                    lines.Append("        if (")
+                        .Append(argument.IsReferenceType ? GetValueName(i) + " is null" : "!" + GetSeenName(i))
+                        .AppendLine(")");
+                    if (argument.IsOption)
+                    {
+                        lines.Append("            throw new global::Lokad.Cli.ParseException(")
+                            .Append(FormatStringLiteral("missing option `" + argument.Options.PrimaryLabel + "`"))
+                            .AppendLine(");");
+                    }
+                    else
+                    {
+                        lines.AppendLine("            throw new global::Lokad.Cli.ParseException(\"missing argument\");");
+                    }
+                }
+
+                return lines.ToString();
+            }
+
+            static string GetLocalType(CliArgumentInfo argument)
+            {
+                var type = argument.TypeName.FullName;
+                if (argument.IsCollection)
+                    return "global::System.Collections.Generic.List<" + GetValueType(argument) + ">";
+
+                if (argument.IsReferenceType)
+                    return type + "?";
+
+                return type;
+            }
         }
 
         private static string EmitLongWithValueBinding(CliTypeInfo type)
@@ -394,32 +434,6 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
             return lines.ToString();
         }
 
-        private static string EmitRequiredChecks(CliTypeInfo type)
-        {
-            var lines = new System.Text.StringBuilder();
-            for (var i = 0; i < type.Arguments.Length; i++)
-            {
-                var argument = type.Arguments[i];
-                if (argument.IsNullable || argument.IsBoolean || argument.IsCollection)
-                    continue;
-
-                lines.AppendLine();
-                lines.Append("        if (!").Append(GetSeenName(i)).AppendLine(")");
-                if (argument.IsOption)
-                {
-                    lines.Append("            throw new global::Lokad.Cli.ParseException(")
-                        .Append(FormatStringLiteral("missing option `" + argument.Options.PrimaryLabel + "`"))
-                        .AppendLine(");");
-                }
-                else
-                {
-                    lines.AppendLine("            throw new global::Lokad.Cli.ParseException(\"missing argument\");");
-                }
-            }
-
-            return lines.ToString();
-        }
-
         private static string EmitConstruction(CliTypeInfo type)
         {
             var lines = new System.Text.StringBuilder();
@@ -464,6 +478,24 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
 
             lines.AppendLine(";");
             return lines.ToString();
+
+            static string GetResultValueExpression(int index, CliArgumentInfo argument)
+            {
+                var value = GetValueName(index);
+                var type = argument.TypeName.FullName;
+                if (argument.IsCollection)
+                {
+                    var array = value + ".ToArray()";
+                    return argument.CollectionKind == CliCollectionKind.ReadOnlyMemory
+                        ? "new global::System.ReadOnlyMemory<" + GetValueType(argument) + ">(" + array + ")"
+                        : array;
+                }
+
+                if (argument.IsReferenceType || !argument.IsNullable)
+                    return value;
+
+                return GetSeenName(index) + " ? " + value + " : default(global::System.Nullable<" + type + ">)";
+            }
         }
 
         private static string EmitAssign(int index, CliArgumentInfo argument, string valueExpression, string labelExpression, string indent)
@@ -537,18 +569,6 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
             }
         }
 
-        private static string GetLocalType(CliArgumentInfo argument)
-        {
-            var type = argument.TypeName.FullName;
-            if (argument.IsCollection)
-                return "global::System.Collections.Generic.List<" + GetValueType(argument) + ">";
-
-            if (type == "string" || type == "global::System.String")
-                return "string?";
-
-            return type;
-        }
-
         private static string GetValueType(CliArgumentInfo argument)
         {
             var type = argument.TypeName.FullName;
@@ -556,32 +576,6 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
                 type = "string";
 
             return argument.IsNullable ? type + "?" : type;
-        }
-
-        private static string GetResultValueExpression(int index, CliArgumentInfo argument)
-        {
-            var value = GetValueName(index);
-            var type = argument.TypeName.FullName;
-            if (argument.IsCollection)
-            {
-                var array = value + ".ToArray()";
-                return argument.CollectionKind == CliCollectionKind.ReadOnlyMemory
-                    ? "new global::System.ReadOnlyMemory<" + GetValueType(argument) + ">(" + array + ")"
-                    : array;
-            }
-
-            if (!argument.IsNullable)
-            {
-                if (type == "string" || type == "global::System.String")
-                    return value + "!";
-
-                return value;
-            }
-
-            if (type == "string" || type == "global::System.String")
-                return GetSeenName(index) + " ? " + value + " : default";
-
-            return GetSeenName(index) + " ? " + value + " : default(global::System.Nullable<" + type + ">)";
         }
 
         private static string EmitLongDiscriminatorSkip(CliTypeInfo type, string nameExpression, string indent)

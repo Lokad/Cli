@@ -9,6 +9,11 @@ namespace Lokad.Cli.Generator
     [Generator]
     public sealed class LokadCliGenerator : BaseIncrementalGenerator
     {
+        private static readonly SymbolDisplayFormat TypeDisplayFormat =
+            SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
+                SymbolDisplayFormat.FullyQualifiedFormat.MiscellaneousOptions |
+                SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
+
         private readonly TypeRecognizer _argumentAttribute =
             Recognize.Type("Lokad.Cli.ArgumentAttribute");
 
@@ -321,6 +326,7 @@ namespace Lokad.Cli.Generator
             argument = new CliArgumentInfo(
                 symbol.Name,
                 GetTypeName(bindableType),
+                bindableType.IsReferenceType,
                 isNullable,
                 collectionKind == CliCollectionKind.None && bindableType.SpecialType == SpecialType.System_Boolean,
                 bindableType.TypeKind == TypeKind.Enum,
@@ -474,7 +480,7 @@ namespace Lokad.Cli.Generator
 
         private static TypeName GetTypeName(ITypeSymbol typeSymbol) =>
             new TypeName(
-                typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                typeSymbol.WithNullableAnnotation(NullableAnnotation.NotAnnotated).ToDisplayString(TypeDisplayFormat),
                 typeSymbol.Name,
                 typeSymbol.ContainingNamespace.ToDisplayString());
     }

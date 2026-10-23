@@ -182,7 +182,7 @@ The `bool` type is special; a `bool` option must have a `Short` or `Long` label.
 
 The primitive types are `string`, `int`, `uint`, `long`, `ulong`, `DateTime`, `double`, all enums, `Ranges`, and any type that implements `IParsable`. A property of a primitive type will parse its argument from the string value (or take the string value as-is, for a `string`), and report an error if parsing fails: "invalid value `value`" or "invalid value `value` for `--foo`). Conversely, if there is no value available for the property, it reports "missing argument" or "missing option `--foo`" 
 
-Custom `IParsable<T>` values are converted through `TryParse` with a `null` format provider. Returning `false` produces a `ParseException` containing the invalid value and its argument label. Exceptions thrown by the custom `TryParse` implementation propagate unchanged.
+Custom `IParsable<T>` structs and classes are converted through `TryParse` with a `null` format provider. Returning `false` produces a `ParseException` containing the invalid value and its argument label. Exceptions thrown by the custom `TryParse` implementation propagate unchanged.
 
 The `Ranges` type is an `IReadOnlyList<(int First, int Last)>` parsed from comma-separated range elements such as `1,4,5-6`. Each element can be a single number `N`, a closed range `N-N`, an open lower-bound range `-N` where `First` is `int.MinValue`, or an open upper-bound range `N-` where `Last` is `int.MaxValue`.
 

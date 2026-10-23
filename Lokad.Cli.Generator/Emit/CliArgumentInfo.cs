@@ -5,6 +5,7 @@ namespace Lokad.Cli.Generator.Emit
         public CliArgumentInfo(
             string name,
             TypeName typeName,
+            bool isReferenceType,
             bool isNullable,
             bool isBoolean,
             bool isEnum,
@@ -19,6 +20,7 @@ namespace Lokad.Cli.Generator.Emit
         {
             Name = name;
             TypeName = typeName;
+            IsReferenceType = isReferenceType;
             IsNullable = isNullable;
             IsBoolean = isBoolean;
             IsEnum = isEnum;
@@ -35,6 +37,9 @@ namespace Lokad.Cli.Generator.Emit
         public string Name { get; }
 
         public TypeName TypeName { get; }
+
+        /// <summary>Whether the scalar value or collection element is a reference type.</summary>
+        public bool IsReferenceType { get; }
 
         /// <summary>Whether the scalar value or collection element is nullable.</summary>
         public bool IsNullable { get; }
@@ -64,6 +69,6 @@ namespace Lokad.Cli.Generator.Emit
 
         public bool IsOption => Options.Labels.Count > 0 || ShortNumeric;
 
-        public bool NeedsSeen => !IsCollection && (!IsBoolean || !AllowRepeated || IsNullable);
+        public bool NeedsSeen => !IsCollection && !IsReferenceType && (!IsBoolean || !AllowRepeated || IsNullable);
     }
 }

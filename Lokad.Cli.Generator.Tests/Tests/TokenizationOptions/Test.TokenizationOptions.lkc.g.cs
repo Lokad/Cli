@@ -6,7 +6,7 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
     private static class __CliOptionNames
     {
         public static readonly char[] Short = new char[] { 'm', 'c', 'p', 'v', 'V', 'f' };
-        public static readonly string[] Long = new string[] { @"mode", @"from-ctor", @"raw-param", @"verbose", @"chatty", @"field" };
+        public static readonly string[] Long = new string[] { @"mode", @"from-ctor", @"raw-param", @"verbose", @"chatty", @"field", @"optional" };
     }
 
     public static global::Test.TokenizationOptions Parse(global::System.Collections.Generic.IReadOnlyList<string> arguments)
@@ -46,13 +46,13 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
         _ = tokenized;
 
         // Binding
-        var arg0Seen = false;
-        string? arg0Value = default;
+        global::Test.SnapshotReferenceValue<string?>? arg0Value = default;
         global::System.Collections.Generic.List<int> arg1Value = new();
         bool arg2Value = default;
         var arg3Seen = false;
         int arg3Value = default;
         global::System.Collections.Generic.List<string> arg4Value = new();
+        global::Test.SnapshotReferenceValue<string?>? arg5Value = default;
         global::Lokad.Cli.ITokenizedArguments? current;
         while ((current = tokenized.Shift()) != null)
         {
@@ -61,8 +61,7 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
                 case global::Lokad.Cli.LongArgWithValue longArgWithValue:
                     if (longArgWithValue.Name == @"from-ctor")
                     {
-                        arg0Value = longArgWithValue.Value;
-                        arg0Seen = true;
+                        arg0Value = ParseCustom<global::Test.SnapshotReferenceValue<string?>>(longArgWithValue.Value, @"--from-ctor");
                         break;
                     }
                     if (longArgWithValue.Name == @"raw-param")
@@ -75,6 +74,11 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
                         arg4Value.Add(longArgWithValue.Value);
                         break;
                     }
+                    if (longArgWithValue.Name == @"optional")
+                    {
+                        arg5Value = ParseCustom<global::Test.SnapshotReferenceValue<string?>>(longArgWithValue.Value, @"--optional");
+                        break;
+                    }
                     if (longArgWithValue.Name == @"mode")
                         break;
                     throw new global::Lokad.Cli.ParseException($"unexpected option `--{longArgWithValue.Name}`");
@@ -84,8 +88,7 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
                         var valueToken = tokenized.Shift();
                         if (!(valueToken is global::Lokad.Cli.ValueArg optionValue))
                             throw new global::Lokad.Cli.ParseException(@"option `--from-ctor` expects a value");
-                        arg0Value = optionValue.Value;
-                        arg0Seen = true;
+                        arg0Value = ParseCustom<global::Test.SnapshotReferenceValue<string?>>(optionValue.Value, @"--from-ctor");
                         break;
                     }
                     if (longArg.Name == @"raw-param")
@@ -109,14 +112,21 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
                         arg4Value.Add(optionValue.Value);
                         break;
                     }
+                    if (longArg.Name == @"optional")
+                    {
+                        var valueToken = tokenized.Shift();
+                        if (!(valueToken is global::Lokad.Cli.ValueArg optionValue))
+                            throw new global::Lokad.Cli.ParseException(@"option `--optional` expects a value");
+                        arg5Value = ParseCustom<global::Test.SnapshotReferenceValue<string?>>(optionValue.Value, @"--optional");
+                        break;
+                    }
                     if (longArg.Name == @"mode")
                         break;
                     throw new global::Lokad.Cli.ParseException($"unexpected option `--{longArg.Name}`");
                 case global::Lokad.Cli.ShortArgWithValue shortArgWithValue:
                     if (shortArgWithValue.Name == 'c')
                     {
-                        arg0Value = shortArgWithValue.Value;
-                        arg0Seen = true;
+                        arg0Value = ParseCustom<global::Test.SnapshotReferenceValue<string?>>(shortArgWithValue.Value, @"-c");
                         break;
                     }
                     if (shortArgWithValue.Name == 'p')
@@ -140,8 +150,7 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
                             var valueToken = tokenized.Shift();
                             if (!(valueToken is global::Lokad.Cli.ValueArg optionValue))
                                 throw new global::Lokad.Cli.ParseException(@"option `-c` expects a value");
-                            arg0Value = optionValue.Value;
-                            arg0Seen = true;
+                            arg0Value = ParseCustom<global::Test.SnapshotReferenceValue<string?>>(optionValue.Value, @"-c");
                             continue;
                         }
                         if (shortOption == 'p')
@@ -183,14 +192,15 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
             }
         }
 
-        if (!arg0Seen)
+        if (arg0Value is null)
             throw new global::Lokad.Cli.ParseException(@"missing option `--from-ctor`");
 
-        return new global::Test.TokenizationOptions(arg0Value!, new global::System.ReadOnlyMemory<int>(arg1Value.ToArray()))
+        return new global::Test.TokenizationOptions(arg0Value, new global::System.ReadOnlyMemory<int>(arg1Value.ToArray()))
         {
             Verbose = arg2Value,
             Depth = arg3Seen ? arg3Value : default(global::System.Nullable<int>),
             Field = arg4Value.ToArray(),
+            Optional = arg5Value,
         };
     }
 
@@ -204,6 +214,7 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
         lines.Add(@"  --verbose, --chatty, -v, -V: Enable verbose output.");
         lines.Add(@"  -<number>: Numeric depth.");
         lines.Add(@"  --field, -f: Field value.");
+        lines.Add(@"  --optional: Optional reference value.");
         return string.Join(global::System.Environment.NewLine, lines);
     }
 
@@ -218,6 +229,15 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
     private static int ParseInt32(string value, string label)
     {
         if (global::System.Int32.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+            return parsed;
+
+        throw new global::Lokad.Cli.ParseException($"invalid value `{value}` for `{label}`");
+    }
+
+    private static TValue ParseCustom<TValue>(string value, string label)
+        where TValue : global::System.IParsable<TValue>
+    {
+        if (TValue.TryParse(value, null, out var parsed))
             return parsed;
 
         throw new global::Lokad.Cli.ParseException($"invalid value `{value}` for `{label}`");
