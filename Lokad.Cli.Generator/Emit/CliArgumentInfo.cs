@@ -17,7 +17,8 @@ namespace Lokad.Cli.Generator.Emit
             CliOptionNames options,
             bool shortNumeric,
             bool allowRepeated,
-            bool consumeUntilBoundary)
+            bool consumeUntilBoundary,
+            bool consumeNextValueVerbatim)
         {
             Name = name;
             TypeName = typeName;
@@ -34,6 +35,7 @@ namespace Lokad.Cli.Generator.Emit
             ShortNumeric = shortNumeric;
             AllowRepeated = allowRepeated;
             ConsumeUntilBoundary = consumeUntilBoundary;
+            ConsumeNextValueVerbatim = consumeNextValueVerbatim;
         }
 
         public string Name { get; }
@@ -70,6 +72,8 @@ namespace Lokad.Cli.Generator.Emit
         public bool AllowRepeated { get; }
 
         public bool ConsumeUntilBoundary { get; }
+
+        public bool ConsumeNextValueVerbatim { get; }
 
         public bool IsOption => Options.Labels.Count > 0 || ShortNumeric;
 

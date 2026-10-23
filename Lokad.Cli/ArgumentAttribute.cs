@@ -67,5 +67,11 @@ namespace Lokad.Cli
         ///     The failed value is left for the next positional member. Defaults to <c>false</c>.
         /// </summary>
         public bool ConsumeUntilBoundary { get; set; }
+
+        /// <summary>
+        ///     Consumes the next raw argument as this named option's value, including leading dashes or <c>--</c>.
+        ///     Applies only when no value is attached. Defaults to <c>false</c>.
+        /// </summary>
+        public bool ConsumeNextValueVerbatim { get; set; }
     }
 }

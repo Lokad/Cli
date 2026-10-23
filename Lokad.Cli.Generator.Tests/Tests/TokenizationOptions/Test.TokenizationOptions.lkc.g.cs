@@ -5,8 +5,8 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
     // A separate holder allows parsing from the argument type's static initializers.
     private static class __CliOptionNames
     {
-        public static readonly char[] Short = new char[] { 'm', 'c', 'p', 'v', 'V', 'f' };
-        public static readonly string[] Long = new string[] { @"mode", @"from-ctor", @"raw-param", @"verbose", @"chatty", @"field", @"optional" };
+        public static readonly global::System.Collections.Generic.IReadOnlyDictionary<char, global::Lokad.Cli.OptionValueMode> Short = new global::System.Collections.Generic.Dictionary<char, global::Lokad.Cli.OptionValueMode> { ['c'] = global::Lokad.Cli.OptionValueMode.Required, ['p'] = global::Lokad.Cli.OptionValueMode.Required, ['v'] = global::Lokad.Cli.OptionValueMode.None, ['V'] = global::Lokad.Cli.OptionValueMode.None, ['f'] = global::Lokad.Cli.OptionValueMode.Verbatim, ['m'] = global::Lokad.Cli.OptionValueMode.None };
+        public static readonly global::System.Collections.Generic.IReadOnlyDictionary<string, global::Lokad.Cli.OptionValueMode> Long = new global::System.Collections.Generic.Dictionary<string, global::Lokad.Cli.OptionValueMode> { [@"from-ctor"] = global::Lokad.Cli.OptionValueMode.Required, [@"raw-param"] = global::Lokad.Cli.OptionValueMode.Required, [@"verbose"] = global::Lokad.Cli.OptionValueMode.None, [@"chatty"] = global::Lokad.Cli.OptionValueMode.None, [@"field"] = global::Lokad.Cli.OptionValueMode.Verbatim, [@"optional"] = global::Lokad.Cli.OptionValueMode.Required, [@"mode"] = global::Lokad.Cli.OptionValueMode.None };
     }
 
     public static global::Test.TokenizationOptions Parse(global::System.Collections.Generic.IReadOnlyList<string> arguments)
@@ -37,7 +37,9 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
             arguments,
             __CliOptionNames.Short,
             __CliOptionNames.Long,
-            true);
+            true,
+            global::Lokad.Cli.ShortOptionSyntax.AttachedValues,
+            false);
     }
 
     private static global::Test.TokenizationOptions ParseTokenizedCore(global::Lokad.Cli.TokenizedArguments tokenized)

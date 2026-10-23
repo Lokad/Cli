@@ -99,5 +99,37 @@ namespace Lokad.Cli.Generator.Emit
             category: "SourceGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor InvalidVerbatimValue = new DiagnosticDescriptor(
+            id: "LKC0010",
+            title: "Invalid verbatim option value",
+            messageFormat: "Argument '{0}' uses ConsumeNextValueVerbatim, which requires a named value-taking option without ShortNumeric",
+            category: "SourceGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor AmbiguousOptionArity = new DiagnosticDescriptor(
+            id: "LKC0011",
+            title: "Ambiguous option value mode",
+            messageFormat: "Option '{0}' has conflicting value modes across reachable choices; attached short values and verbatim operands require an unambiguous mode",
+            category: "SourceGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor ConflictingTokenizationPolicy = new DiagnosticDescriptor(
+            id: "LKC0012",
+            title: "Conflicting tokenization policy",
+            messageFormat: "Explicit '{0}' settings must agree across the reachable choice graph",
+            category: "SourceGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor InvalidTokenizationPolicy = new DiagnosticDescriptor(
+            id: "LKC0013",
+            title: "Invalid tokenization policy",
+            messageFormat: "Invalid value for '{0}'",
+            category: "SourceGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
     }
 }

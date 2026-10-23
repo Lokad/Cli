@@ -11,12 +11,7 @@ $@"#nullable enable
 namespace {type.TypeName.Namespace};
 partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICliParsed<{type.TypeName.FullName}>
 {{
-    // A separate holder allows parsing from the argument type's static initializers.
-    private static class __CliOptionNames
-    {{
-        public static readonly char[] Short = {FormatCharArray(type.ShortOptions)};
-        public static readonly string[] Long = {FormatStringArray(type.LongOptions)};
-    }}
+{EmitOptionNames(type)}
 
     {GetParseMethodDeclaration(type)}
     {{
@@ -46,7 +41,7 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
             arguments,
             __CliOptionNames.Short,
             __CliOptionNames.Long,
-            {FormatBoolean(type.HasShortNumericArguments)});
+            {FormatBoolean(type.HasShortNumericArguments)}{GetLexicalPolicies(type)});
     }}
 
     private static {type.TypeName.FullName} ParseTokenizedCore(global::Lokad.Cli.TokenizedArguments tokenized)
@@ -69,6 +64,45 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
 
                 return "public static global::Lokad.Cli.TokenizedArguments Tokenize(global::System.Collections.Generic.IReadOnlyList<string> arguments)";
             }
+
+            static string EmitOptionNames(CliTypeInfo parserType)
+            {
+                string shortDeclaration;
+                string longDeclaration;
+                if (parserType.Tokenization.RequiresSchema)
+                {
+                    shortDeclaration = FormatOptions("char", "Short", parserType.Tokenization.ShortOptions, FormatCharLiteral);
+                    longDeclaration = FormatOptions("string", "Long", parserType.Tokenization.LongOptions, FormatStringLiteral);
+                }
+                else
+                {
+                    shortDeclaration = "char[] Short = " + FormatCharArray(parserType.ShortOptions);
+                    longDeclaration = "string[] Long = " + FormatStringArray(parserType.LongOptions);
+                }
+                return $@"    // A separate holder allows parsing from the argument type's static initializers.
+    private static class __CliOptionNames
+    {{
+        public static readonly {shortDeclaration};
+        public static readonly {longDeclaration};
+    }}";
+
+                string FormatOptions<T>(string keyType, string name, System.Collections.Generic.IReadOnlyDictionary<T, CliOptionValueMode> options, Func<T, string> format)
+                {
+                    var entries = new System.Collections.Generic.List<string>();
+                    foreach (var option in options)
+                    {
+                        var mode = parserType.Tokenization.UsesArity ? option.Value : CliOptionValueMode.None;
+                        entries.Add("[" + format(option.Key) + "] = global::Lokad.Cli.OptionValueMode." + mode);
+                    }
+                    return "global::System.Collections.Generic.IReadOnlyDictionary<" + keyType + ", global::Lokad.Cli.OptionValueMode> " + name +
+                        " = new global::System.Collections.Generic.Dictionary<" + keyType + ", global::Lokad.Cli.OptionValueMode> { " + string.Join(", ", entries) + " }";
+                }
+            }
+
+            static string GetLexicalPolicies(CliTypeInfo parserType) => parserType.Tokenization.RequiresSchema
+                ? "," + Environment.NewLine + "            global::Lokad.Cli.ShortOptionSyntax." + parserType.Tokenization.ShortOptionSyntax +
+                  "," + Environment.NewLine + "            " + FormatBoolean(parserType.Tokenization.AllowSingleDashLongOptions)
+                : string.Empty;
         }
 
         private static string GetTypeDeclaration(CliTypeInfo type)

@@ -56,43 +56,11 @@ namespace Lokad.Cli.Generator
             var hasShortNumericArguments = false;
             var choices = new List<CliChoiceInfo>();
             var arguments = new List<CliArgumentInfo>();
-            var discriminator = default(CliDiscriminatorInfo);
             var documentation = default(string);
             var discriminatorOptions = new HashSet<string>(StringComparer.Ordinal);
-
-            foreach (var argumentsAttribute in typeSymbol.GetAttributes(compilation, _argumentsAttribute))
-            {
-                discriminator = GetDiscriminator(argumentsAttribute);
-                AddDiscriminatorOptions(discriminator, discriminatorOptions);
-                documentation = GetConstructorString(argumentsAttribute, 0);
-                CollectArgumentNames(argumentsAttribute, shortOptions, longOptions, ref hasShortNumericArguments);
-            }
-
-            foreach (var choice in typeSymbol.GetAttributes(compilation, _choiceAttribute))
-                CollectChoice(compilation, choice, shortOptions, longOptions, ref hasShortNumericArguments, choices, discriminatorOptions);
-
-            CollectMemberArgumentNames(
-                compilation,
-                typeSymbol,
-                shortOptions,
-                longOptions,
-                ref hasShortNumericArguments,
-                arguments);
-
-            foreach (var implementedInterface in typeSymbol.AllInterfaces)
-            {
-                if (!HasCliAnnotation(compilation, implementedInterface))
-                    continue;
-
-                CollectReachableArgumentNames(
-                    compilation,
-                    implementedInterface,
-                    shortOptions,
-                    longOptions,
-                    ref hasShortNumericArguments,
-                    new HashSet<string>(),
-                    discriminatorOptions);
-            }
+            var tokenization = new CliTokenizationInfo();
+            var collected = new Dictionary<ITypeSymbol, CliDiscriminatorInfo?>(SymbolEqualityComparer.Default);
+            var discriminator = Collect(typeSymbol);
 
             var owners = new Dictionary<string, string>(StringComparer.Ordinal);
             var positional = arguments.FindAll(argument => !argument.IsOption);
@@ -109,11 +77,7 @@ namespace Lokad.Cli.Generator
 
                 if (argument.AllowRepeated)
                 {
-                    var hasNamedOption = argument.Options.ShortOptions.Count > 0;
-                    foreach (var name in argument.Options.LongOptions)
-                        hasNamedOption |= name.Length > 0;
-
-                    if (!argument.IsBoolean || argument.IsCollection || argument.ShortNumeric || !hasNamedOption)
+                    if (!argument.IsBoolean || argument.IsCollection || argument.ShortNumeric || !argument.Options.HasNamedOption)
                         throw new GeneratorException(GeneratorException.InvalidRepeatedFlag, argument.Name);
                 }
 
@@ -128,6 +92,7 @@ namespace Lokad.Cli.Generator
                 }
             }
 
+            tokenization.Validate();
             return new CliTypeInfo(
                 type.TypeName,
                 type.Kind,
@@ -138,145 +103,154 @@ namespace Lokad.Cli.Generator
                 choices.ToArray(),
                 arguments.ToArray(),
                 discriminator,
-                documentation);
-        }
+                documentation,
+                tokenization);
 
-        private void CollectChoice(
-            Compilation compilation,
-            AttributeData attribute,
-            List<char> shortOptions,
-            List<string> longOptions,
-            ref bool hasShortNumericArguments,
-            List<CliChoiceInfo> choices,
-            ISet<string> discriminatorOptions)
-        {
-            if (attribute.ConstructorArguments.Length == 0 ||
-                !(attribute.ConstructorArguments[0].Value is ITypeSymbol choiceType))
+            CliDiscriminatorInfo? Collect(ITypeSymbol declaration)
             {
-                return;
-            }
+                if (collected.TryGetValue(declaration, out var cached))
+                    return cached;
 
-            var discriminator = CollectReachableArgumentNames(
-                compilation,
-                choiceType,
-                shortOptions,
-                longOptions,
-                ref hasShortNumericArguments,
-                new HashSet<string>(),
-                discriminatorOptions);
-
-            choices.Add(new CliChoiceInfo(GetTypeName(choiceType), discriminator));
-        }
-
-        private CliDiscriminatorInfo? CollectReachableArgumentNames(
-            Compilation compilation,
-            ITypeSymbol typeSymbol,
-            List<char> shortOptions,
-            List<string> longOptions,
-            ref bool hasShortNumericArguments,
-            HashSet<string> visitedTypes,
-            ISet<string> discriminatorOptions)
-        {
-            if (!visitedTypes.Add(typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)))
-                return null;
-
-            var discriminator = default(CliDiscriminatorInfo);
-            foreach (var arguments in typeSymbol.GetAttributes(compilation, _argumentsAttribute))
-            {
-                discriminator = GetDiscriminator(arguments);
-                CollectArgumentNames(arguments, shortOptions, longOptions, ref hasShortNumericArguments);
-                AddDiscriminatorOptions(discriminator, discriminatorOptions);
-            }
-
-            CollectMemberArgumentNames(compilation, typeSymbol, shortOptions, longOptions, ref hasShortNumericArguments);
-
-            foreach (var choice in typeSymbol.GetAttributes(compilation, _choiceAttribute))
-            {
-                if (choice.ConstructorArguments.Length == 0 ||
-                    !(choice.ConstructorArguments[0].Value is ITypeSymbol choiceType))
+                var isRoot = SymbolEqualityComparer.Default.Equals(declaration, typeSymbol);
+                var ownDiscriminator = default(CliDiscriminatorInfo);
+                foreach (var annotation in declaration.GetAttributes(compilation, _argumentsAttribute))
                 {
-                    continue;
+                    ownDiscriminator = GetDiscriminator(annotation);
+                    AddDiscriminatorOptions(ownDiscriminator, discriminatorOptions);
+                    CollectArgumentNames(annotation, shortOptions, longOptions, ref hasShortNumericArguments);
+                    if (isRoot)
+                        documentation = GetConstructorString(annotation, 0);
+                    foreach (var setting in annotation.NamedArguments)
+                    {
+                        if (setting.Key == "ShortOptionSyntax" && setting.Value.Value is int syntax)
+                            tokenization.ConfigureShortOptions((CliShortOptionSyntax)syntax);
+                        if (setting.Key == "AllowSingleDashLongOptions" && setting.Value.Value is bool allow)
+                            tokenization.ConfigureSingleDashLongOptions(allow);
+                    }
                 }
 
-                CollectReachableArgumentNames(
-                    compilation,
-                    choiceType,
-                    shortOptions,
-                    longOptions,
-                    ref hasShortNumericArguments,
-                    visitedTypes,
-                    discriminatorOptions);
-            }
+                // Both choices and implemented interfaces can lead back to this declaration.
+                // Keep its discriminator available even while the rest of the graph is being collected.
+                collected.Add(declaration, ownDiscriminator);
+                var members = isRoot ? arguments : new List<CliArgumentInfo>();
+                if (declaration.TypeKind != TypeKind.Interface)
+                    CollectMembers();
+                CollectTokenizationOptions(members, ownDiscriminator, tokenization);
 
-            return discriminator;
-        }
-
-        private void CollectMemberArgumentNames(
-            Compilation compilation,
-            ITypeSymbol typeSymbol,
-            List<char> shortOptions,
-            List<string> longOptions,
-            ref bool hasShortNumericArguments,
-            List<CliArgumentInfo>? arguments = null)
-        {
-            var constructorBoundNames = new HashSet<string>();
-
-            foreach (var member in typeSymbol.GetMembers())
-            {
-                if (!(member is IMethodSymbol method) || method.MethodKind != MethodKind.Constructor)
-                    continue;
-
-                foreach (var parameter in method.Parameters)
+                foreach (var choice in declaration.GetAttributes(compilation, _choiceAttribute))
                 {
-                    var argument = parameter.TryGetAttribute(compilation, _argumentAttribute) ??
-                                   FindMatchingPropertyArgument(compilation, typeSymbol, parameter);
-                    if (argument == null)
+                    if (choice.ConstructorArguments.Length == 0 ||
+                        !(choice.ConstructorArguments[0].Value is ITypeSymbol choiceType))
                         continue;
 
-                    var optionNames = CollectArgumentNames(argument, shortOptions, longOptions, ref hasShortNumericArguments);
-                    constructorBoundNames.Add(parameter.Name);
-
-                    if (arguments != null &&
-                        TryGetBindableMemberArgument(
-                            compilation,
-                            parameter,
-                            argument,
-                            optionNames,
-                            isConstructorParameter: true,
-                            out var parameterArgument))
-                    {
-                        arguments.Add(parameterArgument);
-                    }
+                    var choiceDiscriminator = Collect(choiceType);
+                    if (isRoot)
+                        choices.Add(new CliChoiceInfo(GetTypeName(choiceType), choiceDiscriminator));
                 }
-            }
 
-            foreach (var member in typeSymbol.GetMembers())
-            {
-                if (constructorBoundNames.Contains(member.Name))
-                    continue;
+                foreach (var implementedInterface in declaration.AllInterfaces)
+                    if (HasCliAnnotation(compilation, implementedInterface))
+                        Collect(implementedInterface);
 
-                foreach (var argument in member.GetAttributes(compilation, _argumentAttribute))
+                return ownDiscriminator;
+
+                void CollectMembers()
                 {
-                    var optionNames = CollectArgumentNames(argument, shortOptions, longOptions, ref hasShortNumericArguments);
-                    if (arguments != null &&
-                        TryGetBindableMemberArgument(compilation, member, argument, optionNames, isConstructorParameter: false, out var memberArgument))
+                    var constructorBoundNames = new HashSet<string>();
+                    foreach (var member in declaration.GetMembers())
                     {
-                        arguments.Add(memberArgument);
+                        if (!(member is IMethodSymbol method) || method.MethodKind != MethodKind.Constructor)
+                            continue;
+
+                        foreach (var parameter in method.Parameters)
+                        {
+                            var argument = parameter.TryGetAttribute(compilation, _argumentAttribute) ??
+                                           FindMatchingPropertyArgument(parameter);
+                            if (argument == null)
+                                continue;
+
+                            var names = CollectArgumentNames(argument, shortOptions, longOptions, ref hasShortNumericArguments);
+                            constructorBoundNames.Add(parameter.Name);
+                            if (TryGetBindableMemberArgument(compilation, parameter, argument, names,
+                                isConstructorParameter: true, out var parameterArgument))
+                                members.Add(parameterArgument);
+                        }
+                    }
+
+                    foreach (var member in declaration.GetMembers())
+                    {
+                        if (constructorBoundNames.Contains(member.Name))
+                            continue;
+                        foreach (var argument in member.GetAttributes(compilation, _argumentAttribute))
+                        {
+                            var names = CollectArgumentNames(argument, shortOptions, longOptions, ref hasShortNumericArguments);
+                            if (TryGetBindableMemberArgument(compilation, member, argument, names,
+                                isConstructorParameter: false, out var memberArgument))
+                                members.Add(memberArgument);
+                        }
+                    }
+
+                    AttributeData? FindMatchingPropertyArgument(IParameterSymbol parameter)
+                    {
+                        foreach (var member in declaration.GetMembers(parameter.Name))
+                            if (member is IPropertySymbol property)
+                                return property.TryGetAttribute(compilation, _argumentAttribute);
+
+                        return null;
                     }
                 }
+
+                static void CollectTokenizationOptions(
+                    IReadOnlyList<CliArgumentInfo> arguments, CliDiscriminatorInfo? discriminator, CliTokenizationInfo tokenization)
+                {
+                    var owned = new HashSet<string>(StringComparer.Ordinal);
+                    foreach (var argument in arguments)
+                    {
+                        var mode = argument.IsBoolean ? CliOptionValueMode.None :
+                            argument.ConsumeNextValueVerbatim ? CliOptionValueMode.Verbatim : CliOptionValueMode.Required;
+                        tokenization.AddOptions(argument.Options, mode);
+                        foreach (var label in argument.Options.Labels)
+                            owned.Add(label);
+                    }
+
+                    if (discriminator == null)
+                        return;
+                    var longs = new List<string>();
+                    var shorts = new List<char>();
+                    if (discriminator.LongOption != null && !owned.Contains("--" + discriminator.LongOption))
+                        longs.Add(discriminator.LongOption);
+                    if (discriminator.ShortOption != '\0' && !owned.Contains("-" + discriminator.ShortOption))
+                        shorts.Add(discriminator.ShortOption);
+                    tokenization.AddOptions(new CliOptionNames(longs, shorts), CliOptionValueMode.None);
+                }
+
+                static void AddDiscriminatorOptions(CliDiscriminatorInfo? discriminator, ISet<string> options)
+                {
+                    if (discriminator == null)
+                        return;
+                    if (discriminator.LongOption != null)
+                        options.Add("--" + discriminator.LongOption);
+                    if (discriminator.ShortOption != '\0')
+                        options.Add("-" + discriminator.ShortOption);
+                }
+
+                static CliDiscriminatorInfo? GetDiscriminator(AttributeData attribute)
+                {
+                    var prefix = GetNamedString(attribute, "Prefix");
+                    if (prefix != null && prefix.Length > 0)
+                        return new CliDiscriminatorInfo(prefix, prefix, null, '\0');
+
+                    var longOption = GetNamedString(attribute, "Long");
+                    var shortOption = GetNamedChar(attribute, "Short");
+                    if (!string.IsNullOrEmpty(longOption) || shortOption != '\0')
+                    {
+                        var display = !string.IsNullOrEmpty(longOption) ? "--" + longOption : "-" + shortOption;
+                        return new CliDiscriminatorInfo(display, null, longOption, shortOption);
+                    }
+
+                    return null;
+                }
             }
-        }
-
-        private AttributeData? FindMatchingPropertyArgument(
-            Compilation compilation,
-            ITypeSymbol typeSymbol,
-            IParameterSymbol parameter)
-        {
-            foreach (var member in typeSymbol.GetMembers(parameter.Name))
-                if (member is IPropertySymbol property)
-                    return property.TryGetAttribute(compilation, _argumentAttribute);
-
-            return null;
         }
 
         private bool TryGetBindableMemberArgument(
@@ -348,7 +322,12 @@ namespace Lokad.Cli.Generator
                 optionNames,
                 GetNamedBool(attribute, "ShortNumeric"),
                 GetNamedBool(attribute, "AllowRepeated"),
-                GetNamedBool(attribute, "ConsumeUntilBoundary"));
+                GetNamedBool(attribute, "ConsumeUntilBoundary"),
+                GetNamedBool(attribute, "ConsumeNextValueVerbatim"));
+
+            if (argument.ConsumeNextValueVerbatim &&
+                (argument.IsBoolean || argument.ShortNumeric || !argument.Options.HasNamedOption))
+                throw new GeneratorException(GeneratorException.InvalidVerbatimValue, argument.Name);
 
             return true;
 
@@ -425,33 +404,6 @@ namespace Lokad.Cli.Generator
                         return false;
                 return true;
             }
-        }
-
-        private static void AddDiscriminatorOptions(CliDiscriminatorInfo? discriminator, ISet<string> options)
-        {
-            if (discriminator == null)
-                return;
-            if (discriminator.LongOption != null)
-                options.Add("--" + discriminator.LongOption);
-            if (discriminator.ShortOption != '\0')
-                options.Add("-" + discriminator.ShortOption);
-        }
-
-        private static CliDiscriminatorInfo? GetDiscriminator(AttributeData attribute)
-        {
-            var prefix = GetNamedString(attribute, "Prefix");
-            if (!string.IsNullOrEmpty(prefix))
-                return new CliDiscriminatorInfo(prefix!, prefix, null, '\0');
-
-            var longOption = GetNamedString(attribute, "Long");
-            var shortOption = GetNamedChar(attribute, "Short");
-            if (!string.IsNullOrEmpty(longOption) || shortOption != '\0')
-            {
-                var display = !string.IsNullOrEmpty(longOption) ? "--" + longOption : "-" + shortOption;
-                return new CliDiscriminatorInfo(display, null, longOption, shortOption);
-            }
-
-            return null;
         }
 
         private static string? GetNamedString(AttributeData attribute, string name)

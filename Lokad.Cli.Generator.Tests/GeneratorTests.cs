@@ -16,6 +16,7 @@ public class GeneratorTests
     [Fact] public void InvalidCollectionBoundaries() => Run();
     [Fact] public void InvalidOptionAliases() => Run();
     [Fact] public void InvalidRepeatedFlags() => Run();
+    [Fact] public void InvalidTokenizationPolicies() => Run();
     [Fact] public void Ranges() => Run();
     [Fact] public void TokenizationOptions() => Run();
 

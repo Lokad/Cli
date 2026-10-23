@@ -106,6 +106,18 @@ Here `-r`, `-R`, `--recursive`, and `--recurse` share one value and repetition p
 
 For aliased arguments, binding errors use the first long name, or the first short name if none exists. Invalid names and collisions within one command are diagnosed; aliases on option discriminators are currently unsupported.
 
+### Option-value syntax
+
+These controls are independent opt-ins:
+
+| Declaration | Behavior |
+| --- | --- |
+| `[Arguments(..., ShortOptionSyntax = ShortOptionSyntax.AttachedValues)]` | `-fepattern` sets flag `f` and binds `e` to `pattern`; `-ef` binds `e` to `f`, even when `f` is declared. |
+| `[Argument(..., ConsumeNextValueVerbatim = true)]` | A named value-taking option accepts the next raw argument: `--number -2`, `-e --help`, or even `-e --`. |
+| `[Arguments(..., AllowSingleDashLongOptions = false)]` | One dash selects short options; `--long` remains available. |
+
+Defaults preserve grouped values such as `-ee first second`. Explicit shape settings must agree across reachable choices and their annotated interfaces; unspecified settings inherit them. Value-aware modes require unambiguous option arities across those choices. Consumed operands become attached-value tokens before choice discrimination.
+
 ### Choices and Discriminators
 
 A discriminator can be requested as part of the `[Arguments]` itself:
@@ -156,7 +168,7 @@ public partial interface IMySubArgs : IMyArgs {}
 
 The parsing algorithm works as follows: 
 
-  1. **Tokenization**: run left-to-right and classify each argument based on its contents. The classifier has access to the set of all `[Argument]` that could possibly be parsed, but not to the context in which those arguments could be parsed, or their type, or whether they expect additional arguments.
+  1. **Tokenization**: run left-to-right using reachable option names and, for the opt-in value syntax above, generated value modes. The following rules describe the default syntax.
      - if an `[Argument("...", ShortNumeric=true)]` exists, `-[0-9]+` is treated as `NumericShortArg`
      - if an `[Argument("...", ShortNumeric=true, Short='x')]` exists, `-x[0-9]+` is treated as `NumericShortArg`
      - `-[a-zA-Z0-9]+` can be a `LongArg` if `[Argument("...", Long="xyz")]` exists, otherwise, it becomes a `ShortArgSet` made up of single-character short arguments. Reports "unknown short option -x" for each character for which `[Argument("...", Short='x')]` does not exist.

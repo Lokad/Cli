@@ -35,38 +35,125 @@ namespace Lokad.Cli
             if (shortOptions == null) throw new ArgumentNullException(nameof(shortOptions));
             if (longOptions == null) throw new ArgumentNullException(nameof(longOptions));
 
-            var shortSet = new HashSet<char>(shortOptions);
-            var longSet = new HashSet<string>(longOptions, StringComparer.Ordinal);
+            var shortModes = new Dictionary<char, OptionValueMode>();
+            foreach (var name in shortOptions)
+                shortModes[name] = OptionValueMode.None;
+            var longModes = new Dictionary<string, OptionValueMode>(StringComparer.Ordinal);
+            foreach (var name in longOptions)
+                longModes[name] = OptionValueMode.None;
+
+            return Tokenize(arguments, shortModes, longModes, hasShortNumericArguments,
+                ShortOptionSyntax.GroupedValues, allowSingleDashLongOptions: true);
+        }
+
+        /// <summary>Tokenizes arguments with generated option arities and explicit lexical policies.</summary>
+        /// <param name="arguments">Raw command-line arguments.</param>
+        /// <param name="shortOptions">Short names and their value modes.</param>
+        /// <param name="longOptions">Long names and their value modes.</param>
+        /// <param name="hasShortNumericArguments">Whether numeric short forms such as <c>-10</c> are recognized.</param>
+        /// <param name="shortOptionSyntax">How short groups supply values.</param>
+        /// <param name="allowSingleDashLongOptions">Whether known long names also accept one leading dash.</param>
+        /// <returns>A fresh token cursor.</returns>
+        public static TokenizedArguments Tokenize(
+            IReadOnlyList<string> arguments,
+            IReadOnlyDictionary<char, OptionValueMode> shortOptions,
+            IReadOnlyDictionary<string, OptionValueMode> longOptions,
+            bool hasShortNumericArguments,
+            ShortOptionSyntax shortOptionSyntax,
+            bool allowSingleDashLongOptions)
+        {
+            if (arguments == null) throw new ArgumentNullException(nameof(arguments));
+            if (shortOptions == null) throw new ArgumentNullException(nameof(shortOptions));
+            if (longOptions == null) throw new ArgumentNullException(nameof(longOptions));
+            if (shortOptionSyntax != ShortOptionSyntax.GroupedValues && shortOptionSyntax != ShortOptionSyntax.AttachedValues)
+                throw new ArgumentOutOfRangeException(nameof(shortOptionSyntax));
+
             var tokens = new List<ITokenizedArguments>(arguments.Count);
+            var pendingValues = new Queue<int>();
+            var classified = new List<ITokenizedArguments>(2);
             var valuesOnly = false;
 
             foreach (var argument in arguments)
             {
-                if (valuesOnly)
+                if (pendingValues.Count > 0 && GetValueMode(tokens[pendingValues.Peek()]) == OptionValueMode.Verbatim)
                 {
-                    tokens.Add(new ValueArg(argument));
+                    SupplyValue(argument);
                     continue;
                 }
 
-                if (argument == "--")
+                if (!valuesOnly && argument == "--")
                 {
                     valuesOnly = true;
                     continue;
                 }
 
-                if (TryTokenizeLong(argument, longSet, tokens))
-                    continue;
+                classified.Clear();
+                if (valuesOnly ||
+                    (!TryTokenizeLong(argument, longOptions, singleDash: false, classified) &&
+                     !(allowSingleDashLongOptions && TryTokenizeLong(argument, longOptions, singleDash: true, classified)) &&
+                     !TryTokenizeShort(argument, shortOptions, hasShortNumericArguments, shortOptionSyntax, classified)))
+                    classified.Add(new ValueArg(argument));
 
-                if (TryTokenizeSingleDashLong(argument, longSet, tokens))
-                    continue;
+                foreach (var token in classified)
+                {
+                    if (pendingValues.Count > 0)
+                    {
+                        if (token is ValueArg value)
+                        {
+                            SupplyValue(value.Value);
+                            continue;
+                        }
+                        // Binding will report the missing operand. Do not apply its remaining raw-value modes to unrelated options.
+                        pendingValues.Clear();
+                    }
 
-                if (TryTokenizeShort(argument, shortSet, hasShortNumericArguments, tokens))
-                    continue;
-
-                tokens.Add(new ValueArg(argument));
+                    if (token is ShortArgSet group)
+                    {
+                        var start = 0;
+                        for (var i = 0; i < group.Options.Length; i++)
+                        {
+                            var name = group.Options[i];
+                            if (shortOptions[name] == OptionValueMode.None)
+                                continue;
+                            if (i > start)
+                                tokens.Add(new ShortArgSet(group.Options.Substring(start, i - start)));
+                            pendingValues.Enqueue(tokens.Count);
+                            tokens.Add(new ShortArgSet(name.ToString()));
+                            start = i + 1;
+                        }
+                        if (start == 0)
+                            tokens.Add(group);
+                        else if (start < group.Options.Length)
+                            tokens.Add(new ShortArgSet(group.Options.Substring(start)));
+                    }
+                    else
+                    {
+                        if (token is LongArg && GetValueMode(token) != OptionValueMode.None)
+                            pendingValues.Enqueue(tokens.Count);
+                        tokens.Add(token);
+                    }
+                }
             }
 
             return new TokenizedArguments(tokens);
+
+            OptionValueMode GetValueMode(ITokenizedArguments token) => token switch
+            {
+                LongArg option => longOptions[option.Name],
+                ShortArgSet option => shortOptions[option.Options[0]],
+                _ => OptionValueMode.None
+            };
+
+            void SupplyValue(string value)
+            {
+                var index = pendingValues.Dequeue();
+                tokens[index] = tokens[index] switch
+                {
+                    LongArg option => new LongArgWithValue(option.Name, value),
+                    ShortArgSet option => new ShortArgWithValue(option.Options[0], value),
+                    _ => throw new InvalidOperationException("Expected an option awaiting a value.")
+                };
+            }
         }
 
         /// <summary>
@@ -74,53 +161,32 @@ namespace Lokad.Cli
         /// </summary>
         /// <param name="argument"> Raw argument string. </param>
         /// <param name="longOptions"> Recognized long option names. </param>
+        /// <param name="singleDash">Whether to recognize the optional single-dash spelling.</param>
         /// <param name="tokens"> Destination token list. </param>
         /// <returns>
         ///     <c>true</c> when <paramref name="argument"/> was a long option; otherwise <c>false</c>.
         /// </returns>
         private static bool TryTokenizeLong(
             string argument,
-            HashSet<string> longOptions,
+            IReadOnlyDictionary<string, OptionValueMode> longOptions,
+            bool singleDash,
             List<ITokenizedArguments> tokens)
         {
-            if (!argument.StartsWith("--", StringComparison.Ordinal) || argument.Length <= 2)
+            if (argument.Length <= 2 || (singleDash
+                ? !argument.StartsWith("-", StringComparison.Ordinal) || argument.StartsWith("--", StringComparison.Ordinal)
+                : !argument.StartsWith("--", StringComparison.Ordinal)))
                 return false;
 
+            var prefixLength = singleDash ? 1 : 2;
             var separator = argument.IndexOf('=');
-            var name = separator < 0 ? argument.Substring(2) : argument.Substring(2, separator - 2);
+            var name = separator < 0 ? argument.Substring(prefixLength) : argument.Substring(prefixLength, separator - prefixLength);
 
-            if (!longOptions.Contains(name))
+            if (!longOptions.ContainsKey(name))
+            {
+                if (singleDash)
+                    return false;
                 throw new ParseException($"unknown option `--{name}`");
-
-            if (separator < 0)
-            {
-                tokens.Add(new LongArg(name));
             }
-            else
-            {
-                tokens.Add(new LongArgWithValue(name, argument.Substring(separator + 1)));
-            }
-
-            return true;
-        }
-
-        private static bool TryTokenizeSingleDashLong(
-            string argument,
-            HashSet<string> longOptions,
-            List<ITokenizedArguments> tokens)
-        {
-            if (!argument.StartsWith("-", StringComparison.Ordinal) ||
-                argument.StartsWith("--", StringComparison.Ordinal) ||
-                argument.Length <= 2)
-            {
-                return false;
-            }
-
-            var separator = argument.IndexOf('=');
-            var name = separator < 0 ? argument.Substring(1) : argument.Substring(1, separator - 1);
-
-            if (!longOptions.Contains(name))
-                return false;
 
             if (separator < 0)
             {
@@ -136,8 +202,9 @@ namespace Lokad.Cli
 
         private static bool TryTokenizeShort(
             string argument,
-            HashSet<char> shortOptions,
+            IReadOnlyDictionary<char, OptionValueMode> shortOptions,
             bool hasShortNumericArguments,
+            ShortOptionSyntax syntax,
             List<ITokenizedArguments> tokens)
         {
             if (!argument.StartsWith("-", StringComparison.Ordinal) ||
@@ -152,13 +219,41 @@ namespace Lokad.Cli
             }
 
             var set = argument.Substring(1);
+            if (syntax == ShortOptionSyntax.AttachedValues)
+            {
+                for (var i = 0; i < set.Length; i++)
+                {
+                    var option = set[i];
+                    if (!shortOptions.TryGetValue(option, out var mode))
+                        throw new ParseException($"unknown short option `-{option}`");
+                    if (mode == OptionValueMode.None)
+                        continue;
+
+                    if (i > 0)
+                        tokens.Add(new ShortArgSet(set.Substring(0, i)));
+                    var valueStart = i + 1;
+                    if (valueStart < set.Length)
+                    {
+                        if (set[valueStart] == '=')
+                            valueStart++;
+                        tokens.Add(new ShortArgWithValue(option, set.Substring(valueStart)));
+                    }
+                    else
+                        tokens.Add(new ShortArgSet(option.ToString()));
+                    return true;
+                }
+
+                tokens.Add(new ShortArgSet(set));
+                return true;
+            }
+
             var separator = set.IndexOf('=');
             if (separator >= 0)
             {
                 if (separator == 1)
                 {
                     var option = set[0];
-                    if (!shortOptions.Contains(option))
+                    if (!shortOptions.ContainsKey(option))
                         throw new ParseException($"unknown short option `-{option}`");
 
                     tokens.Add(new ShortArgWithValue(option, set.Substring(separator + 1)));
@@ -174,7 +269,7 @@ namespace Lokad.Cli
                 return true;
             }
 
-            if (set.Length > 1 && shortOptions.Contains(set[0]))
+            if (set.Length > 1 && shortOptions.ContainsKey(set[0]))
             {
                 tokens.Add(new ShortArgWithValue(set[0], set.Substring(1)));
                 return true;
@@ -184,19 +279,19 @@ namespace Lokad.Cli
             return true;
         }
 
-        private static bool AllShortOptionsKnown(string options, HashSet<char> shortOptions)
+        private static bool AllShortOptionsKnown(string options, IReadOnlyDictionary<char, OptionValueMode> shortOptions)
         {
             foreach (var option in options)
-                if (!shortOptions.Contains(option))
+                if (!shortOptions.ContainsKey(option))
                     return false;
 
             return true;
         }
 
-        private static void ThrowUnknownShortOption(string options, HashSet<char> shortOptions)
+        private static void ThrowUnknownShortOption(string options, IReadOnlyDictionary<char, OptionValueMode> shortOptions)
         {
             foreach (var option in options)
-                if (!shortOptions.Contains(option))
+                if (!shortOptions.ContainsKey(option))
                     throw new ParseException($"unknown short option `-{option}`");
 
             throw new InvalidOperationException("Unreachable short option tokenization state.");

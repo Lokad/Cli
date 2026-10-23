@@ -4,7 +4,8 @@ using Lokad.Cli;
 
 namespace Test;
 
-[Arguments("Tokenization mode.", Long = "mode", Short = 'm')]
+[Arguments("Tokenization mode.", Long = "mode", Short = 'm',
+    ShortOptionSyntax = ShortOptionSyntax.AttachedValues, AllowSingleDashLongOptions = false)]
 public partial record TokenizationOptions(
     [property: Argument("Constructor property value.", Long = "from-ctor", ShortNames = new[] { 'c' })]
     SnapshotReferenceValue<string?> FromConstructor,
@@ -18,7 +19,7 @@ public partial record TokenizationOptions(
     [Argument("Numeric depth.", ShortNumeric = true)]
     public int? Depth { get; init; }
 
-    [Argument("Field value.", LongNames = new[] { "field" }, ShortNames = new[] { 'f' })]
+    [Argument("Field value.", LongNames = new[] { "field" }, ShortNames = new[] { 'f' }, ConsumeNextValueVerbatim = true)]
     public IReadOnlyList<string> Field = Array.Empty<string>();
 
     [Argument("Optional reference value.", Long = "optional")]

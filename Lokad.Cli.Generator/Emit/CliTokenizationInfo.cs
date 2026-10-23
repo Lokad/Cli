@@ -1,0 +1,68 @@
+using System;
+using System.Collections.Generic;
+
+namespace Lokad.Cli.Generator.Emit
+{
+    // The generator targets netstandard2.0 independently of the runtime library.
+    public enum CliOptionValueMode { None, Required, Verbatim }
+    public enum CliShortOptionSyntax { GroupedValues, AttachedValues }
+
+    public sealed class CliTokenizationInfo
+    {
+        private readonly Dictionary<char, CliOptionValueMode> _shortOptions = new Dictionary<char, CliOptionValueMode>();
+        private readonly Dictionary<string, CliOptionValueMode> _longOptions = new Dictionary<string, CliOptionValueMode>(StringComparer.Ordinal);
+        private readonly SortedSet<string> _ambiguousOptions = new SortedSet<string>(StringComparer.Ordinal);
+        private CliShortOptionSyntax? _shortOptionSyntax;
+        private bool? _allowSingleDashLongOptions;
+        private bool _hasVerbatimValues;
+
+        public IReadOnlyDictionary<char, CliOptionValueMode> ShortOptions => _shortOptions;
+        public IReadOnlyDictionary<string, CliOptionValueMode> LongOptions => _longOptions;
+        public CliShortOptionSyntax ShortOptionSyntax => _shortOptionSyntax ?? CliShortOptionSyntax.GroupedValues;
+        public bool AllowSingleDashLongOptions => _allowSingleDashLongOptions ?? true;
+        public bool UsesArity => ShortOptionSyntax == CliShortOptionSyntax.AttachedValues || _hasVerbatimValues;
+        public bool RequiresSchema => UsesArity || !AllowSingleDashLongOptions;
+
+        public void ConfigureShortOptions(CliShortOptionSyntax syntax)
+        {
+            if (syntax != CliShortOptionSyntax.GroupedValues && syntax != CliShortOptionSyntax.AttachedValues)
+                throw new GeneratorException(GeneratorException.InvalidTokenizationPolicy, "ShortOptionSyntax");
+            if (_shortOptionSyntax.HasValue && _shortOptionSyntax.Value != syntax)
+                throw new GeneratorException(GeneratorException.ConflictingTokenizationPolicy, "ShortOptionSyntax");
+            _shortOptionSyntax = syntax;
+        }
+
+        public void ConfigureSingleDashLongOptions(bool allow)
+        {
+            if (_allowSingleDashLongOptions.HasValue && _allowSingleDashLongOptions.Value != allow)
+                throw new GeneratorException(GeneratorException.ConflictingTokenizationPolicy, "AllowSingleDashLongOptions");
+            _allowSingleDashLongOptions = allow;
+        }
+
+        public void AddOptions(CliOptionNames names, CliOptionValueMode mode)
+        {
+            _hasVerbatimValues |= mode == CliOptionValueMode.Verbatim;
+            foreach (var name in names.ShortOptions)
+                Add(_shortOptions, name, "-" + name);
+            foreach (var name in names.LongOptions)
+                Add(_longOptions, name, "--" + name);
+
+            void Add<T>(Dictionary<T, CliOptionValueMode> options, T name, string label)
+            {
+                if (options.TryGetValue(name, out var previous) && previous != mode)
+                {
+                    _ambiguousOptions.Add(label);
+                    options[name] = CliOptionValueMode.None;
+                }
+                else if (!_ambiguousOptions.Contains(label))
+                    options[name] = mode;
+            }
+        }
+
+        public void Validate()
+        {
+            if (UsesArity && _ambiguousOptions.Count > 0)
+                throw new GeneratorException(GeneratorException.AmbiguousOptionArity, _ambiguousOptions.Min);
+        }
+    }
+}

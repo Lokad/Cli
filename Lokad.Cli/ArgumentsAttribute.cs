@@ -36,5 +36,11 @@ namespace Lokad.Cli
         ///     Short-option discriminator, without the leading <c>-</c>.
         /// </summary>
         public char Short { get; set; }
+
+        /// <summary>Short-value syntax for the reachable choice graph. Defaults to grouped values.</summary>
+        public ShortOptionSyntax ShortOptionSyntax { get; set; }
+
+        /// <summary>Whether known long names also accept one leading dash. Defaults to <c>true</c>.</summary>
+        public bool AllowSingleDashLongOptions { get; set; } = true;
     }
 }
