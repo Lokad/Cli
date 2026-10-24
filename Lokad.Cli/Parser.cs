@@ -75,6 +75,26 @@ namespace Lokad.Cli
             return T.Tokenize(arguments);
         }
 
+        /// <summary>Detects declared help before binding or conversion. Tokenizes the entire input, so lexical errors take precedence.</summary>
+        /// <param name="arguments">Raw command-line arguments.</param>
+        /// <typeparam name="T">Generated argument type.</typeparam>
+        /// <returns>Whether a declared help option or help command prefix occurs.</returns>
+        public static bool IsHelpRequested<T>(IReadOnlyList<string> arguments)
+            where T : ICliParsed<T>
+        {
+            return T.IsHelpRequested(T.Tokenize(arguments));
+        }
+
+        /// <summary>Detects declared help in classified tokens without binding, conversion or consuming the cursor.</summary>
+        /// <param name="arguments">Already classified arguments; lexical validation belongs to tokenization.</param>
+        /// <typeparam name="T">Generated argument type.</typeparam>
+        /// <returns>Whether a declared help option or help command prefix occurs.</returns>
+        public static bool IsHelpRequested<T>(TokenizedArguments arguments)
+            where T : ICliParsed<T>
+        {
+            return T.IsHelpRequested(arguments);
+        }
+
         /// <summary>
         ///     Parses tokenized command-line arguments into the requested generated argument type.
         /// </summary>

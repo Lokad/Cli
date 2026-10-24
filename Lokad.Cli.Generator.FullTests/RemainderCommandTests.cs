@@ -235,7 +235,7 @@ public partial record FirstOperandArgs(
     [property: Argument("Forwarded arguments.")] string[] Tail) : IRemainderCommand, INestedRemainderCommand
 {
     [Argument("Verbose.", Short = 'v')] public bool Verbose { get; init; }
-    [Argument("Help.", Long = "help")] public bool Help { get; init; }
+    [Argument("Help.", Long = "help", IsHelp = true)] public bool Help { get; init; }
     [Argument("Output.", Long = "output")] public string? Output { get; init; }
     [Argument("Limit.", ShortNumeric = true)] public int? Limit { get; init; }
     [Argument("Format.", Long = "format")] public OptionalValue<string> Format { get; init; }
@@ -267,7 +267,7 @@ public partial record CodeRemainderArgs : ICodeRemainderCommand
     [Argument("Code.", LongNames = new[] { "code", "eval" }, Short = 'c', StopOptionParsing = true)]
     public string? Code { get; init; }
     [Argument("Forwarded arguments.", Remainder = true)] public IReadOnlyList<string> Tail { get; init; } = Array.Empty<string>();
-    [Argument("Help.", Long = "help", Short = 'h')] public bool Help { get; init; }
+    [Argument("Help.", Long = "help", Short = 'h', IsHelp = true)] public bool Help { get; init; }
 }
 
 [Choice(typeof(CodeRemainderArgs))]

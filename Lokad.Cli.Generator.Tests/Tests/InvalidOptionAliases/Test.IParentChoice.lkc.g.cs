@@ -19,6 +19,13 @@ partial interface IParentChoice : global::Lokad.Cli.ICliParsed<global::Test.IPar
         return TokenizeCore(arguments);
     }
 
+    static bool global::Lokad.Cli.ICliParsed<global::Test.IParentChoice>.IsHelpRequested(global::Lokad.Cli.TokenizedArguments arguments)
+    {
+        if (arguments == null) throw new global::System.ArgumentNullException(nameof(arguments));
+
+        return false;
+    }
+
     static global::Test.IParentChoice global::Lokad.Cli.ICliParsed<global::Test.IParentChoice>.ParseTokenized(global::Lokad.Cli.TokenizedArguments arguments)
     {
         if (arguments == null) throw new global::System.ArgumentNullException(nameof(arguments));

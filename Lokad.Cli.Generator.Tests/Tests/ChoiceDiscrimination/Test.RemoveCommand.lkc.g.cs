@@ -19,6 +19,13 @@ partial record RemoveCommand : global::Lokad.Cli.ICliParsed<global::Test.RemoveC
         return TokenizeCore(arguments);
     }
 
+    static bool global::Lokad.Cli.ICliParsed<global::Test.RemoveCommand>.IsHelpRequested(global::Lokad.Cli.TokenizedArguments arguments)
+    {
+        if (arguments == null) throw new global::System.ArgumentNullException(nameof(arguments));
+
+        return false;
+    }
+
     public static global::Test.RemoveCommand ParseTokenized(global::Lokad.Cli.TokenizedArguments arguments)
     {
         if (arguments == null) throw new global::System.ArgumentNullException(nameof(arguments));

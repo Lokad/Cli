@@ -40,6 +40,9 @@ public partial record TokenizationOptions(
 
     [Argument("Code boundary.", Long = "code", Short = 'e', StopOptionParsing = true)]
     public string? Code { get; init; }
+
+    [Argument("Help.", Long = "help", Short = 'h', IsHelp = true)]
+    public bool Help { get; init; }
 }
 
 public sealed record SnapshotReferenceValue<T>(string Value) : IParsable<SnapshotReferenceValue<T>>

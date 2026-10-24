@@ -7,7 +7,7 @@ partial record DuplicateFirst : global::Lokad.Cli.ICliParsed<global::Test.Duplic
     {
         public static readonly global::System.Collections.Generic.IReadOnlyDictionary<char, global::Lokad.Cli.OptionValueMode> Short = new global::System.Collections.Generic.Dictionary<char, global::Lokad.Cli.OptionValueMode> {  };
         public static readonly global::System.Collections.Generic.IReadOnlyDictionary<string, global::Lokad.Cli.OptionValueMode> Long = new global::System.Collections.Generic.Dictionary<string, global::Lokad.Cli.OptionValueMode> {  };
-        public static readonly global::Lokad.Cli.CommandBoundary Boundary = new global::Lokad.Cli.CommandBoundary(@"run", null, '\0', new global::Lokad.Cli.CommandBoundary[] {  }, null, global::System.Array.Empty<char>(), global::System.Array.Empty<string>());
+        public static readonly global::Lokad.Cli.CommandBoundary Boundary = new global::Lokad.Cli.CommandBoundary(@"run", null, '\0', new global::Lokad.Cli.CommandBoundary[] {  }, null, global::System.Array.Empty<char>(), global::System.Array.Empty<string>(), false);
     }
 
     public static global::Test.DuplicateFirst Parse(global::System.Collections.Generic.IReadOnlyList<string> arguments)
@@ -18,6 +18,13 @@ partial record DuplicateFirst : global::Lokad.Cli.ICliParsed<global::Test.Duplic
     public static global::Lokad.Cli.TokenizedArguments Tokenize(global::System.Collections.Generic.IReadOnlyList<string> arguments)
     {
         return TokenizeCore(arguments);
+    }
+
+    static bool global::Lokad.Cli.ICliParsed<global::Test.DuplicateFirst>.IsHelpRequested(global::Lokad.Cli.TokenizedArguments arguments)
+    {
+        if (arguments == null) throw new global::System.ArgumentNullException(nameof(arguments));
+
+        return false;
     }
 
     public static global::Test.DuplicateFirst ParseTokenized(global::Lokad.Cli.TokenizedArguments arguments)

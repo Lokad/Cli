@@ -98,7 +98,9 @@ namespace Lokad.Cli.Generator
             tokenization.Validate();
             var builtBoundaries = new Dictionary<ITypeSymbol, CliCommandBoundaryInfo>(SymbolEqualityComparer.Default);
             var activeBoundaries = new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
-            var boundary = tokenization.RequiresBoundaries ? BuildBoundary(typeSymbol) : null;
+            var selectorDiagnostic = tokenization.RequiresBoundaries
+                ? GeneratorException.AmbiguousCommandBoundary : GeneratorException.AmbiguousHelpSchema;
+            var boundary = tokenization.RequiresBoundaries || tokenization.HasHelpPrefixes ? BuildBoundary(typeSymbol) : null;
             return new CliTypeInfo(
                 type.TypeName,
                 type.Kind,
@@ -118,7 +120,7 @@ namespace Lokad.Cli.Generator
                 if (builtBoundaries.TryGetValue(declaration, out var cached))
                     return cached;
                 if (!activeBoundaries.Add(declaration))
-                    throw new GeneratorException(GeneratorException.AmbiguousCommandBoundary, "cyclic choices");
+                    throw new GeneratorException(selectorDiagnostic, "cyclic choices");
                 var info = collected[declaration];
                 var operands = new List<CliArgumentInfo>();
                 var stopShort = new List<char>();
@@ -155,8 +157,8 @@ namespace Lokad.Cli.Generator
                     var selector = child.Discriminator;
                     if (selector == null)
                     {
-                        if (hasDefault || child.Choices.Count > 0)
-                            throw new GeneratorException(GeneratorException.AmbiguousCommandBoundary, "multiple defaults or a default with nested choices");
+                        if (hasDefault || (tokenization.RequiresBoundaries && child.Choices.Count > 0))
+                            throw new GeneratorException(selectorDiagnostic, "multiple defaults or a default with nested choices");
                         hasDefault = true;
                     }
                     else
@@ -167,7 +169,7 @@ namespace Lokad.Cli.Generator
                     }
                     childBoundaries.Add(child);
                 }
-                var result = new CliCommandBoundaryInfo(info.Discriminator, childBoundaries, remainderAfter, stopShort, stopLong);
+                var result = new CliCommandBoundaryInfo(info.Discriminator, childBoundaries, remainderAfter, stopShort, stopLong, info.IsHelpPrefix);
                 activeBoundaries.Remove(declaration);
                 builtBoundaries.Add(declaration, result);
                 return result;
@@ -175,7 +177,7 @@ namespace Lokad.Cli.Generator
                 void AddSelector(string selector)
                 {
                     if (!selectors.Add(selector))
-                        throw new GeneratorException(GeneratorException.AmbiguousCommandBoundary, "duplicate selector " + selector);
+                        throw new GeneratorException(selectorDiagnostic, "duplicate selector " + selector);
                 }
             }
 
@@ -186,9 +188,24 @@ namespace Lokad.Cli.Generator
 
                 var isRoot = SymbolEqualityComparer.Default.Equals(declaration, typeSymbol);
                 var ownDiscriminator = default(CliDiscriminatorInfo);
+                var isHelpPrefix = false;
                 foreach (var annotation in declaration.GetAttributes(compilation, _argumentsAttribute))
                 {
                     ownDiscriminator = GetDiscriminator(annotation);
+                    if (GetNamedBool(annotation, "IsHelp"))
+                    {
+                        if (ownDiscriminator == null)
+                            throw new GeneratorException(GeneratorException.InvalidHelpChoice);
+                        if (ownDiscriminator.Prefix != null)
+                        {
+                            isHelpPrefix = true;
+                            tokenization.RequireHelpPrefix();
+                        }
+                        else
+                            tokenization.AddHelpOptions(new CliOptionNames(
+                                ownDiscriminator.LongOption is string name ? new[] { name } : Array.Empty<string>(),
+                                ownDiscriminator.ShortOption != '\0' ? new[] { ownDiscriminator.ShortOption } : Array.Empty<char>()));
+                    }
                     AddDiscriminatorOptions(ownDiscriminator, discriminatorOptions);
                     CollectArgumentNames(annotation, shortOptions, longOptions, ref hasShortNumericArguments);
                     if (isRoot)
@@ -219,7 +236,7 @@ namespace Lokad.Cli.Generator
                     choiceTypes.Add(choiceType);
                 }
                 // Cache before following choices and implemented interfaces, which can lead back here.
-                collected.Add(declaration, new CollectedDeclaration(ownDiscriminator, members, choiceTypes));
+                collected.Add(declaration, new CollectedDeclaration(ownDiscriminator, members, choiceTypes, isHelpPrefix));
                 foreach (var choiceType in choiceTypes)
                 {
                     var choiceDiscriminator = Collect(choiceType);
@@ -285,6 +302,8 @@ namespace Lokad.Cli.Generator
                     var owned = new HashSet<string>(StringComparer.Ordinal);
                     foreach (var argument in arguments)
                     {
+                        if (argument.IsHelp)
+                            tokenization.AddHelpOptions(argument.Options);
                         if (argument.IsRemainder || argument.StopOptionParsing)
                             tokenization.RequireBoundaries();
                         var mode = argument.IsOptionalValue ? CliOptionValueMode.OptionalAttached :
@@ -338,16 +357,18 @@ namespace Lokad.Cli.Generator
         private sealed class CollectedDeclaration
         {
             public CollectedDeclaration(CliDiscriminatorInfo? discriminator,
-                IReadOnlyList<CliArgumentInfo> arguments, IReadOnlyList<ITypeSymbol> choices)
+                IReadOnlyList<CliArgumentInfo> arguments, IReadOnlyList<ITypeSymbol> choices, bool isHelpPrefix)
             {
                 Discriminator = discriminator;
                 Arguments = arguments;
                 Choices = choices;
+                IsHelpPrefix = isHelpPrefix;
             }
 
             public CliDiscriminatorInfo? Discriminator { get; }
             public IReadOnlyList<CliArgumentInfo> Arguments { get; }
             public IReadOnlyList<ITypeSymbol> Choices { get; }
+            public bool IsHelpPrefix { get; }
         }
 
         private bool TryGetBindableMemberArgument(
@@ -435,7 +456,11 @@ namespace Lokad.Cli.Generator
                 GetNamedBool(attribute, "ConsumeNextValueVerbatim"),
                 isOptionalValue,
                 GetNamedBool(attribute, "Remainder"),
-                GetNamedBool(attribute, "StopOptionParsing"));
+                GetNamedBool(attribute, "StopOptionParsing"),
+                GetNamedBool(attribute, "IsHelp"));
+
+            if (argument.IsHelp && (!argument.IsBoolean || argument.ShortNumeric || !optionNames.HasNamedOption))
+                throw new GeneratorException(GeneratorException.InvalidHelpFlag, argument.Name);
 
             if (argument.IsRemainder && (argument.IsOption || !argument.IsCollection || isOptionalValue ||
                 bindableType.SpecialType != SpecialType.System_String || argument.ConsumeUntilBoundary))

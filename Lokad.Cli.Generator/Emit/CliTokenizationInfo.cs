@@ -18,6 +18,10 @@ namespace Lokad.Cli.Generator.Emit
         private bool _hasOptionalShortValues;
         private bool? _stopAtFirstOperand;
         private bool _hasDeclaredBoundaries;
+        private readonly SortedSet<char> _helpShortOptions = new SortedSet<char>();
+        private readonly SortedSet<string> _helpLongOptions = new SortedSet<string>(StringComparer.Ordinal);
+        private readonly Dictionary<char, CliOptionValueMode> _helpShortModes = new Dictionary<char, CliOptionValueMode>();
+        private readonly Dictionary<string, CliOptionValueMode> _helpLongModes = new Dictionary<string, CliOptionValueMode>(StringComparer.Ordinal);
 
         public IReadOnlyDictionary<char, CliOptionValueMode> ShortOptions => _shortOptions;
         public IReadOnlyDictionary<string, CliOptionValueMode> LongOptions => _longOptions;
@@ -25,7 +29,11 @@ namespace Lokad.Cli.Generator.Emit
         public bool AllowSingleDashLongOptions => _allowSingleDashLongOptions ?? true;
         public bool StopAtFirstOperand => _stopAtFirstOperand ?? false;
         public bool RequiresBoundaries => StopAtFirstOperand || _hasDeclaredBoundaries;
-        public bool UsesArity => ShortOptionSyntax == CliShortOptionSyntax.AttachedValues || _hasVerbatimOrOptionalValues || RequiresBoundaries;
+        public bool HasHelp { get; private set; }
+        public bool HasHelpPrefixes { get; private set; }
+        public IReadOnlyDictionary<char, CliOptionValueMode> HelpShortOptions => _helpShortModes;
+        public IReadOnlyDictionary<string, CliOptionValueMode> HelpLongOptions => _helpLongModes;
+        public bool UsesArity => ShortOptionSyntax == CliShortOptionSyntax.AttachedValues || _hasVerbatimOrOptionalValues || RequiresBoundaries || HasHelp;
         public bool RequiresSchema => UsesArity || !AllowSingleDashLongOptions;
 
         public void ConfigureShortOptions(CliShortOptionSyntax syntax)
@@ -52,6 +60,21 @@ namespace Lokad.Cli.Generator.Emit
         }
 
         public void RequireBoundaries() => _hasDeclaredBoundaries = true;
+
+        public void AddHelpOptions(CliOptionNames names)
+        {
+            HasHelp = true;
+            foreach (var name in names.ShortOptions)
+                _helpShortOptions.Add(name);
+            foreach (var name in names.LongOptions)
+                _helpLongOptions.Add(name);
+        }
+
+        public void RequireHelpPrefix()
+        {
+            HasHelp = true;
+            HasHelpPrefixes = true;
+        }
 
         public void AddOptions(CliOptionNames names, CliOptionValueMode mode)
         {
@@ -80,6 +103,10 @@ namespace Lokad.Cli.Generator.Emit
                 throw new GeneratorException(GeneratorException.OptionalShortSyntax);
             if (UsesArity && _ambiguousOptions.Count > 0)
                 throw new GeneratorException(GeneratorException.AmbiguousOptionArity, _ambiguousOptions.Min);
+            foreach (var name in _helpShortOptions)
+                _helpShortModes[name] = _shortOptions[name];
+            foreach (var name in _helpLongOptions)
+                _helpLongModes[name] = _longOptions[name];
         }
     }
 }

@@ -21,7 +21,8 @@ namespace Lokad.Cli.Generator.Emit
             bool consumeNextValueVerbatim,
             bool isOptionalValue,
             bool isRemainder,
-            bool stopOptionParsing)
+            bool stopOptionParsing,
+            bool isHelp)
         {
             Name = name;
             TypeName = typeName;
@@ -42,6 +43,7 @@ namespace Lokad.Cli.Generator.Emit
             IsOptionalValue = isOptionalValue;
             IsRemainder = isRemainder;
             StopOptionParsing = stopOptionParsing;
+            IsHelp = isHelp;
         }
 
         public string Name { get; }
@@ -86,6 +88,8 @@ namespace Lokad.Cli.Generator.Emit
         public bool IsRemainder { get; }
 
         public bool StopOptionParsing { get; }
+
+        public bool IsHelp { get; }
 
         public bool IsOption => Options.Labels.Count > 0 || ShortNumeric;
 

@@ -85,6 +85,108 @@ namespace Lokad.Cli
         {
             if (prefix == null) throw new ArgumentNullException(nameof(prefix));
 
+            foreach (var value in PositionalValues())
+                return string.Equals(value, prefix, StringComparison.Ordinal);
+
+            return false;
+        }
+
+        /// <summary>Inspects help options and positional help commands without advancing this cursor.</summary>
+        /// <param name="shortOptions">Declared short help names and their value modes.</param>
+        /// <param name="longOptions">Declared long help names and their value modes.</param>
+        /// <param name="commands">The selected entrypoint's command tree, including positional help markers.</param>
+        /// <returns>Whether a declared help occurrence is present; help-looking text inside values or literal suffixes is excluded.</returns>
+        public bool IsHelpRequested(IReadOnlyDictionary<char, OptionValueMode> shortOptions,
+            IReadOnlyDictionary<string, OptionValueMode> longOptions, CommandBoundary commands)
+        {
+            if (shortOptions == null) throw new ArgumentNullException(nameof(shortOptions));
+            if (longOptions == null) throw new ArgumentNullException(nameof(longOptions));
+            if (commands == null) throw new ArgumentNullException(nameof(commands));
+
+            foreach (var argument in _arguments)
+            {
+                if (argument is LongArg longArg && longOptions.ContainsKey(longArg.Name))
+                    return true;
+                if (argument is LongArgWithValue longValue && longOptions.TryGetValue(longValue.Name, out var longMode) && longMode != OptionValueMode.None)
+                    return true;
+                if (argument is ShortArgWithValue shortValue && shortOptions.TryGetValue(shortValue.Name, out var shortMode) && shortMode != OptionValueMode.None)
+                    return true;
+                if (argument is ShortArgSet group)
+                    foreach (var name in group.Options)
+                        if (shortOptions.ContainsKey(name))
+                            return true;
+            }
+            if (!commands.HasHelpPrefixes)
+                return false;
+            return HasHelpPrefix();
+
+            bool HasHelpPrefix()
+            {
+                var longNames = new HashSet<string>(StringComparer.Ordinal);
+                var shortNames = new HashSet<char>();
+                foreach (var argument in _arguments)
+                {
+                    switch (argument)
+                    {
+                        case LongArg option: longNames.Add(option.Name); break;
+                        case LongArgWithValue option: longNames.Add(option.Name); break;
+                        case ShortArgWithValue option: shortNames.Add(option.Name); break;
+                        case ShortArgSet group:
+                            foreach (var name in group.Options)
+                                shortNames.Add(name);
+                            break;
+                    }
+                }
+                var values = new List<string>(PositionalValues());
+                var visited = new HashSet<(CommandBoundary Command, int Position)>();
+                // The caller has selected this entrypoint. Consume its positional prefix before inspecting children.
+                var start = 0;
+                if (commands.Prefix != null && !TryMatch(commands, 0, out start))
+                    return false;
+                return Visit(commands, start);
+
+                bool Visit(CommandBoundary command, int position)
+                {
+                    if (!command.HasHelpPrefixes || !visited.Add((command, position)))
+                        return false;
+                    if (command.IsHelpPrefix)
+                        return true;
+                    var hasExplicitChoice = false;
+                    foreach (var child in command.Choices)
+                    {
+                        if (child.IsDefault || !TryMatch(child, position, out var next))
+                            continue;
+                        hasExplicitChoice = true;
+                        if (Visit(child, next))
+                            return true;
+                    }
+                    if (hasExplicitChoice)
+                        return false;
+                    foreach (var child in command.Choices)
+                        if (child.IsDefault && Visit(child, position))
+                            return true;
+                    return false;
+                }
+
+                bool TryMatch(CommandBoundary command, int position, out int next)
+                {
+                    next = position;
+                    if (command.Prefix != null)
+                    {
+                        if (position >= values.Count || !string.Equals(command.Prefix, values[position], StringComparison.Ordinal))
+                            return false;
+                        next++;
+                        return true;
+                    }
+                    return command.IsDefault ||
+                        (command.LongOption != null && longNames.Contains(command.LongOption)) ||
+                        (command.ShortOption != '\0' && shortNames.Contains(command.ShortOption));
+                }
+            }
+        }
+
+        private IEnumerable<string> PositionalValues()
+        {
             var skipPositional = _skipPositional.ToArray();
             var skipIndex = 0;
             foreach (var argument in _arguments)
@@ -99,10 +201,8 @@ namespace Lokad.Cli
                     continue;
                 }
 
-                return string.Equals(valueArg.Value, prefix, StringComparison.Ordinal);
+                yield return valueArg.Value;
             }
-
-            return false;
         }
 
         /// <summary>

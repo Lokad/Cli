@@ -19,6 +19,13 @@ partial interface ICommand : global::Lokad.Cli.ICliParsed<global::Test.ICommand>
         return TokenizeCore(arguments);
     }
 
+    static bool global::Lokad.Cli.ICliParsed<global::Test.ICommand>.IsHelpRequested(global::Lokad.Cli.TokenizedArguments arguments)
+    {
+        if (arguments == null) throw new global::System.ArgumentNullException(nameof(arguments));
+
+        return false;
+    }
+
     static global::Test.ICommand global::Lokad.Cli.ICliParsed<global::Test.ICommand>.ParseTokenized(global::Lokad.Cli.TokenizedArguments arguments)
     {
         if (arguments == null) throw new global::System.ArgumentNullException(nameof(arguments));

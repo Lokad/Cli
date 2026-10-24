@@ -14,6 +14,7 @@ public class GeneratorTests
     [Fact] public void ChoiceDiscrimination() => Run();
     [Fact] public void Empty() => Run();
     [Fact] public void InvalidCollectionBoundaries() => Run();
+    [Fact] public void InvalidHelp() => Run();
     [Fact] public void InvalidOptionAliases() => Run();
     [Fact] public void InvalidOptionalValues() => Run();
     [Fact] public void InvalidRemainders() => Run();

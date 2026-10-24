@@ -45,5 +45,8 @@ namespace Lokad.Cli
 
         /// <summary>Stops recognizing options after the first operand, excluding command prefixes. Defaults to <c>false</c>.</summary>
         public bool StopAtFirstOperand { get; set; }
+
+        /// <summary>Marks this shape's discriminator as a help request. Requires a discriminator; defaults to <c>false</c>.</summary>
+        public bool IsHelp { get; set; }
     }
 }

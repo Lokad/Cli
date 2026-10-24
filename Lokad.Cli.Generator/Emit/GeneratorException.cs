@@ -172,5 +172,19 @@ namespace Lokad.Cli.Generator.Emit
             "LKC0020", "Unsupported short option boundary",
             "Short options using StopOptionParsing require ShortOptionSyntax.AttachedValues",
             "SourceGenerator", DiagnosticSeverity.Error, true);
+        public static readonly DiagnosticDescriptor InvalidHelpFlag = new DiagnosticDescriptor(
+            "LKC0021", "Invalid help flag",
+            "Argument '{0}' uses IsHelp, which requires a named bool or bool? flag without ShortNumeric",
+            "SourceGenerator", DiagnosticSeverity.Error, true);
+
+        public static readonly DiagnosticDescriptor InvalidHelpChoice = new DiagnosticDescriptor(
+            "LKC0022", "Missing help discriminator",
+            "An argument shape using IsHelp requires a Prefix, Long or Short discriminator",
+            "SourceGenerator", DiagnosticSeverity.Error, true);
+
+        public static readonly DiagnosticDescriptor AmbiguousHelpSchema = new DiagnosticDescriptor(
+            "LKC0023", "Ambiguous help command schema",
+            "Help prefix inspection requires unambiguous command selectors: {0}",
+            "SourceGenerator", DiagnosticSeverity.Error, true);
     }
 }

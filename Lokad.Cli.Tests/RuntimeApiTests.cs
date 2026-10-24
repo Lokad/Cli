@@ -7,6 +7,7 @@ public class RuntimeApiTests
     {
         Assert.Throws<System.NotImplementedException>(() => Parser.Parse<Parsed>(System.Array.Empty<string>()));
         Assert.Throws<System.NotImplementedException>(() => Parser.Tokenize<Parsed>(System.Array.Empty<string>()));
+        Assert.Throws<System.NotImplementedException>(() => Parser.IsHelpRequested<Parsed>(new TokenizedArguments(System.Array.Empty<ITokenizedArguments>())));
         Assert.Throws<System.NotImplementedException>(() => Parser.Document<Parsed>("cmd"));
     }
 
@@ -73,6 +74,8 @@ public class RuntimeApiTests
 
     private sealed class Parsed : ICliParsed<Parsed>
     {
+        public static bool IsHelpRequested(TokenizedArguments arguments) => throw new System.NotImplementedException();
+
         public static TokenizedArguments Tokenize(System.Collections.Generic.IReadOnlyList<string> arguments)
         {
             throw new System.NotImplementedException();
@@ -96,6 +99,8 @@ public class RuntimeApiTests
 
     private sealed class CapturedParsed : ICliParsed<CapturedParsed>
     {
+        public static bool IsHelpRequested(TokenizedArguments arguments) => false;
+
         public CapturedParsed(System.Collections.Generic.IReadOnlyList<string> arguments)
         {
             Arguments = arguments;

@@ -19,6 +19,13 @@ partial record RangeOptions : global::Lokad.Cli.ICliParsed<global::Test.RangeOpt
         return TokenizeCore(arguments);
     }
 
+    static bool global::Lokad.Cli.ICliParsed<global::Test.RangeOptions>.IsHelpRequested(global::Lokad.Cli.TokenizedArguments arguments)
+    {
+        if (arguments == null) throw new global::System.ArgumentNullException(nameof(arguments));
+
+        return false;
+    }
+
     public static global::Test.RangeOptions ParseTokenized(global::Lokad.Cli.TokenizedArguments arguments)
     {
         if (arguments == null) throw new global::System.ArgumentNullException(nameof(arguments));

@@ -86,5 +86,8 @@ namespace Lokad.Cli
         ///     Short names require <see cref="ShortOptionSyntax.AttachedValues"/>. Defaults to <c>false</c>.
         /// </summary>
         public bool StopOptionParsing { get; set; }
+
+        /// <summary>Marks a named boolean flag for help inspection before binding. Defaults to <c>false</c>.</summary>
+        public bool IsHelp { get; set; }
     }
 }

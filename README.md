@@ -77,7 +77,17 @@ Each call returns a fresh mutable cursor. Presence checks do not advance it; `Sh
 
 Callers can rewrite token records and pass a new `TokenizedArguments` to `ParseTokenized<T>`. Preserve option-value boundaries: the tokens do not expose option arity. Reconstructing raw argument strings and tokenizing them again can change their interpretation, so normalize tokens directly. Reusable option names remain private to the generated type.
 
-Handwritten implementations of `ICliParsed<T>` must implement its static `Tokenize` member; annotated types receive it from the generator.
+Handwritten implementations of `ICliParsed<T>` must implement its static `Tokenize` and `IsHelpRequested(TokenizedArguments)` members; annotated types receive them from the generator.
+
+### Help inspection
+
+Mark a named `bool`/`bool?` flag with `[Argument(..., IsHelp = true)]`, or a
+help choice with `[Arguments(..., IsHelp = true)]`.
+`Parser.IsHelpRequested<MyArgs>(args)` detects help before binding. Lexical errors
+take precedence; help-looking text in values or remainders stays data.
+
+The tokenized overload preserves the cursor for `Parser.ParseTokenized<MyArgs>`.
+Ordinary parsing remains strict.
 
 ### Repeated boolean flags
 

@@ -5,9 +5,11 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
     // A separate holder allows parsing from the argument type's static initializers.
     private static class __CliOptionNames
     {
-        public static readonly global::System.Collections.Generic.IReadOnlyDictionary<char, global::Lokad.Cli.OptionValueMode> Short = new global::System.Collections.Generic.Dictionary<char, global::Lokad.Cli.OptionValueMode> { ['c'] = global::Lokad.Cli.OptionValueMode.Required, ['p'] = global::Lokad.Cli.OptionValueMode.Required, ['v'] = global::Lokad.Cli.OptionValueMode.None, ['V'] = global::Lokad.Cli.OptionValueMode.None, ['f'] = global::Lokad.Cli.OptionValueMode.Verbatim, ['o'] = global::Lokad.Cli.OptionValueMode.OptionalAttached, ['e'] = global::Lokad.Cli.OptionValueMode.Required, ['m'] = global::Lokad.Cli.OptionValueMode.None };
-        public static readonly global::System.Collections.Generic.IReadOnlyDictionary<string, global::Lokad.Cli.OptionValueMode> Long = new global::System.Collections.Generic.Dictionary<string, global::Lokad.Cli.OptionValueMode> { [@"from-ctor"] = global::Lokad.Cli.OptionValueMode.Required, [@"raw-param"] = global::Lokad.Cli.OptionValueMode.Required, [@"verbose"] = global::Lokad.Cli.OptionValueMode.None, [@"chatty"] = global::Lokad.Cli.OptionValueMode.None, [@"field"] = global::Lokad.Cli.OptionValueMode.Verbatim, [@"optional"] = global::Lokad.Cli.OptionValueMode.Required, [@"format"] = global::Lokad.Cli.OptionValueMode.OptionalAttached, [@"flag-value"] = global::Lokad.Cli.OptionValueMode.OptionalAttached, [@"code"] = global::Lokad.Cli.OptionValueMode.Required, [@"mode"] = global::Lokad.Cli.OptionValueMode.None };
-        public static readonly global::Lokad.Cli.CommandBoundary Boundary = new global::Lokad.Cli.CommandBoundary(null, @"mode", 'm', new global::Lokad.Cli.CommandBoundary[] {  }, null, new char[] { 'e' }, new string[] { @"code" });
+        public static readonly global::System.Collections.Generic.IReadOnlyDictionary<char, global::Lokad.Cli.OptionValueMode> Short = new global::System.Collections.Generic.Dictionary<char, global::Lokad.Cli.OptionValueMode> { ['c'] = global::Lokad.Cli.OptionValueMode.Required, ['p'] = global::Lokad.Cli.OptionValueMode.Required, ['v'] = global::Lokad.Cli.OptionValueMode.None, ['V'] = global::Lokad.Cli.OptionValueMode.None, ['f'] = global::Lokad.Cli.OptionValueMode.Verbatim, ['o'] = global::Lokad.Cli.OptionValueMode.OptionalAttached, ['e'] = global::Lokad.Cli.OptionValueMode.Required, ['h'] = global::Lokad.Cli.OptionValueMode.None, ['m'] = global::Lokad.Cli.OptionValueMode.None };
+        public static readonly global::System.Collections.Generic.IReadOnlyDictionary<string, global::Lokad.Cli.OptionValueMode> Long = new global::System.Collections.Generic.Dictionary<string, global::Lokad.Cli.OptionValueMode> { [@"from-ctor"] = global::Lokad.Cli.OptionValueMode.Required, [@"raw-param"] = global::Lokad.Cli.OptionValueMode.Required, [@"verbose"] = global::Lokad.Cli.OptionValueMode.None, [@"chatty"] = global::Lokad.Cli.OptionValueMode.None, [@"field"] = global::Lokad.Cli.OptionValueMode.Verbatim, [@"optional"] = global::Lokad.Cli.OptionValueMode.Required, [@"format"] = global::Lokad.Cli.OptionValueMode.OptionalAttached, [@"flag-value"] = global::Lokad.Cli.OptionValueMode.OptionalAttached, [@"code"] = global::Lokad.Cli.OptionValueMode.Required, [@"help"] = global::Lokad.Cli.OptionValueMode.None, [@"mode"] = global::Lokad.Cli.OptionValueMode.None };
+        public static readonly global::System.Collections.Generic.IReadOnlyDictionary<char, global::Lokad.Cli.OptionValueMode> HelpShort = new global::System.Collections.Generic.Dictionary<char, global::Lokad.Cli.OptionValueMode> { ['h'] = global::Lokad.Cli.OptionValueMode.None };
+        public static readonly global::System.Collections.Generic.IReadOnlyDictionary<string, global::Lokad.Cli.OptionValueMode> HelpLong = new global::System.Collections.Generic.Dictionary<string, global::Lokad.Cli.OptionValueMode> { [@"help"] = global::Lokad.Cli.OptionValueMode.None };
+        public static readonly global::Lokad.Cli.CommandBoundary Boundary = new global::Lokad.Cli.CommandBoundary(null, @"mode", 'm', new global::Lokad.Cli.CommandBoundary[] {  }, null, new char[] { 'e' }, new string[] { @"code" }, false);
     }
 
     public static global::Test.TokenizationOptions Parse(global::System.Collections.Generic.IReadOnlyList<string> arguments)
@@ -18,6 +20,13 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
     public static global::Lokad.Cli.TokenizedArguments Tokenize(global::System.Collections.Generic.IReadOnlyList<string> arguments)
     {
         return TokenizeCore(arguments);
+    }
+
+    static bool global::Lokad.Cli.ICliParsed<global::Test.TokenizationOptions>.IsHelpRequested(global::Lokad.Cli.TokenizedArguments arguments)
+    {
+        if (arguments == null) throw new global::System.ArgumentNullException(nameof(arguments));
+
+        return arguments.IsHelpRequested(__CliOptionNames.HelpShort, __CliOptionNames.HelpLong, __CliOptionNames.Boundary);
     }
 
     public static global::Test.TokenizationOptions ParseTokenized(global::Lokad.Cli.TokenizedArguments arguments)
@@ -62,6 +71,8 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
         global::Lokad.Cli.OptionalValue<global::Test.SnapshotReferenceValue<string?>?> arg8Value = default;
         global::System.Collections.Generic.List<global::Lokad.Cli.OptionalValue<bool?>> arg9Value = new();
         string? arg10Value = default;
+        var arg11Seen = false;
+        bool arg11Value = default;
         var positionalIndex = 0;
         global::Lokad.Cli.ITokenizedArguments? current;
         while ((current = tokenized.Peek()) != null)
@@ -172,6 +183,14 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
                         arg10Value = optionValue.Value;
                         break;
                     }
+                    if (longArg.Name == @"help")
+                    {
+                        if (arg11Seen)
+                            throw new global::Lokad.Cli.ParseException(@"duplicate option `--help`");
+                        arg11Seen = true;
+                        arg11Value = true;
+                        break;
+                    }
                     if (longArg.Name == @"mode")
                         break;
                     throw new global::Lokad.Cli.ParseException($"unexpected option `--{longArg.Name}`");
@@ -249,6 +268,14 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
                             arg10Value = optionValue.Value;
                             continue;
                         }
+                        if (shortOption == 'h')
+                        {
+                            if (arg11Seen)
+                                throw new global::Lokad.Cli.ParseException(@"duplicate option `-h`");
+                            arg11Seen = true;
+                            arg11Value = true;
+                            continue;
+                        }
                         if (shortOption == 'm')
                             continue;
                         throw new global::Lokad.Cli.ParseException($"unexpected option `-{shortOption}`");
@@ -308,6 +335,7 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
             Format = arg8Value,
             FlagValues = arg9Value.ToArray(),
             Code = arg10Value,
+            Help = arg11Value,
         };
     }
 
@@ -327,6 +355,7 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
         lines.Add(@"  --format[=style], -o[style]: Optional attached value.");
         lines.Add(@"  --flag-value[=bool]: Optional flag values.");
         lines.Add(@"  --code, -e: Code boundary.");
+        lines.Add(@"  --help, -h: Help.");
         return string.Join(global::System.Environment.NewLine, lines);
     }
 

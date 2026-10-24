@@ -23,6 +23,13 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
         return TokenizeCore(arguments);
     }}
 
+    {GetHelpMethodDeclaration(type)}
+    {{
+        if (arguments == null) throw new global::System.ArgumentNullException(nameof(arguments));
+
+        {GetHelpInspection(type)}
+    }}
+
     {GetParseTokenizedMethodDeclaration(type)}
     {{
         if (arguments == null) throw new global::System.ArgumentNullException(nameof(arguments));
@@ -65,6 +72,14 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
                 return "public static global::Lokad.Cli.TokenizedArguments Tokenize(global::System.Collections.Generic.IReadOnlyList<string> arguments)";
             }
 
+            static string GetHelpMethodDeclaration(CliTypeInfo parserType) =>
+                "static bool global::Lokad.Cli.ICliParsed<" + parserType.TypeName.FullName + ">.IsHelpRequested(global::Lokad.Cli.TokenizedArguments arguments)";
+
+            static string GetHelpInspection(CliTypeInfo parserType) => parserType.Tokenization.HasHelp
+                ? "return arguments.IsHelpRequested(__CliOptionNames.HelpShort, __CliOptionNames.HelpLong, " +
+                    (parserType.CommandBoundary != null ? "__CliOptionNames.Boundary" : "global::Lokad.Cli.CommandBoundary.Empty") + ");"
+                : "return false;";
+
             static string EmitOptionNames(CliTypeInfo parserType)
             {
                 string shortDeclaration;
@@ -79,12 +94,16 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
                     shortDeclaration = "char[] Short = " + FormatCharArray(parserType.ShortOptions);
                     longDeclaration = "string[] Long = " + FormatStringArray(parserType.LongOptions);
                 }
+                var helpDeclarations = parserType.Tokenization.HasHelp
+                    ? "        public static readonly " + FormatOptions("char", "HelpShort", parserType.Tokenization.HelpShortOptions, FormatCharLiteral) + ";" + Environment.NewLine +
+                      "        public static readonly " + FormatOptions("string", "HelpLong", parserType.Tokenization.HelpLongOptions, FormatStringLiteral) + ";" + Environment.NewLine
+                    : string.Empty;
                 return $@"    // A separate holder allows parsing from the argument type's static initializers.
     private static class __CliOptionNames
     {{
         public static readonly {shortDeclaration};
         public static readonly {longDeclaration};
-{EmitBoundaries()}    }}";
+{helpDeclarations}{EmitBoundaries()}    }}";
 
                 string EmitBoundaries()
                 {
@@ -113,7 +132,8 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
                             .Append(FormatCharLiteral(boundary.Discriminator?.ShortOption ?? '\0')).Append(", ")
                             .Append("new global::Lokad.Cli.CommandBoundary[] { ").Append(string.Join(", ", children)).Append(" }, ")
                             .Append(boundary.RemainderAfterOperands?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "null").Append(", ")
-                            .Append(FormatCharArray(shorts)).Append(", ").Append(FormatStringArray(longs)).AppendLine(");");
+                            .Append(FormatCharArray(shorts)).Append(", ").Append(FormatStringArray(longs)).Append(", ")
+                            .Append(FormatBoolean(boundary.IsHelpPrefix)).AppendLine(");");
                         return name;
                     }
                 }
@@ -1008,7 +1028,8 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
 
             var lines = new System.Text.StringBuilder();
             lines.AppendLine("        var choice = -1;");
-            lines.AppendLine("        string? choiceDiscriminator = null;");
+            if (Array.Exists(type.Choices, choice => choice.Discriminator != null))
+                lines.AppendLine("        string? choiceDiscriminator = null;");
 
             for (var i = 0; i < type.Choices.Length; i++)
             {

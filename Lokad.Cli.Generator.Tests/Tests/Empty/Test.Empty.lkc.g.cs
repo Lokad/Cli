@@ -19,6 +19,13 @@ partial record Empty : global::Lokad.Cli.ICliParsed<global::Test.Empty>
         return TokenizeCore(arguments);
     }
 
+    static bool global::Lokad.Cli.ICliParsed<global::Test.Empty>.IsHelpRequested(global::Lokad.Cli.TokenizedArguments arguments)
+    {
+        if (arguments == null) throw new global::System.ArgumentNullException(nameof(arguments));
+
+        return false;
+    }
+
     public static global::Test.Empty ParseTokenized(global::Lokad.Cli.TokenizedArguments arguments)
     {
         if (arguments == null) throw new global::System.ArgumentNullException(nameof(arguments));

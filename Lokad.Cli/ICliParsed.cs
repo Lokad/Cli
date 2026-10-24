@@ -22,6 +22,11 @@ namespace Lokad.Cli
         /// <returns> A fresh token cursor for inspection or rewriting. </returns>
         static abstract TokenizedArguments Tokenize(IReadOnlyList<string> arguments);
 
+        /// <summary>Inspects declared help options and command prefixes without binding, conversion or consuming the cursor.</summary>
+        /// <param name="arguments">Already classified arguments; lexical validation belongs to tokenization.</param>
+        /// <returns>Whether the token stream requests help for this schema.</returns>
+        static abstract bool IsHelpRequested(TokenizedArguments arguments);
+
         /// <summary>
         ///     Parses tokenized command-line arguments into an instance of <typeparamref name="T"/>.
         /// </summary>
