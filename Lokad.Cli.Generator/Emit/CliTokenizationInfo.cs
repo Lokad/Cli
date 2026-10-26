@@ -18,6 +18,7 @@ namespace Lokad.Cli.Generator.Emit
         private bool _hasOptionalShortValues;
         private bool? _stopAtFirstOperand;
         private bool _hasDeclaredBoundaries;
+        private bool _hasPositionalChoices;
         private readonly SortedSet<char> _helpShortOptions = new SortedSet<char>();
         private readonly SortedSet<string> _helpLongOptions = new SortedSet<string>(StringComparer.Ordinal);
         private readonly Dictionary<char, CliOptionValueMode> _helpShortModes = new Dictionary<char, CliOptionValueMode>();
@@ -33,7 +34,7 @@ namespace Lokad.Cli.Generator.Emit
         public bool HasHelpPrefixes { get; private set; }
         public IReadOnlyDictionary<char, CliOptionValueMode> HelpShortOptions => _helpShortModes;
         public IReadOnlyDictionary<string, CliOptionValueMode> HelpLongOptions => _helpLongModes;
-        public bool UsesArity => ShortOptionSyntax == CliShortOptionSyntax.AttachedValues || _hasVerbatimOrOptionalValues || RequiresBoundaries || HasHelp;
+        public bool UsesArity => ShortOptionSyntax == CliShortOptionSyntax.AttachedValues || _hasVerbatimOrOptionalValues || RequiresBoundaries || HasHelp || _hasPositionalChoices;
         public bool RequiresSchema => UsesArity || !AllowSingleDashLongOptions;
 
         public void ConfigureShortOptions(CliShortOptionSyntax syntax)
@@ -60,6 +61,8 @@ namespace Lokad.Cli.Generator.Emit
         }
 
         public void RequireBoundaries() => _hasDeclaredBoundaries = true;
+
+        public void RequirePositionalChoices() => _hasPositionalChoices = true;
 
         public void AddHelpOptions(CliOptionNames names)
         {

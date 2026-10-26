@@ -126,13 +126,13 @@ namespace Lokad.Cli.Generator
                     if (name >= '0' && name <= '9')
                         throw new GeneratorException(GeneratorException.NumericShortCollision, name);
 
-            tokenization.Validate();
             var commandSchemas = new Dictionary<ITypeSymbol, CliCommandBoundaryInfo>(SymbolEqualityComparer.Default);
             var activeCommands = new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
             var selectorDiagnostic = tokenization.RequiresBoundaries
                 ? GeneratorException.AmbiguousCommandBoundary
                 : tokenization.HasHelpPrefixes ? GeneratorException.AmbiguousHelpSchema : GeneratorException.InvalidChoiceSchema;
             var schema = BuildCommandSchema(typeSymbol);
+            tokenization.Validate();
             var boundary = tokenization.RequiresBoundaries || tokenization.HasHelpPrefixes ? schema : null;
             var explicitParserMethods = CliParserMethods.None;
             foreach (var method in new[] { CliParserMethods.Parse, CliParserMethods.Tokenize, CliParserMethods.ParseTokenized, CliParserMethods.Document })
@@ -226,7 +226,11 @@ namespace Lokad.Cli.Generator
                     }
                     else
                     {
-                        if (selector.Prefix != null) AddSelector("prefix:" + selector.Prefix);
+                        if (selector.Prefix != null)
+                        {
+                            AddSelector("prefix:" + selector.Prefix);
+                            tokenization.RequirePositionalChoices();
+                        }
                         if (selector.LongOption != null) AddSelector("--" + selector.LongOption);
                         if (selector.ShortOption != '\0') AddSelector("-" + selector.ShortOption);
                     }

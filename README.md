@@ -190,6 +190,7 @@ public partial record MyArgs2 : IMyArgs;
 
 The members of the interface are ignored. All the choice types must implement the interface, and
 must carry either `[Arguments]` or `[Choice]` annotations of their own.
+Option values are excluded from prefix matching; positional choices require unambiguous option arities.
 
 The interface may be annotated with `[Arguments]` itself to specify a discriminator. For example, 
 

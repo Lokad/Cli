@@ -5,8 +5,8 @@ partial interface ICommand : global::Lokad.Cli.ICliParsed<global::Test.ICommand>
     // A separate holder allows parsing from the argument type's static initializers.
     private static class __CliOptionNames
     {
-        public static readonly char[] Short = global::System.Array.Empty<char>();
-        public static readonly string[] Long = global::System.Array.Empty<string>();
+        public static readonly global::System.Collections.Generic.IReadOnlyDictionary<char, global::Lokad.Cli.OptionValueMode> Short = new global::System.Collections.Generic.Dictionary<char, global::Lokad.Cli.OptionValueMode> {  };
+        public static readonly global::System.Collections.Generic.IReadOnlyDictionary<string, global::Lokad.Cli.OptionValueMode> Long = new global::System.Collections.Generic.Dictionary<string, global::Lokad.Cli.OptionValueMode> {  };
     }
 
     static global::Test.ICommand global::Lokad.Cli.ICliParsed<global::Test.ICommand>.Parse(global::System.Collections.Generic.IReadOnlyList<string> arguments)
@@ -44,7 +44,9 @@ partial interface ICommand : global::Lokad.Cli.ICliParsed<global::Test.ICommand>
             arguments,
             __CliOptionNames.Short,
             __CliOptionNames.Long,
-            false);
+            false,
+            global::Lokad.Cli.ShortOptionSyntax.GroupedValues,
+            true);
     }
 
     private static global::Test.ICommand ParseTokenizedCore(global::Lokad.Cli.TokenizedArguments tokenized)
