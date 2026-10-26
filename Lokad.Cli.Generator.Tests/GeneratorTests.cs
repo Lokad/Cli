@@ -22,6 +22,7 @@ public class GeneratorTests
     [Fact] public void InvalidOptionAliases() => GeneratorTestFixture.Test(nameof(InvalidOptionAliases));
     [Fact] public void InvalidOptionNames() => GeneratorTestFixture.Test(nameof(InvalidOptionNames));
     [Fact] public void InvalidOptionalValues() => GeneratorTestFixture.Test(nameof(InvalidOptionalValues));
+    [Fact] public void InvalidPositionalOrder() => GeneratorTestFixture.Test(nameof(InvalidPositionalOrder));
     [Fact] public void InvalidRemainders() => GeneratorTestFixture.Test(nameof(InvalidRemainders));
     [Fact] public void InvalidRepeatedFlags() => GeneratorTestFixture.Test(nameof(InvalidRepeatedFlags));
     [Fact] public void InvalidTokenizationPolicies() => GeneratorTestFixture.Test(nameof(InvalidTokenizationPolicies));

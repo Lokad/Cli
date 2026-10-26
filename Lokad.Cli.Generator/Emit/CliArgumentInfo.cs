@@ -107,6 +107,8 @@ namespace Lokad.Cli.Generator.Emit
 
         public bool IsOption => Options.Labels.Count > 0 || ShortNumeric;
 
+        public bool IsRequired => !IsOptionalValue && !IsNullable && !IsBoolean && !IsCollection;
+
         public bool NeedsSeen => !IsOptionalValue && !IsCollection && !IsReferenceType && (!IsBoolean || !AllowRepeated || IsNullable);
     }
 }

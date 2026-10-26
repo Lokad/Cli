@@ -1,0 +1,3 @@
+Error LKC0032: Optional positional argument 'Limit' cannot precede required positional argument 'File' (InvalidPositionalOrder/Input.cs:8:16)
+Error LKC0032: Optional positional argument 'Prefix' cannot precede required positional argument 'File' (InvalidPositionalOrder/Input.cs:13:16)
+Error LKC0032: Optional positional argument 'Options.Limit' cannot precede required positional argument 'File' (InvalidPositionalOrder/Input.cs:21:16)

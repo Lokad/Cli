@@ -237,6 +237,7 @@ Custom `IParsable<T>` structs and classes are converted through `TryParse` with 
 The `Ranges` type is an `IReadOnlyList<(int First, int Last)>` parsed from comma-separated range elements such as `1,4,5-6`. Each element can be a single number `N`, a closed range `N-N`, an open lower-bound range `-N` where `First` is `int.MinValue`, or an open upper-bound range `N-` where `Last` is `int.MaxValue`.
 
 Given a primitive type `T`, the type `T?` behaves the same, but the property is optional and does not fail if no value was provided. 
+Required positional scalars must precede optional positional scalars, including across groups (`LKC0032`).
 
 For a supported element type `T`, `T[]`, `IReadOnlyList<T>`, and `ReadOnlyMemory<T>` capture multiple values. Repeated named options append in order (`--value 10 --value 11` or `-vv 10 11`); a final positional collection captures the remaining operands. Omitted collections are empty. Elements use the same conversions as scalar values; boolean collections take explicit `true` or `false` values.
 

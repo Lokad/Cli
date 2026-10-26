@@ -267,7 +267,7 @@ $@"#nullable enable
                 for (var i = 0; i < type.Arguments.Length; i++)
                 {
                     var argument = type.Arguments[i];
-                    if (argument.IsOptionalValue || argument.IsNullable || argument.IsBoolean || argument.IsCollection)
+                    if (!argument.IsRequired)
                         continue;
 
                     lines.AppendLine();

@@ -201,6 +201,15 @@ namespace Lokad.Cli.Generator
                         stopLong.AddRange(argument.Options.LongOptions);
                     }
                 }
+                CliArgumentInfo? optionalOperand = null;
+                foreach (var operand in operands)
+                {
+                    if (operand.IsRequired && optionalOperand != null)
+                        throw new GeneratorException(operand.Location, GeneratorException.InvalidPositionalOrder,
+                            optionalOperand.Path, operand.Path);
+                    if (!operand.IsCollection && operand.IsNullable)
+                        optionalOperand ??= operand;
+                }
                 if (stopShort.Count > 0 && tokenization.ShortOptionSyntax != CliShortOptionSyntax.AttachedValues)
                     throw new GeneratorException(GeneratorException.ShortBoundarySyntax);
                 int? remainderAfter = null;
