@@ -84,7 +84,7 @@ namespace Lokad.Cli.Generator
                 var source = strategy.EmitSource();
                 if (source != null)
                     context.AddSource(
-                        (strategy.Type.TypeName.Namespace.Length == 0 ? "" : strategy.Type.TypeName.Namespace + ".") +
+                        (strategy.Type.TypeName.Namespace.Length == 0 ? "" : strategy.Type.TypeName.Namespace.Replace("@", "") + ".") +
                         $"{strategy.Type.TypeName.Name}.{_slug}.g.cs",
                         source);
             }

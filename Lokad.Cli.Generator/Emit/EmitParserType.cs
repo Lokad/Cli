@@ -1,4 +1,5 @@
 using System;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace Lokad.Cli.Generator.Emit
 {
@@ -8,7 +9,7 @@ namespace Lokad.Cli.Generator.Emit
         {
             return
 $@"#nullable enable
-{GetNamespaceDeclaration(type)}partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICliParsed<{type.TypeName.FullName}>
+{GetNamespaceDeclaration(type)}partial {GetTypeDeclaration(type)} {FormatIdentifier(type.TypeName.Name)} : global::Lokad.Cli.ICliParsed<{type.TypeName.FullName}>
 {{
 {EmitOptionNames(type)}
 
@@ -623,7 +624,7 @@ $@"#nullable enable
                         expression.AppendLine().Append(indent).AppendLine("{");
                         hasInitializer = true;
                     }
-                    expression.Append(indent).Append("    ").Append(member.Name).Append(" = ")
+                    expression.Append(indent).Append("    ").Append(FormatIdentifier(member.Name)).Append(" = ")
                         .Append(GetResultValueExpression(member, indent + "    ")).AppendLine(",");
                 }
                 if (hasInitializer)
@@ -1148,6 +1149,10 @@ $@"#nullable enable
 
         private static string FormatStringLiteral(string value) =>
             "@\"" + value.Replace("\"", "\"\"") + "\"";
+
+        private static string FormatIdentifier(string name) =>
+            SyntaxFacts.GetKeywordKind(name) != SyntaxKind.None || SyntaxFacts.GetContextualKeywordKind(name) != SyntaxKind.None
+                ? "@" + name : name;
 
         private static string EscapeInterpolatedStringText(string value) =>
             value.Replace("{", "{{").Replace("}", "}}").Replace("\"", "\\\"");
