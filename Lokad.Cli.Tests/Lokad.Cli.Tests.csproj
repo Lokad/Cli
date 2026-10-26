@@ -1,23 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
         <ImplicitUsings>disable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <OutputType>Exe</OutputType>
-        <GenerateProgramFile>false</GenerateProgramFile>
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(Configuration)'=='Debug'">
+    <ItemGroup>
         <ProjectReference Include="..\Lokad.Cli\Lokad.Cli.csproj" />
         <ProjectReference Include="..\Lokad.Cli.Generator\Lokad.Cli.Generator.csproj"
                           OutputItemType="Analyzer"
                           ReferenceOutputAssembly="false" />
-        <ProjectReference Include="..\Lokad.Cli.Generator.Tests\Lokad.Cli.Generator.Tests.csproj" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(Configuration)'=='Release'">
-        <PackageReference Include="Lokad.Cli" Version="1.0.0-rc3" />
     </ItemGroup>
 
     <ItemGroup>

@@ -1,29 +1,28 @@
-using System.Reflection;
-
 namespace Lokad.Cli.Generator.Tests;
 
 public static class Program
 {
-    public static void Main(string[] args)
+    public static int Main(string[] args)
     {
         if (args is ["--reindex"])
         {
             GeneratorTestFixture.Reindex();
-            return;
+            return 0;
         }
 
         if (args is ["--refresh-all"])
         {
             GeneratorTestFixture.RefreshAll();
-            return;
+            return 0;
         }
 
         if (args is ["--refresh", var test])
         {
             GeneratorTestFixture.Refresh(test);
-            return;
+            return 0;
         }
 
-        RunInProcess.RunTests(Assembly.GetExecutingAssembly());
+        Console.Error.WriteLine("Use dotnet test to run tests, or --reindex, --refresh-all, --refresh <fixture> to maintain snapshots.");
+        return 1;
     }
 }
