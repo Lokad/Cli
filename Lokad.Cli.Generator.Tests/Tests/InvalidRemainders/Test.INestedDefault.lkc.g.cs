@@ -84,7 +84,10 @@ partial interface INestedDefault : global::Lokad.Cli.ICliParsed<global::Test.INe
 
         var documentedCommandName = commandName;
         var lines = new global::System.Collections.Generic.List<string>();
-        AddDocumentation__Cli(lines, DocumentChoice__Cli<global::Test.NestedDefaultLeaf>(documentedCommandName));
+        string documentation;
+        documentation = DocumentChoice__Cli<global::Test.NestedDefaultLeaf>(documentedCommandName);
+        if (documentation.Length > 0)
+            lines.Add(documentation);
         return string.Join(global::System.Environment.NewLine, lines);
     }
 
@@ -92,16 +95,6 @@ partial interface INestedDefault : global::Lokad.Cli.ICliParsed<global::Test.INe
         where TChoice : global::Lokad.Cli.ICliParsed<TChoice>
     {
         return TChoice.Document(commandName);
-    }
-
-    private static void AddDocumentation__Cli(global::System.Collections.Generic.List<string> lines, string documentation)
-    {
-        if (documentation.Length == 0)
-            return;
-
-        var split = documentation.Split(new[] { global::System.Environment.NewLine }, global::System.StringSplitOptions.None);
-        foreach (var line in split)
-            lines.Add(line);
     }
 
     private static string FormatDocumentationLine__Cli(string commandName, string documentation)

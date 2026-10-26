@@ -822,11 +822,14 @@ $@"#nullable enable
                         .AppendLine("));");
                 }
 
+                lines.AppendLine("        string documentation;");
                 for (var i = 0; i < type.Choices.Length; i++)
                 {
-                    lines.Append("        AddDocumentation").Append(type.ImplementationSuffix).Append("(lines, DocumentChoice").Append(type.ImplementationSuffix).Append('<')
+                    lines.Append("        documentation = DocumentChoice").Append(type.ImplementationSuffix).Append('<')
                         .Append(type.Choices[i].TypeName.FullName)
-                        .AppendLine(">(documentedCommandName));");
+                        .AppendLine(">(documentedCommandName);");
+                    lines.AppendLine("        if (documentation.Length > 0)");
+                    lines.AppendLine("            lines.Add(documentation);");
                 }
 
                 lines.AppendLine("        return string.Join(global::System.Environment.NewLine, lines);");
@@ -858,16 +861,6 @@ $@"#nullable enable
         where TChoice : global::Lokad.Cli.ICliParsed<TChoice>
     {{
         return TChoice.Document(commandName);
-    }}
-
-    private static void AddDocumentation{type.ImplementationSuffix}(global::System.Collections.Generic.List<string> lines, string documentation)
-    {{
-        if (documentation.Length == 0)
-            return;
-
-        var split = documentation.Split(new[] {{ global::System.Environment.NewLine }}, global::System.StringSplitOptions.None);
-        foreach (var line in split)
-            lines.Add(line);
     }}");
             }
 
