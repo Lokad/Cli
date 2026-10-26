@@ -9,8 +9,6 @@ namespace Lokad.Cli.Generator.Emit
             CliTypeKind kind,
             CliParserMethods explicitParserMethods,
             string implementationSuffix,
-            char[] shortOptions,
-            string[] longOptions,
             bool hasShortNumericArguments,
             CliChoiceInfo[] choices,
             IReadOnlyList<CliArgumentInfo> members,
@@ -24,8 +22,6 @@ namespace Lokad.Cli.Generator.Emit
             Kind = kind;
             ExplicitParserMethods = explicitParserMethods;
             ImplementationSuffix = implementationSuffix;
-            ShortOptions = shortOptions;
-            LongOptions = longOptions;
             HasShortNumericArguments = hasShortNumericArguments;
             Choices = choices;
             Members = members;
@@ -43,10 +39,6 @@ namespace Lokad.Cli.Generator.Emit
         public CliParserMethods ExplicitParserMethods { get; }
 
         public string ImplementationSuffix { get; }
-
-        public char[] ShortOptions { get; }
-
-        public string[] LongOptions { get; }
 
         public bool HasShortNumericArguments { get; }
 

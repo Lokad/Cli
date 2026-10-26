@@ -74,8 +74,6 @@ namespace Lokad.Cli.Generator
 
         private CliTypeInfo CollectParserInfo(Compilation compilation, ITypeSymbol typeSymbol)
         {
-            var shortOptions = new List<char>();
-            var longOptions = new List<string>();
             var hasShortNumericArguments = false;
             var choices = new List<CliChoiceInfo>();
             var rootMembers = Array.Empty<CliArgumentInfo>();
@@ -122,7 +120,7 @@ namespace Lokad.Cli.Generator
             }
 
             if (hasShortNumericArguments)
-                foreach (var name in shortOptions)
+                foreach (var name in tokenization.ShortOptions.Keys)
                     if (name >= '0' && name <= '9')
                         throw new GeneratorException(GeneratorException.NumericShortCollision, name);
 
@@ -151,8 +149,6 @@ namespace Lokad.Cli.Generator
                 GetTypeKind(typeSymbol),
                 explicitParserMethods,
                 implementationSuffix,
-                shortOptions.ToArray(),
-                longOptions.ToArray(),
                 hasShortNumericArguments,
                 choices.ToArray(),
                 rootMembers,
@@ -365,7 +361,7 @@ namespace Lokad.Cli.Generator
 
                 void AddMember(ISymbol member, AttributeData annotation, bool isConstructorParameter)
                 {
-                    var names = CollectArgumentNames(annotation, shortOptions, longOptions, ref hasShortNumericArguments);
+                    var names = CollectArgumentNames(annotation, ref hasShortNumericArguments);
                     var memberPath = path.Length == 0 ? member.Name : path + "." + member.Name;
                     if (member.IsStatic || member is IPropertySymbol indexer && indexer.IsIndexer)
                         throw InvalidTarget();
@@ -545,7 +541,7 @@ namespace Lokad.Cli.Generator
                                 ownDiscriminator.ShortOption != '\0' ? new[] { ownDiscriminator.ShortOption } : Array.Empty<char>()));
                     }
                     AddDiscriminatorOptions(ownDiscriminator, discriminatorOptions);
-                    CollectArgumentNames(annotation, shortOptions, longOptions, ref hasShortNumericArguments);
+                    CollectArgumentNames(annotation, ref hasShortNumericArguments);
                     if (isRoot)
                         documentation = GetConstructorString(annotation, 0);
                 }
@@ -684,8 +680,6 @@ namespace Lokad.Cli.Generator
 
         private static CliOptionNames CollectArgumentNames(
             AttributeData attribute,
-            List<char> shortOptions,
-            List<string> longOptions,
             ref bool hasShortNumericArguments)
         {
             var shortOption = GetNamedChar(attribute, "Short");
@@ -702,13 +696,6 @@ namespace Lokad.Cli.Generator
                         !char.IsControl(name) && !char.IsSurrogate(name));
             AddNames(attribute, "Long", "LongNames", allLongOptions, IsValidLongName);
             var names = new CliOptionNames(allLongOptions, allShortOptions);
-            foreach (var name in names.ShortOptions)
-                if (!shortOptions.Contains(name))
-                    shortOptions.Add(name);
-            foreach (var name in names.LongOptions)
-                if (name.Length > 0 && !longOptions.Contains(name))
-                    longOptions.Add(name);
-
             if (GetNamedBool(attribute, "ShortNumeric"))
                 hasShortNumericArguments = true;
             return names;

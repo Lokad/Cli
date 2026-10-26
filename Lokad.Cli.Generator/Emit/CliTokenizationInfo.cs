@@ -35,7 +35,6 @@ namespace Lokad.Cli.Generator.Emit
         public IReadOnlyDictionary<char, CliOptionValueMode> HelpShortOptions => _helpShortModes;
         public IReadOnlyDictionary<string, CliOptionValueMode> HelpLongOptions => _helpLongModes;
         public bool UsesArity => ShortOptionSyntax == CliShortOptionSyntax.AttachedValues || _hasVerbatimOrOptionalValues || RequiresBoundaries || HasHelp || _hasPositionalChoices;
-        public bool RequiresSchema => UsesArity || !AllowSingleDashLongOptions;
 
         public void ConfigureShortOptions(CliShortOptionSyntax syntax)
         {

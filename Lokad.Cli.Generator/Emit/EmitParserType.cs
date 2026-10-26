@@ -85,18 +85,8 @@ $@"#nullable enable
 
             static string EmitOptionNames(CliTypeInfo parserType)
             {
-                string shortDeclaration;
-                string longDeclaration;
-                if (parserType.Tokenization.RequiresSchema)
-                {
-                    shortDeclaration = FormatOptions("char", "Short", parserType.Tokenization.ShortOptions, FormatCharLiteral);
-                    longDeclaration = FormatOptions("string", "Long", parserType.Tokenization.LongOptions, FormatStringLiteral);
-                }
-                else
-                {
-                    shortDeclaration = "char[] Short = " + FormatCharArray(parserType.ShortOptions);
-                    longDeclaration = "string[] Long = " + FormatStringArray(parserType.LongOptions);
-                }
+                var shortDeclaration = FormatOptions("char", "Short", parserType.Tokenization.ShortOptions, FormatCharLiteral);
+                var longDeclaration = FormatOptions("string", "Long", parserType.Tokenization.LongOptions, FormatStringLiteral);
                 var helpDeclarations = parserType.Tokenization.HasHelp
                     ? "        public static readonly " + FormatOptions("char", "HelpShort", parserType.Tokenization.HelpShortOptions, FormatCharLiteral) + ";" + Environment.NewLine +
                       "        public static readonly " + FormatOptions("string", "HelpLong", parserType.Tokenization.HelpLongOptions, FormatStringLiteral) + ";" + Environment.NewLine
@@ -162,12 +152,11 @@ $@"#nullable enable
                     : "new string[] { " + string.Join(", ", Array.ConvertAll(values, FormatStringLiteral)) + " }";
             }
 
-            static string GetLexicalPolicies(CliTypeInfo parserType) => parserType.Tokenization.RequiresSchema
-                ? "," + Environment.NewLine + "            global::Lokad.Cli.ShortOptionSyntax." + parserType.Tokenization.ShortOptionSyntax +
+            static string GetLexicalPolicies(CliTypeInfo parserType) =>
+                "," + Environment.NewLine + "            global::Lokad.Cli.ShortOptionSyntax." + parserType.Tokenization.ShortOptionSyntax +
                   "," + Environment.NewLine + "            " + FormatBoolean(parserType.Tokenization.AllowSingleDashLongOptions)
                   + (parserType.CommandBoundary == null ? string.Empty : "," + Environment.NewLine + "            " +
-                      FormatBoolean(parserType.Tokenization.StopAtFirstOperand) + ", OptionNames" + parserType.ImplementationSuffix + ".Boundary")
-                : string.Empty;
+                      FormatBoolean(parserType.Tokenization.StopAtFirstOperand) + ", OptionNames" + parserType.ImplementationSuffix + ".Boundary");
 
             static string GetTypeDeclaration(CliTypeInfo parserType)
             {
