@@ -124,8 +124,6 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
                         arg10Value = longArgWithValue.Value;
                         break;
                     }
-                    if (longArgWithValue.Name == @"mode")
-                        break;
                     throw new global::Lokad.Cli.ParseException($"unexpected option `--{longArgWithValue.Name}`");
                 case global::Lokad.Cli.LongArg longArg:
                     if (longArg.Name == @"from-ctor")
@@ -220,8 +218,6 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
                         arg10Value = shortArgWithValue.Value;
                         break;
                     }
-                    if (shortArgWithValue.Name == 'm')
-                        break;
                     throw new global::Lokad.Cli.ParseException($"unexpected option `-{shortArgWithValue.Name}`");
                 case global::Lokad.Cli.ShortArgSet shortArgSet:
                     foreach (var shortOption in shortArgSet.Options)

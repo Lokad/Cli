@@ -65,8 +65,6 @@ partial record AddCommand : global::Lokad.Cli.ICliParsed<global::Test.AddCommand
                         arg0Value = longArgWithValue.Value;
                         break;
                     }
-                    if (longArgWithValue.Name == @"add")
-                        break;
                     throw new global::Lokad.Cli.ParseException($"unexpected option `--{longArgWithValue.Name}`");
                 case global::Lokad.Cli.LongArg longArg:
                     if (longArg.Name == @"name")

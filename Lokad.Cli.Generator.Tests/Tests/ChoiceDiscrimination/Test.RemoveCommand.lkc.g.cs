@@ -71,8 +71,6 @@ partial record RemoveCommand : global::Lokad.Cli.ICliParsed<global::Test.RemoveC
                         arg0Seen = true;
                         break;
                     }
-                    if (shortArgWithValue.Name == 'r')
-                        break;
                     throw new global::Lokad.Cli.ParseException($"unexpected option `-{shortArgWithValue.Name}`");
                 case global::Lokad.Cli.ShortArgSet shortArgSet:
                     foreach (var shortOption in shortArgSet.Options)

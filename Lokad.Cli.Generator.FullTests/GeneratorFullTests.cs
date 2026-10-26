@@ -318,6 +318,25 @@ public class GeneratorFullTests
         Parser.Parse<HelpChoiceArgs>(new[] { argument });
     }
 
+    [Theory]
+    [InlineData("--help=value")]
+    [InlineData("--help=")]
+    [InlineData("-help=value")]
+    [InlineData("-h=value")]
+    [InlineData("-h=")]
+    [InlineData("-hvalue")]
+    public void RejectsValuesForDiscriminatorOnlyOptions(string argument)
+    {
+        Assert.Throws<ParseException>(() => Parser.Parse<HelpChoiceArgs>(new[] { argument }));
+        Assert.Throws<ParseException>(() => Parser.Parse<IHelpChoiceArgs>(new[] { argument }));
+    }
+
+    [Fact]
+    public void PreservesConversionForAValueTakingShortDiscriminator()
+    {
+        Assert.Throws<System.InvalidOperationException>(() => Parser.Parse<ValuedHelpChoice>(new[] { "-htopic" }));
+    }
+
     [Fact]
     public void ParsesChoiceWithDiscriminatorAlsoUsedAsStringArgument()
     {

@@ -425,7 +425,6 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
                 lines.AppendLine("                    }");
             }
 
-            lines.Append(EmitLongDiscriminatorSkip(type, "longArgWithValue.Name", "                    "));
             lines.AppendLine("                    throw new global::Lokad.Cli.ParseException($\"unexpected option `--{longArgWithValue.Name}`\");");
             return lines.ToString();
         }
@@ -465,7 +464,11 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
                 lines.AppendLine("                    }");
             }
 
-            lines.Append(EmitLongDiscriminatorSkip(type, "longArg.Name", "                    "));
+            if (type.Discriminator?.LongOption != null)
+            {
+                lines.Append("                    if (longArg.Name == ").Append(FormatStringLiteral(type.Discriminator.LongOption)).AppendLine(")");
+                lines.AppendLine("                        break;");
+            }
             lines.AppendLine("                    throw new global::Lokad.Cli.ParseException($\"unexpected option `--{longArg.Name}`\");");
             return lines.ToString();
         }
@@ -486,14 +489,6 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
                 lines.Append(EmitAssign(i, argument, "shortArgWithValue.Value", FormatStringLiteral(GetOptionLabel(argument, argument.Options.ShortOptions, "-")), "                        "));
                 lines.AppendLine("                        break;");
                 lines.AppendLine("                    }");
-            }
-
-            if (type.Discriminator?.ShortOption != '\0' && type.Discriminator?.ShortOption != null)
-            {
-                lines.Append("                    if (shortArgWithValue.Name == ")
-                    .Append(FormatCharLiteral(type.Discriminator.ShortOption))
-                    .AppendLine(")");
-                lines.AppendLine("                        break;");
             }
 
             lines.AppendLine("                    throw new global::Lokad.Cli.ParseException($\"unexpected option `-{shortArgWithValue.Name}`\");");
@@ -740,15 +735,6 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
         private static string GetBoundValueType(CliArgumentInfo argument) => argument.IsOptionalValue
             ? "global::Lokad.Cli.OptionalValue<" + GetValueType(argument) + ">"
             : GetValueType(argument);
-
-        private static string EmitLongDiscriminatorSkip(CliTypeInfo type, string nameExpression, string indent)
-        {
-            if (type.Discriminator?.LongOption == null)
-                return string.Empty;
-
-            return indent + "if (" + nameExpression + " == " + FormatStringLiteral(type.Discriminator.LongOption) + ")" + System.Environment.NewLine +
-                   indent + "    break;" + System.Environment.NewLine;
-        }
 
         private static CliArgumentInfo[] GetPositionalArguments(CliTypeInfo type) =>
             Array.FindAll(type.Arguments, argument => !argument.IsOption);
