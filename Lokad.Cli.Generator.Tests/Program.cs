@@ -18,8 +18,10 @@ public static class Program
 
         if (args is ["--refresh", var test])
         {
-            GeneratorTestFixture.Refresh(test);
-            return 0;
+            if (GeneratorTestFixture.TryRefresh(test))
+                return 0;
+            Console.Error.WriteLine($"No input files found for fixture '{test}'.");
+            return 1;
         }
 
         Console.Error.WriteLine("Use dotnet test to run tests, or --reindex, --refresh-all, --refresh <fixture> to maintain snapshots.");

@@ -23,9 +23,8 @@ public static class GeneratorTestFixture
         TestsRoot = baseDirectoryRoot;
     }
 
-    private static IReadOnlyList<(string FileName, string Source)> Generate(string folderName)
+    private static IReadOnlyList<(string FileName, string Source)> Generate(IReadOnlyList<string> inputFiles, string assemblyName)
     {
-        var inputFiles = GetInputFiles(folderName);
         var syntaxTrees = inputFiles
             .Select(relativePath =>
             {
@@ -34,7 +33,7 @@ public static class GeneratorTestFixture
             })
             .ToArray();
 
-        return Generate(syntaxTrees, Path.GetFileName(folderName), new LokadCliGenerator());
+        return Generate(syntaxTrees, assemblyName, new LokadCliGenerator());
     }
 
     internal static void AssertCompiles(string source) => AssertCompiles(source, new LokadCliGenerator());
@@ -132,12 +131,13 @@ public static class GeneratorTestFixture
         return generatedSources;
     }
 
-    public static void Refresh(string folderName)
+    public static bool TryRefresh(string folderName)
     {
-        if (GetInputFiles(folderName).Count == 0)
-            return;
+        var inputFiles = GetInputFiles(folderName);
+        if (inputFiles.Count == 0)
+            return false;
 
-        var generatedSources = Generate(folderName);
+        var generatedSources = Generate(inputFiles, Path.GetFileName(folderName));
         var outputDirectory = Path.Combine(TestsRoot, folderName);
         Directory.CreateDirectory(outputDirectory);
 
@@ -153,11 +153,12 @@ public static class GeneratorTestFixture
             var outputFile = Path.Combine(folderName, hintName);
             WriteContent(outputFile, source);
         }
+        return true;
     }
 
     public static void Test(string folderName)
     {
-        var generatedSources = Generate(folderName);
+        var generatedSources = Generate(GetInputFiles(folderName), Path.GetFileName(folderName));
         var outputDirectory = Path.Combine(TestsRoot, folderName);
 
         var inputPath = Path.Combine(TestsRoot, folderName, "Input.cs");
@@ -203,7 +204,8 @@ public static class GeneratorTestFixture
         var testNames = GetTestDirectoryNames();
         foreach (var testName in testNames)
         {
-            Refresh(testName);
+            if (!TryRefresh(testName))
+                throw new DirectoryNotFoundException($"No input files found for fixture '{testName}'.");
         }
     }
 
