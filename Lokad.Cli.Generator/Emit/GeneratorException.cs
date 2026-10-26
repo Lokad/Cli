@@ -191,5 +191,10 @@ namespace Lokad.Cli.Generator.Emit
             "LKC0024", "Invalid argument group",
             "Argument group '{0}' is invalid: {1}",
             "SourceGenerator", DiagnosticSeverity.Error, true);
+
+        public static readonly DiagnosticDescriptor InvalidBindingTarget = new DiagnosticDescriptor(
+            "LKC0025", "Invalid argument binding target",
+            "Argument '{0}' requires a constructor parameter, writable instance field or writable non-indexed instance property",
+            "SourceGenerator", DiagnosticSeverity.Error, true);
     }
 }

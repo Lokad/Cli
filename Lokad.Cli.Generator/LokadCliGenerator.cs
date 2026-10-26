@@ -248,6 +248,8 @@ namespace Lokad.Cli.Generator
                 {
                     var names = CollectArgumentNames(annotation, shortOptions, longOptions, ref hasShortNumericArguments);
                     var memberPath = path.Length == 0 ? member.Name : path + "." + member.Name;
+                    if (member.IsStatic || member is IPropertySymbol indexer && indexer.IsIndexer)
+                        throw InvalidTarget();
                     var type = default(ITypeSymbol);
                     var isSettableMember = false;
 
@@ -315,6 +317,8 @@ namespace Lokad.Cli.Generator
                             throw GroupError(annotation, memberPath, "the group must be constructor-bound or writable");
                         groupMembers = CollectGroup(bindableType, memberPath, annotation, constructionContext);
                     }
+                    else if (!isConstructorParameter && !isSettableMember)
+                        throw InvalidTarget();
                     var argument = new CliArgumentInfo(
                         member.Name,
                         GetTypeName(bindableType),
@@ -359,6 +363,9 @@ namespace Lokad.Cli.Generator
                         throw new GeneratorException(GeneratorException.InvalidVerbatimValue, argument.Name);
 
                     members.Add(argument);
+
+                    GeneratorException InvalidTarget() =>
+                        new GeneratorException(GetAttributeLocation(annotation), GeneratorException.InvalidBindingTarget, memberPath);
 
                     static ITypeSymbol UnwrapNullable(ITypeSymbol value)
                     {

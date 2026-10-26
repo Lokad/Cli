@@ -1,0 +1,6 @@
+Error LKC0025: Argument 'Value' requires a constructor parameter, writable instance field or writable non-indexed instance property (InvalidBindingTargets/Input.cs:8:6)
+Error LKC0025: Argument 'Value' requires a constructor parameter, writable instance field or writable non-indexed instance property (InvalidBindingTargets/Input.cs:14:6)
+Error LKC0025: Argument 'Value' requires a constructor parameter, writable instance field or writable non-indexed instance property (InvalidBindingTargets/Input.cs:20:6)
+Error LKC0025: Argument 'Value' requires a constructor parameter, writable instance field or writable non-indexed instance property (InvalidBindingTargets/Input.cs:26:6)
+Error LKC0025: Argument 'Value' requires a constructor parameter, writable instance field or writable non-indexed instance property (InvalidBindingTargets/Input.cs:32:6)
+Error LKC0025: Argument 'this[]' requires a constructor parameter, writable instance field or writable non-indexed instance property (InvalidBindingTargets/Input.cs:38:6)
