@@ -4,24 +4,6 @@ namespace Lokad.Cli.Generator.Emit
 {
     public sealed class CliTypeInfo
     {
-        public CliTypeInfo(TypeName typeName, CliTypeKind kind)
-            : this(
-                typeName,
-                kind,
-                CliParserMethods.None,
-                System.Array.Empty<char>(),
-                System.Array.Empty<string>(),
-                false,
-                System.Array.Empty<CliChoiceInfo>(),
-                System.Array.Empty<CliArgumentInfo>(),
-                System.Array.Empty<CliArgumentInfo>(),
-                null,
-                null,
-                new CliTokenizationInfo(),
-                null)
-        {
-        }
-
         public CliTypeInfo(
             TypeName typeName,
             CliTypeKind kind,

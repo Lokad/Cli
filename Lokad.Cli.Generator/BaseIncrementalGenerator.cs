@@ -24,6 +24,9 @@ namespace Lokad.Cli.Generator
                 transform: GetSymbolAndStrategy);
 
             context.RegisterSourceOutput(allTypes, GenerateSource);
+
+            static bool IsTypeDeclaration(SyntaxNode node, CancellationToken cancel) =>
+                node is TypeDeclarationSyntax declaration && declaration.AttributeLists.Count > 0;
         }
 
         /// <summary>Whether a symbol carries annotations requesting a CLI parser.</summary>
@@ -32,11 +35,7 @@ namespace Lokad.Cli.Generator
         /// <summary>Builds a parser strategy for an annotated symbol; declaration failures may throw generator diagnostics.</summary>
         protected abstract ITypeGenerationStrategy GetGenerationStrategyForSymbol(
             Compilation compilation,
-            ITypeSymbol typeSymbol,
-            CliTypeInfo type);
-
-        private static bool IsTypeDeclaration(SyntaxNode node, CancellationToken cancel) =>
-            node is TypeDeclarationSyntax declaration && declaration.AttributeLists.Count > 0;
+            ITypeSymbol typeSymbol);
 
         private GenerationItem? GetSymbolAndStrategy(
             GeneratorSyntaxContext context,
@@ -58,16 +57,14 @@ namespace Lokad.Cli.Generator
                 break;
             }
 
-            var type = GetTypeInfo(typeSymbol);
-
             try
             {
-                var strategy = GetGenerationStrategyForSymbol(context.SemanticModel.Compilation, typeSymbol, type);
+                var strategy = GetGenerationStrategyForSymbol(context.SemanticModel.Compilation, typeSymbol);
                 return new GenerationItem(strategy, GetPrimaryLocation(typeSymbol));
             }
             catch (Exception ex)
             {
-                return new GenerationItem(new ErrorReportStrategy(ex, type), GetPrimaryLocation(typeSymbol));
+                return new GenerationItem(new ErrorReportStrategy(ex, TypeName.FromSymbol(typeSymbol)), GetPrimaryLocation(typeSymbol));
             }
         }
 
@@ -84,43 +81,16 @@ namespace Lokad.Cli.Generator
                 var source = strategy.EmitSource();
                 if (source != null)
                     context.AddSource(
-                        (strategy.Type.TypeName.Namespace.Length == 0 ? "" : strategy.Type.TypeName.Namespace.Replace("@", "") + ".") +
-                        $"{strategy.Type.TypeName.Name}.{_slug}.g.cs",
+                        (strategy.TypeName.Namespace.Length == 0 ? "" : strategy.TypeName.Namespace.Replace("@", "") + ".") +
+                        $"{strategy.TypeName.Name}.{_slug}.g.cs",
                         source);
             }
             catch (Exception ex)
             {
                 ReportDiagnostics(context, new GenerationItem(
-                    new ErrorReportStrategy(ex, strategy.Type),
+                    new ErrorReportStrategy(ex, strategy.TypeName),
                     item.PrimaryLocation));
             }
-        }
-
-        private static CliTypeInfo GetTypeInfo(ITypeSymbol typeSymbol)
-        {
-            return new CliTypeInfo(
-                new TypeName(
-                    typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                    typeSymbol.Name,
-                    typeSymbol.ContainingNamespace.IsGlobalNamespace ? "" : typeSymbol.ContainingNamespace.ToDisplayString()),
-                GetTypeKind(typeSymbol));
-        }
-
-        private static CliTypeKind GetTypeKind(ITypeSymbol typeSymbol)
-        {
-            if (typeSymbol.TypeKind == TypeKind.Interface)
-                return CliTypeKind.Interface;
-
-            if (typeSymbol.IsRecord && typeSymbol.TypeKind == TypeKind.Struct)
-                return CliTypeKind.RecordStruct;
-
-            if (typeSymbol.IsRecord)
-                return CliTypeKind.Record;
-
-            if (typeSymbol.TypeKind == TypeKind.Struct)
-                return CliTypeKind.Struct;
-
-            return CliTypeKind.Class;
         }
 
         private static Location? GetPrimaryLocation(ITypeSymbol typeSymbol) =>

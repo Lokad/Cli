@@ -5,15 +5,17 @@ namespace Lokad.Cli.Generator.Analysis
 {
     public sealed class ParserGenerationStrategy : ITypeGenerationStrategy
     {
+        private readonly CliTypeInfo _type;
+
         public ParserGenerationStrategy(CliTypeInfo type)
         {
-            Type = type;
+            _type = type;
         }
 
-        public CliTypeInfo Type { get; }
+        public TypeName TypeName => _type.TypeName;
 
         public IReadOnlyList<GeneratorException> Diagnostics => System.Array.Empty<GeneratorException>();
 
-        public string EmitSource() => EmitParserType.EmitFor(Type);
+        public string EmitSource() => EmitParserType.EmitFor(_type);
     }
 }

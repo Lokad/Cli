@@ -6,9 +6,9 @@ namespace Lokad.Cli.Generator.Analysis
 {
     public sealed class ErrorReportStrategy : ITypeGenerationStrategy
     {
-        public ErrorReportStrategy(Exception exception, CliTypeInfo type)
+        public ErrorReportStrategy(Exception exception, TypeName typeName)
         {
-            Type = type;
+            TypeName = typeName;
             Diagnostics = new[]
             {
                 exception as GeneratorException
@@ -19,7 +19,7 @@ namespace Lokad.Cli.Generator.Analysis
             };
         }
 
-        public CliTypeInfo Type { get; }
+        public TypeName TypeName { get; }
 
         public IReadOnlyList<GeneratorException> Diagnostics { get; }
 

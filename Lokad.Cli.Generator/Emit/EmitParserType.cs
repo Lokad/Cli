@@ -593,7 +593,7 @@ $@"#nullable enable
                 var hasInitializer = false;
                 foreach (var member in members)
                 {
-                    if (member.IsConstructorParameter || !member.IsSettableMember)
+                    if (member.IsConstructorParameter)
                         continue;
                     if (!hasInitializer)
                     {

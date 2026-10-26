@@ -11,11 +11,6 @@ namespace Lokad.Cli.Generator
     [Generator]
     public sealed class LokadCliGenerator : BaseIncrementalGenerator
     {
-        private static readonly SymbolDisplayFormat TypeDisplayFormat =
-            SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
-                SymbolDisplayFormat.FullyQualifiedFormat.MiscellaneousOptions |
-                SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
-
         private readonly TypeRecognizer _argumentAttribute =
             Recognize.Type("Lokad.Cli.ArgumentAttribute");
 
@@ -41,8 +36,7 @@ namespace Lokad.Cli.Generator
 
         protected override ITypeGenerationStrategy GetGenerationStrategyForSymbol(
             Compilation compilation,
-            ITypeSymbol typeSymbol,
-            CliTypeInfo type)
+            ITypeSymbol typeSymbol)
         {
             if (typeSymbol.ContainingType != null)
                 throw Unsupported("nested types are not supported");
@@ -68,7 +62,7 @@ namespace Lokad.Cli.Generator
                 if (System.Linq.Enumerable.Any(declaration.Modifiers, modifier => modifier.ValueText == "file"))
                     throw Unsupported("file-local types cannot be extended from generated source");
             }
-            return new ParserGenerationStrategy(CollectParserInfo(compilation, typeSymbol, type));
+            return new ParserGenerationStrategy(CollectParserInfo(compilation, typeSymbol));
 
             GeneratorException Unsupported(string reason) =>
                 new GeneratorException(GeneratorException.UnsupportedArgumentType, typeSymbol.Name, reason);
@@ -78,7 +72,7 @@ namespace Lokad.Cli.Generator
             typeSymbol.TryGetAttribute(compilation, _argumentsAttribute) != null ||
             typeSymbol.TryGetAttribute(compilation, _choiceAttribute) != null;
 
-        private CliTypeInfo CollectParserInfo(Compilation compilation, ITypeSymbol typeSymbol, CliTypeInfo type)
+        private CliTypeInfo CollectParserInfo(Compilation compilation, ITypeSymbol typeSymbol)
         {
             var shortOptions = new List<char>();
             var longOptions = new List<string>();
@@ -152,8 +146,8 @@ namespace Lokad.Cli.Generator
                     }
             }
             return new CliTypeInfo(
-                type.TypeName,
-                type.Kind,
+                TypeName.FromSymbol(typeSymbol),
+                GetTypeKind(typeSymbol),
                 explicitParserMethods,
                 shortOptions.ToArray(),
                 longOptions.ToArray(),
@@ -165,6 +159,15 @@ namespace Lokad.Cli.Generator
                 documentation,
                 tokenization,
                 boundary);
+
+            static CliTypeKind GetTypeKind(ITypeSymbol symbol)
+            {
+                if (symbol.TypeKind == TypeKind.Interface)
+                    return CliTypeKind.Interface;
+                if (symbol.IsRecord)
+                    return symbol.TypeKind == TypeKind.Struct ? CliTypeKind.RecordStruct : CliTypeKind.Record;
+                return symbol.TypeKind == TypeKind.Struct ? CliTypeKind.Struct : CliTypeKind.Class;
+            }
 
             void AddOwner(string label, CliArgumentInfo argument)
             {
@@ -409,14 +412,13 @@ namespace Lokad.Cli.Generator
                         throw InvalidTarget();
                     var argument = new CliArgumentInfo(
                         member.Name,
-                        GetTypeName(bindableType),
+                        TypeName.FromSymbol(bindableType),
                         bindableType.IsReferenceType,
                         isNullable,
                         !isOptionalValue && collectionKind == CliCollectionKind.None && bindableType.SpecialType == SpecialType.System_Boolean,
                         bindableType.TypeKind == TypeKind.Enum,
                         collectionKind,
                         isConstructorParameter,
-                        isSettableMember,
                         GetConstructorString(annotation, 0) ?? string.Empty,
                         GetNamedString(annotation, "Name"),
                         names,
@@ -554,7 +556,7 @@ namespace Lokad.Cli.Generator
                 {
                     var choiceDiscriminator = Collect(choiceType);
                     if (isRoot)
-                        choices.Add(new CliChoiceInfo(GetTypeName(choiceType), choiceDiscriminator));
+                        choices.Add(new CliChoiceInfo(TypeName.FromSymbol(choiceType), choiceDiscriminator));
                 }
 
                 foreach (var implementedInterface in declaration.AllInterfaces)
@@ -752,10 +754,5 @@ namespace Lokad.Cli.Generator
             return false;
         }
 
-        private static TypeName GetTypeName(ITypeSymbol typeSymbol) =>
-            new TypeName(
-                typeSymbol.WithNullableAnnotation(NullableAnnotation.NotAnnotated).ToDisplayString(TypeDisplayFormat),
-                typeSymbol.Name,
-                typeSymbol.ContainingNamespace.IsGlobalNamespace ? "" : typeSymbol.ContainingNamespace.ToDisplayString());
     }
 }

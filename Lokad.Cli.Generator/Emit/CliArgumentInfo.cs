@@ -14,7 +14,6 @@ namespace Lokad.Cli.Generator.Emit
             bool isEnum,
             CliCollectionKind collectionKind,
             bool isConstructorParameter,
-            bool isSettableMember,
             string documentation,
             string? documentationName,
             CliOptionNames options,
@@ -38,7 +37,6 @@ namespace Lokad.Cli.Generator.Emit
             IsEnum = isEnum;
             CollectionKind = collectionKind;
             IsConstructorParameter = isConstructorParameter;
-            IsSettableMember = isSettableMember;
             Documentation = documentation;
             DocumentationName = documentationName;
             Options = options;
@@ -75,8 +73,6 @@ namespace Lokad.Cli.Generator.Emit
         public bool IsCollection => CollectionKind != CliCollectionKind.None;
 
         public bool IsConstructorParameter { get; }
-
-        public bool IsSettableMember { get; }
 
         public string Documentation { get; }
 

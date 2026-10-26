@@ -5,7 +5,7 @@ namespace Lokad.Cli.Generator
 {
     public interface ITypeGenerationStrategy
     {
-        CliTypeInfo Type { get; }
+        TypeName TypeName { get; }
 
         IReadOnlyList<GeneratorException> Diagnostics { get; }
 
