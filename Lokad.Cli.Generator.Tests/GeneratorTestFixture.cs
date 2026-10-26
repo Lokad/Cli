@@ -297,7 +297,8 @@ public static class GeneratorTestFixture
     private static bool IsInputFile(string? fileName) =>
         fileName != null &&
         fileName.StartsWith("Input", StringComparison.OrdinalIgnoreCase) &&
-        fileName.EndsWith(".cs", StringComparison.OrdinalIgnoreCase);
+        fileName.EndsWith(".cs", StringComparison.OrdinalIgnoreCase) &&
+        !fileName.EndsWith(".g.cs", StringComparison.OrdinalIgnoreCase);
 
     private static bool IsGeneratorDiagnostic(Diagnostic diagnostic) =>
         diagnostic.Id.StartsWith("LKC", StringComparison.Ordinal);

@@ -10,6 +10,7 @@ public class GeneratorTests
     [Fact] public void ChoiceDiscrimination() => GeneratorTestFixture.Test(nameof(ChoiceDiscrimination));
     [Fact] public void Empty() => GeneratorTestFixture.Test(nameof(Empty));
     [Fact] public void GlobalNamespace() => GeneratorTestFixture.Test(nameof(GlobalNamespace));
+    [Fact] public void InputNames() => GeneratorTestFixture.Test(nameof(InputNames));
     [Fact] public void InvalidArgumentGroups() => GeneratorTestFixture.Test(nameof(InvalidArgumentGroups));
     [Fact] public void InvalidBindingTargets() => GeneratorTestFixture.Test(nameof(InvalidBindingTargets));
     [Fact] public void InvalidBooleanFlags() => GeneratorTestFixture.Test(nameof(InvalidBooleanFlags));
