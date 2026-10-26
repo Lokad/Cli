@@ -23,12 +23,12 @@ public static class GeneratorTestFixture
         TestsRoot = baseDirectoryRoot;
     }
 
-    private static IReadOnlyList<(string FileName, string Source)> Generate(IReadOnlyList<string> inputFiles, string assemblyName)
+    private static IReadOnlyList<(string FileName, string Source)> Generate(string testsRoot, IReadOnlyList<string> inputFiles, string assemblyName)
     {
         var syntaxTrees = inputFiles
             .Select(relativePath =>
             {
-                var source = LoadContent(relativePath);
+                var source = File.ReadAllText(Path.Combine(testsRoot, relativePath));
                 return CSharpSyntaxTree.ParseText(source, ParseOptions, path: relativePath);
             })
             .ToArray();
@@ -131,34 +131,40 @@ public static class GeneratorTestFixture
         return generatedSources;
     }
 
-    public static bool TryRefresh(string folderName)
+    public static bool TryRefresh(string folderName) => TryRefreshFixture(TestsRoot, folderName);
+
+    internal static bool TryRefreshFixture(string testsRoot, string folderName)
     {
-        var inputFiles = GetInputFiles(folderName);
+        // Fixture directory names also become generated test method names.
+        if (!SyntaxFacts.IsValidIdentifier(folderName))
+            return false;
+        var outputDirectory = Path.Combine(testsRoot, folderName);
+        var directory = new DirectoryInfo(outputDirectory);
+        if (!directory.Exists || (directory.Attributes & FileAttributes.ReparsePoint) != 0)
+            return false;
+        var inputFiles = GetInputFiles(testsRoot, folderName);
         if (inputFiles.Count == 0)
             return false;
 
-        var generatedSources = Generate(inputFiles, Path.GetFileName(folderName));
-        var outputDirectory = Path.Combine(TestsRoot, folderName);
-        Directory.CreateDirectory(outputDirectory);
+        var generatedSources = Generate(testsRoot, inputFiles, folderName);
 
         foreach (var file in Directory.EnumerateFiles(outputDirectory))
         {
             var fileName = Path.GetFileName(file);
-            if (!IsInputFile(fileName))
+            if (IsSnapshotFile(fileName))
                 File.Delete(file);
         }
 
         foreach (var (hintName, source) in generatedSources)
         {
-            var outputFile = Path.Combine(folderName, hintName);
-            WriteContent(outputFile, source);
+            File.WriteAllText(Path.Combine(outputDirectory, hintName), source);
         }
         return true;
     }
 
     public static void Test(string folderName)
     {
-        var generatedSources = Generate(GetInputFiles(folderName), Path.GetFileName(folderName));
+        var generatedSources = Generate(TestsRoot, GetInputFiles(TestsRoot, folderName), folderName);
         var outputDirectory = Path.Combine(TestsRoot, folderName);
 
         var inputPath = Path.Combine(TestsRoot, folderName, "Input.cs");
@@ -171,7 +177,7 @@ public static class GeneratorTestFixture
             ? Directory.EnumerateFiles(outputDirectory)
                 .Select(Path.GetFileName)
                 .OfType<string>()
-                .Where(fileName => !IsInputFile(fileName))
+                .Where(IsSnapshotFile)
                 .ToArray()
             : Array.Empty<string>();
 
@@ -261,14 +267,6 @@ public static class GeneratorTestFixture
         return File.ReadAllText(path);
     }
 
-    private static void WriteContent(string relativePath, string content)
-    {
-        var path = Path.Combine(TestsRoot, relativePath);
-        Directory.CreateDirectory(Path.GetDirectoryName(path)
-            ?? throw new InvalidOperationException("Snapshot output requires a parent directory."));
-        File.WriteAllText(path, content);
-    }
-
     private static IEnumerable<string> GetTestDirectoryNames()
     {
         var testsDirectory = new DirectoryInfo(TestsRoot);
@@ -279,9 +277,9 @@ public static class GeneratorTestFixture
             .ToArray();
     }
 
-    private static IReadOnlyList<string> GetInputFiles(string folderName)
+    private static IReadOnlyList<string> GetInputFiles(string testsRoot, string folderName)
     {
-        var folderPath = Path.Combine(TestsRoot, folderName);
+        var folderPath = Path.Combine(testsRoot, folderName);
         if (!Directory.Exists(folderPath))
             return Array.Empty<string>();
 
@@ -299,6 +297,10 @@ public static class GeneratorTestFixture
         fileName.StartsWith("Input", StringComparison.OrdinalIgnoreCase) &&
         fileName.EndsWith(".cs", StringComparison.OrdinalIgnoreCase) &&
         !fileName.EndsWith(".g.cs", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsSnapshotFile(string fileName) =>
+        fileName.EndsWith(".lkc.g.cs", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(fileName, "Diagnostics.txt", StringComparison.OrdinalIgnoreCase);
 
     private static bool IsGeneratorDiagnostic(Diagnostic diagnostic) =>
         diagnostic.Id.StartsWith("LKC", StringComparison.Ordinal);
