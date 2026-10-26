@@ -26,3 +26,20 @@ public partial class RefConstructor
 {
     public RefConstructor([Argument("Number.", Long = "number")] ref int number) { }
 }
+
+[Arguments("Ambiguous optional constructors.")]
+public partial class AmbiguousOptional
+{
+    public AmbiguousOptional(int x = 1) { }
+    public AmbiguousOptional(int x = 1, int y = 2) { }
+}
+
+[Arguments("Ambiguous params constructors.")]
+public partial class AmbiguousParams
+{
+    public AmbiguousParams(params int[] values) { }
+    public AmbiguousParams(params string[] values) { }
+}
+
+[Arguments("Ambiguous group constructor.")]
+public partial record AmbiguousConstructorGroup([property: Argument("Options.")] AmbiguousOptional Options);

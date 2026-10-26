@@ -49,6 +49,15 @@ public sealed class BindingTargetCommandTests
         Assert.Equal("list", grouped.Options.Constructor);
         Assert.Equal(new[] { 8 }, grouped.Options.Values);
     }
+
+    [Fact]
+    public void PreservesValidOverloadPreferencesWithoutArguments()
+    {
+        Assert.Equal("optional", Parser.Parse<PreferredOptionalArgs>(System.Array.Empty<string>()).Constructor);
+        Assert.Equal("optional", Parser.Parse<PreferredOptionalGroup>(System.Array.Empty<string>()).Options.Constructor);
+        Assert.Equal("private", Parser.Parse<PartialOptionalArgs>(System.Array.Empty<string>()).Constructor);
+        Assert.Equal("zero", Parser.Parse<PreferredZeroArgs>(System.Array.Empty<string>()).Constructor);
+    }
 }
 
 [Arguments("Read-only result.")]
@@ -123,3 +132,32 @@ public partial class ReadOnlyListConstructorArgs
 
 [Arguments("Read-only list group.")]
 public partial record ReadOnlyListConstructorGroup([property: Argument("Options.")] ReadOnlyListConstructorArgs Options);
+
+[Arguments("Optional constructor preferred to expanded params.")]
+public partial class PreferredOptionalArgs
+{
+    internal PreferredOptionalArgs(int value = 1) => Constructor = "optional";
+    public PreferredOptionalArgs(params string[] values) => Constructor = "params";
+    public string Constructor { get; }
+}
+
+[Arguments("Optional overload in a group.")]
+public partial record PreferredOptionalGroup([property: Argument("Options.")] PreferredOptionalArgs Options);
+
+[Arguments("Partial record with a private optional constructor.")]
+public partial record PartialOptionalArgs;
+
+public partial record PartialOptionalArgs
+{
+    private PartialOptionalArgs(int value = 1) => Constructor = "private";
+    public PartialOptionalArgs(params string[] values) => Constructor = "params";
+    public string Constructor { get; }
+}
+
+[Arguments("Parameterless constructor preferred to optional arguments.")]
+public partial class PreferredZeroArgs
+{
+    public PreferredZeroArgs() => Constructor = "zero";
+    public PreferredZeroArgs(int value = 1) => Constructor = "optional";
+    public string Constructor { get; }
+}

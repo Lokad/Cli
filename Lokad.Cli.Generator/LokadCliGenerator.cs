@@ -326,14 +326,33 @@ namespace Lokad.Cli.Generator
                     boundConstructor = method;
                     constructorArguments = parameters;
                 }
-                if (boundConstructor == null && declaration is INamedTypeSymbol named &&
-                    !System.Linq.Enumerable.Any(named.InstanceConstructors, constructor =>
-                        compilation.IsSymbolAccessibleWithin(constructor, constructionContext, declaration) &&
-                        System.Linq.Enumerable.All(constructor.Parameters, parameter => parameter.IsOptional || parameter.IsParams)))
+                if (boundConstructor == null && declaration is INamedTypeSymbol named)
                 {
-                    if (groupUsage != null)
-                        throw GroupError(groupUsage, path, "no constructor callable without arguments is accessible from the containing command");
-                    throw ConstructorError("a constructor callable without arguments or a fully annotated constructor is required");
+                    var constructorCount = 0;
+                    foreach (var constructor in named.InstanceConstructors)
+                    {
+                        if (!compilation.IsSymbolAccessibleWithin(constructor, constructionContext, declaration) ||
+                            !System.Linq.Enumerable.All(constructor.Parameters, parameter => parameter.IsOptional || parameter.IsParams))
+                            continue;
+                        if (constructor.Parameters.Length == 0)
+                        {
+                            constructorCount = 1;
+                            break;
+                        }
+                        constructorCount++;
+                    }
+                    if (constructorCount == 0)
+                    {
+                        if (groupUsage != null)
+                            throw GroupError(groupUsage, path, "no constructor callable without arguments is accessible from the containing command");
+                        throw ConstructorError("a constructor callable without arguments or a fully annotated constructor is required");
+                    }
+                    if (constructorCount > 1 && HasAmbiguousZeroArgumentCall())
+                    {
+                        if (groupUsage != null)
+                            throw GroupError(groupUsage, path, "its constructor call without arguments is ambiguous");
+                        throw ConstructorError("the constructor call without arguments is ambiguous");
+                    }
                 }
                 foreach (var parameter in constructorArguments)
                 {
@@ -358,6 +377,29 @@ namespace Lokad.Cli.Generator
 
                 GeneratorException ConstructorError(string reason) =>
                     new GeneratorException(GeneratorException.InvalidArgumentConstructor, declaration.Name, reason);
+
+                bool HasAmbiguousZeroArgumentCall()
+                {
+                    TypeDeclarationSyntax? context = null;
+                    foreach (var reference in constructionContext.DeclaringSyntaxReferences)
+                    {
+                        if (!compilation.ContainsSyntaxTree(reference.SyntaxTree) || !(reference.GetSyntax() is TypeDeclarationSyntax part))
+                            continue;
+                        context = part;
+                        if (part.OpenBraceToken.RawKind != 0 && !part.OpenBraceToken.IsMissing)
+                            break;
+                    }
+                    // Referenced choices construct themselves; this generator emits no constructor call for them.
+                    if (context == null)
+                        return false;
+                    var position = context.OpenBraceToken.RawKind == 0 || context.OpenBraceToken.IsMissing
+                        ? context.Identifier.Span.End : context.OpenBraceToken.Span.End;
+                    var creation = SyntaxFactory.ObjectCreationExpression(SyntaxFactory.ParseTypeName(TypeName.FromSymbol(declaration).FullName))
+                        .WithArgumentList(SyntaxFactory.ArgumentList());
+                    var info = compilation.GetSemanticModel(context.SyntaxTree).GetSpeculativeSymbolInfo(
+                        position, creation, SpeculativeBindingOption.BindAsExpression);
+                    return info.CandidateReason == CandidateReason.OverloadResolutionFailure;
+                }
 
                 void AddMember(ISymbol member, AttributeData annotation, bool isConstructorParameter)
                 {
