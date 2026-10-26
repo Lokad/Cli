@@ -10,7 +10,7 @@ public partial interface ISelf { }
 public partial interface IMultipleDefaults { }
 
 [Arguments("First default.")]
-public partial record FirstDefault : IMultipleDefaults;
+public partial record FirstDefault : IMultipleDefaults, IMixedNullChoice;
 
 [Arguments("Second default.")]
 public partial record SecondDefault : IMultipleDefaults;
@@ -34,3 +34,10 @@ public class Unrelated { }
 public partial interface IUnannotatedChoice { }
 
 public class Unannotated : IUnannotatedChoice { }
+
+[Choice(null)]
+public partial interface INullChoice { }
+
+[Choice(typeof(FirstDefault))]
+[Choice(null)]
+public partial interface IMixedNullChoice { }

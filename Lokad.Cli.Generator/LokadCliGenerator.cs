@@ -609,9 +609,10 @@ namespace Lokad.Cli.Generator
                 var choiceTypes = new List<ITypeSymbol>();
                 foreach (var choice in declaration.GetAttributes(compilation, _choiceAttribute))
                 {
-                    if (choice.ConstructorArguments.Length == 0 ||
-                        !(choice.ConstructorArguments[0].Value is ITypeSymbol choiceType))
-                        continue;
+                    var choiceType = choice.ConstructorArguments.Length == 0
+                        ? null : choice.ConstructorArguments[0].Value as ITypeSymbol;
+                    if (choiceType == null)
+                        throw InvalidChoice("the target type must not be null");
 
                     if (!compilation.ClassifyCommonConversion(choiceType, declaration).IsImplicit)
                         throw InvalidChoice("the target must implement the choice interface");
@@ -623,7 +624,7 @@ namespace Lokad.Cli.Generator
 
                     GeneratorException InvalidChoice(string reason) =>
                         new GeneratorException(GetAttributeLocation(choice), GeneratorException.InvalidChoiceTarget,
-                            choiceType.Name, declaration.Name, reason);
+                            choiceType?.Name ?? "null", declaration.Name, reason);
                 }
                 // Cache before following choices so command-schema validation can diagnose cycles.
                 collected.Add(declaration, new CollectedDeclaration(ownDiscriminator, flattened, choiceTypes, isHelpPrefix));
