@@ -37,3 +37,17 @@ public partial record IndexedProperty
 {
     [Argument("Value.", Long = "value")] public int this[int index] { get => 42; set { } }
 }
+
+[Arguments("Field-targeted property.")]
+public partial class BackingField
+{
+    [field: Argument("Value.", Long = "value")] public int Value { get; set; }
+}
+
+public interface IValue { int Value { get; set; } }
+
+[Arguments("Explicit interface property.")]
+public partial class ExplicitProperty : IValue
+{
+    [Argument("Value.", Long = "value")] int IValue.Value { get; set; }
+}

@@ -413,7 +413,7 @@ namespace Lokad.Cli.Generator
                 {
                     var names = CollectArgumentNames(annotation, ref hasShortNumericArguments);
                     var memberPath = path.Length == 0 ? member.Name : path + "." + member.Name;
-                    if (member.IsStatic || member is IPropertySymbol indexer && indexer.IsIndexer)
+                    if (member.IsStatic || !member.CanBeReferencedByName)
                         throw InvalidTarget();
                     var type = default(ITypeSymbol);
                     var isSettableMember = false;

@@ -186,7 +186,7 @@ namespace Lokad.Cli.Generator.Emit
 
         public static readonly DiagnosticDescriptor InvalidBindingTarget = new DiagnosticDescriptor(
             "LKC0025", "Invalid argument binding target",
-            "Argument '{0}' requires a constructor parameter, writable instance field or writable non-indexed instance property",
+            "Argument '{0}' must bind a constructor parameter or an instance field or property that can be assigned by name",
             "SourceGenerator", DiagnosticSeverity.Error, true);
 
         public static readonly DiagnosticDescriptor InvalidChoiceSchema = new DiagnosticDescriptor(
