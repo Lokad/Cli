@@ -12,6 +12,7 @@ namespace Lokad.Cli.Generator.Tests;
 public static class GeneratorTestFixture
 {
     private static readonly string TestsRoot;
+    private static readonly CSharpParseOptions ParseOptions = new(LanguageVersion.CSharp11);
 
     static GeneratorTestFixture()
     {
@@ -24,15 +25,29 @@ public static class GeneratorTestFixture
 
     private static IReadOnlyList<(string FileName, string Source)> Generate(string folderName)
     {
-        var parseOptions = new CSharpParseOptions(LanguageVersion.Preview);
         var inputFiles = GetInputFiles(folderName);
         var syntaxTrees = inputFiles
             .Select(relativePath =>
             {
                 var source = LoadContent(relativePath);
-                return CSharpSyntaxTree.ParseText(source, parseOptions, path: relativePath);
+                return CSharpSyntaxTree.ParseText(source, ParseOptions, path: relativePath);
             })
             .ToArray();
+
+        return Generate(syntaxTrees, Path.GetFileName(folderName), new LokadCliGenerator());
+    }
+
+    internal static void AssertCompiles(string source) => AssertCompiles(source, new LokadCliGenerator());
+
+    internal static void AssertCompiles(string source, IIncrementalGenerator generator)
+    {
+        var generated = Generate(new[] { CSharpSyntaxTree.ParseText(source, ParseOptions, path: "Example.cs") }, "Example", generator);
+        Assert.DoesNotContain(generated, file => file.FileName == "Diagnostics.txt");
+    }
+
+    private static IReadOnlyList<(string FileName, string Source)> Generate(
+        IReadOnlyList<SyntaxTree> syntaxTrees, string assemblyName, IIncrementalGenerator generator)
+    {
 
         var runtimeDirectory = System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory();
         var references = new[]
@@ -43,7 +58,7 @@ public static class GeneratorTestFixture
         };
 
         var compilation = CSharpCompilation.Create(
-            Path.GetFileName(folderName),
+            assemblyName,
             syntaxTrees,
             references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
@@ -54,8 +69,8 @@ public static class GeneratorTestFixture
             .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
 
         GeneratorDriver driver = CSharpGeneratorDriver.Create(
-            new[] { new Lokad.Cli.Generator.LokadCliGenerator().AsSourceGenerator() },
-            parseOptions: parseOptions);
+            new[] { generator.AsSourceGenerator() },
+            parseOptions: ParseOptions);
 
         driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
         return CollectResults(driver, outputCompilation, diagnostics, syntaxDiagnostics, parseDiagnostics);
@@ -69,6 +84,11 @@ public static class GeneratorTestFixture
         IEnumerable<Diagnostic> parseDiagnostics)
     {
         var result = driver.GetRunResult();
+        foreach (var run in result.Results)
+            Assert.True(run.Exception == null, $"Generator failed: {run.Exception}");
+
+        var failures = diagnostics.Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error && !IsGeneratorDiagnostic(diagnostic));
+        Assert.True(!failures.Any(), string.Join(Environment.NewLine, failures));
         var generatorDiagnostics = result.Results
             .SelectMany(runResult => runResult.Diagnostics)
             .Where(IsGeneratorDiagnostic);
@@ -90,6 +110,15 @@ public static class GeneratorTestFixture
             })
             .Select(group => group.First())
             .ToArray();
+
+        // Invalid declarations may leave dependent types without generated members.
+        // Successful generation must produce a complete C# 11 assembly.
+        if (!allDiagnostics.Any(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error && IsGeneratorDiagnostic(diagnostic)))
+        {
+            using var stream = new MemoryStream();
+            var emitted = outputCompilation.Emit(stream);
+            Assert.True(emitted.Success, string.Join(Environment.NewLine, emitted.Diagnostics));
+        }
 
         var generatedSources =
             (from generatorResult in result.Results

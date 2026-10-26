@@ -27,7 +27,7 @@ public partial record TokenizationOptions(
     public SnapshotReferenceValue<string?>? Optional { get; init; }
 
     [Argument("Numbers.", Name = "number", ConsumeUntilBoundary = true)]
-    public int[] Numbers { get; init; } = [];
+    public int[] Numbers { get; init; } = System.Array.Empty<int>();
 
     [Argument("Label.", Name = "label")]
     public string Label { get; init; } = "";

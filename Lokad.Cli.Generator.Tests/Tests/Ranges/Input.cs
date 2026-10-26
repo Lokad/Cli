@@ -6,5 +6,5 @@ namespace Test;
 public partial record RangeOptions
 {
     [Argument("Line ranges.", Long = "ranges", Short = 'r')]
-    public Ranges Ranges { get; init; } = new([]);
+    public Ranges Ranges { get; init; } = new(System.Array.Empty<(int, int)>());
 }
