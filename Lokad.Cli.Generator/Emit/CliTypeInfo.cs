@@ -8,6 +8,7 @@ namespace Lokad.Cli.Generator.Emit
             : this(
                 typeName,
                 kind,
+                CliParserMethods.None,
                 System.Array.Empty<char>(),
                 System.Array.Empty<string>(),
                 false,
@@ -24,6 +25,7 @@ namespace Lokad.Cli.Generator.Emit
         public CliTypeInfo(
             TypeName typeName,
             CliTypeKind kind,
+            CliParserMethods explicitParserMethods,
             char[] shortOptions,
             string[] longOptions,
             bool hasShortNumericArguments,
@@ -37,6 +39,7 @@ namespace Lokad.Cli.Generator.Emit
         {
             TypeName = typeName;
             Kind = kind;
+            ExplicitParserMethods = explicitParserMethods;
             ShortOptions = shortOptions;
             LongOptions = longOptions;
             HasShortNumericArguments = hasShortNumericArguments;
@@ -52,6 +55,8 @@ namespace Lokad.Cli.Generator.Emit
         public TypeName TypeName { get; }
 
         public CliTypeKind Kind { get; }
+
+        public CliParserMethods ExplicitParserMethods { get; }
 
         public char[] ShortOptions { get; }
 

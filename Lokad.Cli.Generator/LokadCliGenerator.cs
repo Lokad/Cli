@@ -131,9 +131,21 @@ namespace Lokad.Cli.Generator
                 : tokenization.HasHelpPrefixes ? GeneratorException.AmbiguousHelpSchema : GeneratorException.InvalidChoiceSchema;
             var schema = BuildCommandSchema(typeSymbol);
             var boundary = tokenization.RequiresBoundaries || tokenization.HasHelpPrefixes ? schema : null;
+            var explicitParserMethods = CliParserMethods.None;
+            foreach (var method in new[] { CliParserMethods.Parse, CliParserMethods.Tokenize, CliParserMethods.ParseTokenized, CliParserMethods.Document })
+            {
+                var name = method.ToString();
+                for (var current = typeSymbol; current != null; current = current.BaseType)
+                    if (current.Name == name || current.GetMembers(name).Length > 0)
+                    {
+                        explicitParserMethods |= method;
+                        break;
+                    }
+            }
             return new CliTypeInfo(
                 type.TypeName,
                 type.Kind,
+                explicitParserMethods,
                 shortOptions.ToArray(),
                 longOptions.ToArray(),
                 hasShortNumericArguments,

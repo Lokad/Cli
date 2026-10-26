@@ -12,6 +12,7 @@ In case of parsing error, a `Lokad.Cli.ParseException` is thrown, and should be 
 ## Basic usage
 
 Use top-level, non-generic partial types. Unsupported declarations produce `LKC0027`.
+The `Parser` facade supports argument members named `Parse`, `Tokenize`, `ParseTokenized`, or `Document`.
 
 The `[Arguments]` annotation is added to a record to indicate that it should be automatically parsed from the command-line arguments.
 It requires user-facing documentation for the argument shape.

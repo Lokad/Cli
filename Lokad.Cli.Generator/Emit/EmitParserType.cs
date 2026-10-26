@@ -13,12 +13,12 @@ $@"#nullable enable
 {{
 {EmitOptionNames(type)}
 
-    {GetParseMethodDeclaration(type)}
+    {GetParserMethodDeclaration(CliParserMethods.Parse, type.TypeName.FullName, "global::System.Collections.Generic.IReadOnlyList<string> arguments")}
     {{
         return ParseTokenizedCore(TokenizeCore(arguments));
     }}
 
-    {GetTokenizeMethodDeclaration(type)}
+    {GetParserMethodDeclaration(CliParserMethods.Tokenize, "global::Lokad.Cli.TokenizedArguments", "global::System.Collections.Generic.IReadOnlyList<string> arguments")}
     {{
         return TokenizeCore(arguments);
     }}
@@ -30,14 +30,14 @@ $@"#nullable enable
         {GetHelpInspection(type)}
     }}
 
-    {GetParseTokenizedMethodDeclaration(type)}
+    {GetParserMethodDeclaration(CliParserMethods.ParseTokenized, type.TypeName.FullName, "global::Lokad.Cli.TokenizedArguments arguments")}
     {{
         if (arguments == null) throw new global::System.ArgumentNullException(nameof(arguments));
 
         return ParseTokenizedCore(arguments);
     }}
 
-    {GetDocumentMethodDeclaration(type)}
+    {GetParserMethodDeclaration(CliParserMethods.Document, "string", "string commandName")}
     {{
         return DocumentCore(commandName);
     }}
@@ -67,12 +67,12 @@ $@"#nullable enable
             static string GetNamespaceDeclaration(CliTypeInfo parserType) => parserType.TypeName.Namespace.Length == 0
                 ? string.Empty : "namespace " + parserType.TypeName.Namespace + ";" + Environment.NewLine;
 
-            static string GetTokenizeMethodDeclaration(CliTypeInfo parserType)
+            string GetParserMethodDeclaration(CliParserMethods method, string returnType, string parameters)
             {
-                if (parserType.Kind == CliTypeKind.Interface)
-                    return "static global::Lokad.Cli.TokenizedArguments global::Lokad.Cli.ICliParsed<" + parserType.TypeName.FullName + ">.Tokenize(global::System.Collections.Generic.IReadOnlyList<string> arguments)";
-
-                return "public static global::Lokad.Cli.TokenizedArguments Tokenize(global::System.Collections.Generic.IReadOnlyList<string> arguments)";
+                var implementation = type.Kind == CliTypeKind.Interface || (type.ExplicitParserMethods & method) != 0
+                    ? "static " + returnType + " global::Lokad.Cli.ICliParsed<" + type.TypeName.FullName + ">."
+                    : "public static " + returnType + " ";
+                return implementation + method + "(" + parameters + ")";
             }
 
             static string GetHelpMethodDeclaration(CliTypeInfo parserType) =>
@@ -177,30 +177,6 @@ $@"#nullable enable
                 default:
                     return "record";
             }
-        }
-
-        private static string GetParseMethodDeclaration(CliTypeInfo type)
-        {
-            if (type.Kind == CliTypeKind.Interface)
-                return "static " + type.TypeName.FullName + " global::Lokad.Cli.ICliParsed<" + type.TypeName.FullName + ">.Parse(global::System.Collections.Generic.IReadOnlyList<string> arguments)";
-
-            return "public static " + type.TypeName.FullName + " Parse(global::System.Collections.Generic.IReadOnlyList<string> arguments)";
-        }
-
-        private static string GetParseTokenizedMethodDeclaration(CliTypeInfo type)
-        {
-            if (type.Kind == CliTypeKind.Interface)
-                return "static " + type.TypeName.FullName + " global::Lokad.Cli.ICliParsed<" + type.TypeName.FullName + ">.ParseTokenized(global::Lokad.Cli.TokenizedArguments arguments)";
-
-            return "public static " + type.TypeName.FullName + " ParseTokenized(global::Lokad.Cli.TokenizedArguments arguments)";
-        }
-
-        private static string GetDocumentMethodDeclaration(CliTypeInfo type)
-        {
-            if (type.Kind == CliTypeKind.Interface)
-                return "static string global::Lokad.Cli.ICliParsed<" + type.TypeName.FullName + ">.Document(string commandName)";
-
-            return "public static string Document(string commandName)";
         }
 
         private static string FormatCharArray(char[] values)
