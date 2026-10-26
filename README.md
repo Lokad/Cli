@@ -30,7 +30,7 @@ public partial record MyArgs
     // Type 'int?' means an optional argument that must be parsed as an integer. 
     // The presence of 'Short' and/or 'Long' means this is a named option.
     // Recognizes `-d 10`, `-d10`, `--max-depth 10` or `--max-depth=10`
-    // Recognizes `-d abc` and reports "Invalid integer value for option `-d`: abc"
+    // Invalid values such as `-d abc` produce ParseException.
     [Argument(
         "Maximum depth for recursive traversal.",
         Short = 'd',
@@ -55,12 +55,13 @@ public int Main(string[] args)
 {
     try
     {
-        MyArgs args = Lokad.Cli.Parser.Parse<MyArgs>(args);
-        return Operate(args);
+        var parsed = Lokad.Cli.Parser.Parse<MyArgs>(args);
+        return Operate(parsed);
     }
     catch (Lokad.Cli.ParseException ex)
     {
         Console.Error.WriteLine($"appname: {ex.Message}");
+        return 1;
     }
 }
 ``` 
@@ -178,6 +179,12 @@ The choices must have a discriminant (at most one choice without discriminant is
 public partial interface IMyArgs
 {
 }
+
+[Arguments("First command.", Prefix = "first")]
+public partial record MyArgs1 : IMyArgs;
+
+[Arguments("Second command.", Prefix = "second")]
+public partial record MyArgs2 : IMyArgs;
 ```
 
 The members of the interface are ignored. All the choice types must implement the interface, and
@@ -187,47 +194,34 @@ The interface may be annotated with `[Arguments]` itself to specify a discrimina
 
 ```csharp
 [Choice(typeof(IMySubArgs))]
-[Choice(typeof(MyArgs)]
+[Choice(typeof(MyArgs))]
 public partial interface IMyArgs {}
 
-[Choice(typeof(MySubArgs1)]
-[Choice(typeof(MySubArgs2)]
+[Choice(typeof(MySubArgs1))]
+[Choice(typeof(MySubArgs2))]
 [Arguments("Subcommands.", Prefix = "sub")]
 public partial interface IMySubArgs : IMyArgs {}
 
 // Produced by parsing `A`
-[Arguments("Command A.", Prefix = "A"] public partial record MyArgs();
+[Arguments("Command A.", Prefix = "A")] public partial record MyArgs : IMyArgs;
  
 // Produced by parsing `sub B` 
-[Arguments("Command B.", Prefix = "B"] public partial record MySubArgs1();
+[Arguments("Command B.", Prefix = "B")] public partial record MySubArgs1 : IMySubArgs;
 
 // Produced by parsing `sub C`
-[Arguments("Command C.", Prefix = "C"] public partial record MySubArgs2();
+[Arguments("Command C.", Prefix = "C")] public partial record MySubArgs2 : IMySubArgs;
 ``` 
 
 ### Parsing algorithm steps
 
-The parsing algorithm works as follows: 
-
-  1. **Tokenization**: run left-to-right using reachable option names and, for the opt-in value syntax above, generated value modes. The following rules describe the default syntax.
-     - if an `[Argument("...", ShortNumeric=true)]` exists, `-[0-9]+` is treated as `NumericShortArg`
-     - if an `[Argument("...", ShortNumeric=true, Short='x')]` exists, `-x[0-9]+` is treated as `NumericShortArg`
-     - `-[a-zA-Z0-9]+` can be a `LongArg` if `[Argument("...", Long="xyz")]` exists, otherwise, it becomes a `ShortArgSet` made up of single-character short arguments. Reports "unknown short option -x" for each character for which `[Argument("...", Short='x')]` does not exist.
-     - `--[a-zA-Z0-9]+` is a `LongArg`. Reports "unknown option `--xyz`" if `[Argument("...", Long="xyz")]` does not exist.
-     - `--[a-zA-Z0-9]+=.*` is a `LongArgWithValue`. Reports "unknown option `--xyz`" if `[Argument("...", Long="xyz")]` does not exist.
-     - `--` is ignored, but causes all subsequent arguments to be treated as `ValueArg`.
-     - Any unmatched argument is treated a `ValueArg`.
-     
-  2. **Discrimination**: if multiple `[Choice]` are present, find which one to use based on discriminants. 
-     - If multiple choices match, report an error "incompatible options `--abc` and `--def`".
-     - If all choices have a discriminant, and none of them match, report an error "expected `--abc`, `--def` or `--ghi`"
-     
-  3. **Binding**: after choices have resolved, traverse the argument list and divert each argument to its destination. 
-     - Options without arguments (usually, booleans) are assigned.
-     - Options that include their argument value (`NumericShortArg`, `LongArgWithValue`) have their value parsed and assigned.
-     - Options that expect a subsequent value (a `LongArg` or an entry in a `ShortArgSet`) consume the next unparsed argument ; if there is no next unparsed argument or if that argument is not a `ValueArg`, report an error "option `--foo` expects a value" ; the consumed argument is parsed and assigned.
-     - Options that are not allowed (and are not a discriminator), are reported as "unexpected option `--xyz`" (as opposed to "unknown option")
-     - Any `ValueArg`, if not consumed by a preceding option, is parsed assigned to the next positional property (this includes the positional discriminator). If there are no unbound positional properties remaining, report "unexpected argument `{value}`"
+1. **Tokenization** classifies options and operands using the reachable schema
+   and its lexical policies. Value-aware modes distinguish consumed values from
+   command prefixes; `--` ends options unless consumed as a verbatim value.
+2. **Discrimination** selects a declared choice by its option or positional prefix.
+   Conflicting choices fail; a default is used only when no explicit choice matches.
+3. **Binding** converts values, checks required arguments and flag repetition,
+   and constructs the selected command and its groups. Invalid input produces
+   `ParseException`; exceptions from custom converters propagate unchanged.
 
 ## Supported Types
 

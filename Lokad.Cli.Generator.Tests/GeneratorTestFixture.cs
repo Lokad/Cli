@@ -54,6 +54,7 @@ public static class GeneratorTestFixture
         {
             MetadataReference.CreateFromFile(Path.Combine(runtimeDirectory, "System.Runtime.dll")),
             MetadataReference.CreateFromFile(Path.Combine(runtimeDirectory, "System.Private.CoreLib.dll")),
+            MetadataReference.CreateFromFile(typeof(Console).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(ArgumentsAttribute).Assembly.Location),
         };
 
