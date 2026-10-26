@@ -90,7 +90,8 @@ namespace Lokad.Cli.Generator
                                  $"{nameof(ITypeGenerationStrategy.EmitSource)} returned null.");
 
                 context.AddSource(
-                    $"{strategy.Type.TypeName.Namespace}.{strategy.Type.TypeName.Name}.{_slug}.g.cs",
+                    (strategy.Type.TypeName.Namespace.Length == 0 ? "" : strategy.Type.TypeName.Namespace + ".") +
+                    $"{strategy.Type.TypeName.Name}.{_slug}.g.cs",
                     source);
             }
             catch (Exception ex)
@@ -143,7 +144,7 @@ namespace Lokad.Cli.Generator
                 new TypeName(
                     typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                     typeSymbol.Name,
-                    typeSymbol.ContainingNamespace.ToDisplayString()),
+                    typeSymbol.ContainingNamespace.IsGlobalNamespace ? "" : typeSymbol.ContainingNamespace.ToDisplayString()),
                 GetTypeKind(typeSymbol),
                 sourceLocation);
         }

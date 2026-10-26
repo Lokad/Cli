@@ -8,8 +8,7 @@ namespace Lokad.Cli.Generator.Emit
         {
             return
 $@"#nullable enable
-namespace {type.TypeName.Namespace};
-partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICliParsed<{type.TypeName.FullName}>
+{GetNamespaceDeclaration(type)}partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICliParsed<{type.TypeName.FullName}>
 {{
 {EmitOptionNames(type)}
 
@@ -63,6 +62,9 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
 {EmitParseHelpers(type)}
 }}
 ";
+
+            static string GetNamespaceDeclaration(CliTypeInfo parserType) => parserType.TypeName.Namespace.Length == 0
+                ? string.Empty : "namespace " + parserType.TypeName.Namespace + ";" + Environment.NewLine;
 
             static string GetTokenizeMethodDeclaration(CliTypeInfo parserType)
             {

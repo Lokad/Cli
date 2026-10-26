@@ -1,0 +1,5 @@
+Error LKC0027: CLI argument type 'GenericArgs' is unsupported: generic types are not supported (UnsupportedTypes/Input.cs:6:23)
+Error LKC0027: CLI argument type 'NestedArgs' is unsupported: nested types are not supported (UnsupportedTypes/Input.cs:11:27)
+Error LKC0027: CLI argument type 'RefArgs' is unsupported: ref-like types cannot implement the parser contract (UnsupportedTypes/Input.cs:15:27)
+Error LKC0027: CLI argument type 'NonPartialArgs' is unsupported: argument types must be partial (UnsupportedTypes/Input.cs:18:15)
+Error LKC0027: CLI argument type 'FileArgs' is unsupported: file-local types cannot be extended from generated source (UnsupportedTypes/Input.cs:21:21)

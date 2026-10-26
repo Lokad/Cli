@@ -17,4 +17,4 @@ Error LKC0024: Argument group 'Options' is invalid: the group must be constructo
 Error LKC0024: Argument group 'Options' is invalid: its parameterless constructor is inaccessible from the containing command (InvalidArgumentGroups/Input.cs:79:47)
 Error LKC0024: Argument group 'Options' is invalid: a bound member is inaccessible from the containing command (InvalidArgumentGroups/Input.cs:84:6)
 Error LKC0024: Argument group 'Options' is invalid: its parameterless constructor is inaccessible from the containing command (InvalidArgumentGroups/Input.cs:99:6)
-Error LKC0024: Argument group 'Options' is invalid: recursive argument groups are not supported (InvalidArgumentGroups/Input.cs:104:16)
+Error LKC0027: CLI argument type 'ExpandingGroup' is unsupported: generic types are not supported (InvalidArgumentGroups/Input.cs:103:23)

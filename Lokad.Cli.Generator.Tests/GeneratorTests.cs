@@ -14,6 +14,7 @@ public class GeneratorTests
     [Fact] public void ArgumentGroups() => Run();
     [Fact] public void ChoiceDiscrimination() => Run();
     [Fact] public void Empty() => Run();
+    [Fact] public void GlobalNamespace() => Run();
     [Fact] public void InvalidArgumentGroups() => Run();
     [Fact] public void InvalidBindingTargets() => Run();
     [Fact] public void InvalidChoices() => Run();
@@ -27,6 +28,7 @@ public class GeneratorTests
     [Fact] public void PartialDeclarations() => Run();
     [Fact] public void Ranges() => Run();
     [Fact] public void TokenizationOptions() => Run();
+    [Fact] public void UnsupportedTypes() => Run();
 
     #endregion
 }

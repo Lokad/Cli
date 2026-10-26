@@ -1,6 +1,8 @@
 using Lokad.Cli.Generator.Analysis;
 using Lokad.Cli.Generator.Emit;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 
@@ -42,7 +44,25 @@ namespace Lokad.Cli.Generator
             ITypeSymbol typeSymbol,
             CliTypeInfo type)
         {
+            if (typeSymbol.ContainingType != null)
+                throw Unsupported("nested types are not supported");
+            if (typeSymbol is INamedTypeSymbol named && named.Arity != 0)
+                throw Unsupported("generic types are not supported");
+            if (typeSymbol is INamedTypeSymbol refLike && refLike.IsRefLikeType)
+                throw Unsupported("ref-like types cannot implement the parser contract");
+            foreach (var reference in typeSymbol.DeclaringSyntaxReferences)
+            {
+                if (!(reference.GetSyntax() is TypeDeclarationSyntax declaration))
+                    continue;
+                if (!System.Linq.Enumerable.Any(declaration.Modifiers, modifier => modifier.IsKind(SyntaxKind.PartialKeyword)))
+                    throw Unsupported("argument types must be partial");
+                if (System.Linq.Enumerable.Any(declaration.Modifiers, modifier => modifier.ValueText == "file"))
+                    throw Unsupported("file-local types cannot be extended from generated source");
+            }
             return new ParserGenerationStrategy(CollectParserInfo(compilation, typeSymbol, type));
+
+            GeneratorException Unsupported(string reason) =>
+                new GeneratorException(GeneratorException.UnsupportedArgumentType, typeSymbol.Name, reason);
         }
 
         protected override bool HasCliAnnotation(Compilation compilation, ITypeSymbol typeSymbol) =>
@@ -661,6 +681,6 @@ namespace Lokad.Cli.Generator
             new TypeName(
                 typeSymbol.WithNullableAnnotation(NullableAnnotation.NotAnnotated).ToDisplayString(TypeDisplayFormat),
                 typeSymbol.Name,
-                typeSymbol.ContainingNamespace.ToDisplayString());
+                typeSymbol.ContainingNamespace.IsGlobalNamespace ? "" : typeSymbol.ContainingNamespace.ToDisplayString());
     }
 }
