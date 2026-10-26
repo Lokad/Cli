@@ -676,6 +676,9 @@ namespace Lokad.Cli.Generator
                             names.Add(name);
                     }
                 }
+                foreach (var name in names)
+                    if (!isValid(name))
+                        throw new GeneratorException(GeneratorException.InvalidOptionName, singular);
             }
 
             static bool IsValidLongName(string name)

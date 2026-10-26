@@ -47,7 +47,7 @@ namespace Lokad.Cli.Generator.Emit
         public static readonly DiagnosticDescriptor InvalidOptionName = new DiagnosticDescriptor(
             id: "LKC0004",
             title: "Invalid option name",
-            messageFormat: "Invalid {0}: use an array of nonempty names without leading dashes, '=', whitespace or control characters",
+            messageFormat: "Invalid {0}: option names must be nonempty, cannot start with a dash, and cannot contain '=', whitespace or control characters",
             category: "SourceGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);

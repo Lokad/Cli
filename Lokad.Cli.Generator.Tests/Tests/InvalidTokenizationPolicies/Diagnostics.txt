@@ -1,7 +1,7 @@
+Error LKC0004: Invalid Long: option names must be nonempty, cannot start with a dash, and cannot contain '=', whitespace or control characters (InvalidTokenizationPolicies/Input.cs:24:23)
 Error LKC0010: Argument 'Flag' uses ConsumeNextValueVerbatim, which requires a named value-taking option without ShortNumeric (InvalidTokenizationPolicies/Input.cs:6:23)
 Error LKC0010: Argument 'Value' uses ConsumeNextValueVerbatim, which requires a named value-taking option without ShortNumeric (InvalidTokenizationPolicies/Input.cs:12:23)
 Error LKC0010: Argument 'Value' uses ConsumeNextValueVerbatim, which requires a named value-taking option without ShortNumeric (InvalidTokenizationPolicies/Input.cs:18:23)
-Error LKC0010: Argument 'Value' uses ConsumeNextValueVerbatim, which requires a named value-taking option without ShortNumeric (InvalidTokenizationPolicies/Input.cs:24:23)
 Error LKC0011: Option '-x' has conflicting value modes across reachable choices; value-aware tokenization requires an unambiguous mode (InvalidTokenizationPolicies/Input.cs:35:26)
 Error LKC0011: Option '-x' has conflicting value modes across reachable choices; value-aware tokenization requires an unambiguous mode (InvalidTokenizationPolicies/Input.cs:40:26)
 Error LKC0011: Option '-x' has conflicting value modes across reachable choices; value-aware tokenization requires an unambiguous mode (InvalidTokenizationPolicies/Input.cs:43:23)

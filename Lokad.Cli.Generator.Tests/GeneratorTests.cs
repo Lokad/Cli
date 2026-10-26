@@ -24,6 +24,7 @@ public class GeneratorTests
     [Fact] public void InvalidHelp() => Run();
     [Fact] public void InvalidNumericOptions() => Run();
     [Fact] public void InvalidOptionAliases() => Run();
+    [Fact] public void InvalidOptionNames() => Run();
     [Fact] public void InvalidOptionalValues() => Run();
     [Fact] public void InvalidRemainders() => Run();
     [Fact] public void InvalidRepeatedFlags() => Run();
