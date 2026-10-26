@@ -224,12 +224,12 @@ namespace Lokad.Cli
             bool singleDash,
             List<ITokenizedArguments> tokens)
         {
-            if (argument.Length <= 2 || (singleDash
+            var prefixLength = singleDash ? 1 : 2;
+            if (argument.Length <= prefixLength || (singleDash
                 ? !argument.StartsWith("-", StringComparison.Ordinal) || argument.StartsWith("--", StringComparison.Ordinal)
                 : !argument.StartsWith("--", StringComparison.Ordinal)))
                 return false;
 
-            var prefixLength = singleDash ? 1 : 2;
             var separator = argument.IndexOf('=');
             var name = separator < 0 ? argument.Substring(prefixLength) : argument.Substring(prefixLength, separator - prefixLength);
 
