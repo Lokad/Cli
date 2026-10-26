@@ -19,6 +19,7 @@ public class GeneratorTests
     [Fact] public void InvalidBindingTargets() => Run();
     [Fact] public void InvalidChoices() => Run();
     [Fact] public void InvalidCollectionBoundaries() => Run();
+    [Fact] public void InvalidConstructors() => Run();
     [Fact] public void InvalidHelp() => Run();
     [Fact] public void InvalidOptionAliases() => Run();
     [Fact] public void InvalidOptionalValues() => Run();

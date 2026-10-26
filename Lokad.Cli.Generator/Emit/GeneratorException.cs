@@ -198,5 +198,10 @@ namespace Lokad.Cli.Generator.Emit
             "LKC0027", "Unsupported argument type declaration",
             "CLI argument type '{0}' is unsupported: {1}",
             "SourceGenerator", DiagnosticSeverity.Error, true);
+
+        public static readonly DiagnosticDescriptor InvalidArgumentConstructor = new DiagnosticDescriptor(
+            "LKC0028", "Invalid argument constructor",
+            "CLI argument type '{0}' has an invalid constructor: {1}",
+            "SourceGenerator", DiagnosticSeverity.Error, true);
     }
 }

@@ -233,21 +233,39 @@ namespace Lokad.Cli.Generator
                 activeGroups.Add(declaration.OriginalDefinition);
                 var members = new List<CliArgumentInfo>();
                 var constructorBoundNames = new HashSet<string>();
+                IMethodSymbol? boundConstructor = null;
+                var constructorArguments = new List<(IParameterSymbol Parameter, AttributeData Annotation)>();
                 foreach (var member in declaration.GetMembers())
                 {
                     if (!(member is IMethodSymbol method) || method.MethodKind != MethodKind.Constructor)
                         continue;
+                    // Record copy constructors do not describe command-line inputs.
+                    if (method.IsImplicitlyDeclared && method.Parameters.Length > 0)
+                        continue;
+                    var parameters = new List<(IParameterSymbol Parameter, AttributeData Annotation)>();
                     foreach (var parameter in method.Parameters)
                     {
                         var annotation = parameter.TryGetAttribute(compilation, _argumentAttribute) ??
                                          FindMatchingPropertyArgument(parameter);
                         if (annotation == null)
                             continue;
-                        if (isGroup && !compilation.IsSymbolAccessibleWithin(method, constructionContext, declaration))
-                            throw GroupError(annotation, path, "its constructor is inaccessible from the containing command");
-                        constructorBoundNames.Add(parameter.Name);
-                        AddMember(parameter, annotation, true);
+                        parameters.Add((parameter, annotation));
                     }
+                    if (parameters.Count == 0)
+                        continue;
+                    if (boundConstructor != null)
+                        throw ConstructorError("only one constructor may bind arguments");
+                    if (parameters.Count != method.Parameters.Length)
+                        throw ConstructorError("every parameter of the bound constructor must be annotated or match an annotated property");
+                    if (isGroup && !compilation.IsSymbolAccessibleWithin(method, constructionContext, declaration))
+                        throw GroupError(parameters[0].Annotation, path, "its constructor is inaccessible from the containing command");
+                    boundConstructor = method;
+                    constructorArguments = parameters;
+                }
+                foreach (var parameter in constructorArguments)
+                {
+                    constructorBoundNames.Add(parameter.Parameter.Name);
+                    AddMember(parameter.Parameter, parameter.Annotation, true);
                 }
                 foreach (var member in declaration.GetMembers())
                 {
@@ -263,6 +281,9 @@ namespace Lokad.Cli.Generator
                 }
                 activeGroups.Remove(declaration.OriginalDefinition);
                 return members.ToArray();
+
+                GeneratorException ConstructorError(string reason) =>
+                    new GeneratorException(GeneratorException.InvalidArgumentConstructor, declaration.Name, reason);
 
                 void AddMember(ISymbol member, AttributeData annotation, bool isConstructorParameter)
                 {
@@ -402,7 +423,7 @@ namespace Lokad.Cli.Generator
                 AttributeData? FindMatchingPropertyArgument(IParameterSymbol parameter)
                 {
                     foreach (var member in declaration.GetMembers(parameter.Name))
-                        if (member is IPropertySymbol property)
+                        if (member is IPropertySymbol property && SymbolEqualityComparer.Default.Equals(property.Type, parameter.Type))
                             return property.TryGetAttribute(compilation, _argumentAttribute);
                     return null;
                 }

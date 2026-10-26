@@ -1,0 +1,2 @@
+Error LKC0028: CLI argument type 'Overloads' has an invalid constructor: only one constructor may bind arguments (InvalidConstructors/Input.cs:6:22)
+Error LKC0028: CLI argument type 'Incomplete' has an invalid constructor: every parameter of the bound constructor must be annotated or match an annotated property (InvalidConstructors/Input.cs:13:22)
