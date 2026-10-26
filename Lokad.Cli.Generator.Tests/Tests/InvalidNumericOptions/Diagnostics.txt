@@ -1,0 +1,4 @@
+Error LKC0005: Option '-<number>' is assigned to both 'First' and 'Second' in the same command (InvalidNumericOptions/Input.cs:8:16)
+Error LKC0030: Short option '-1' cannot be used alongside ShortNumeric arguments in the reachable command graph (InvalidNumericOptions/Input.cs:11:23)
+Error LKC0030: Short option '-2' cannot be used alongside ShortNumeric arguments in the reachable command graph (InvalidNumericOptions/Input.cs:16:23)
+Error LKC0030: Short option '-3' cannot be used alongside ShortNumeric arguments in the reachable command graph (InvalidNumericOptions/Input.cs:20:23)

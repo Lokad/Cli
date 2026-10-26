@@ -107,16 +107,21 @@ namespace Lokad.Cli.Generator
                 if (argument.IsBoolean && (!argument.Options.HasNamedOption || argument.ShortNumeric))
                     throw new GeneratorException(argument.Location, GeneratorException.InvalidBooleanFlag, argument.Path);
 
+                if (argument.ShortNumeric)
+                    AddOwner("-<number>", argument);
                 foreach (var label in argument.Options.Labels)
                 {
-                    if (owners.TryGetValue(label, out var owner))
-                        throw new GeneratorException(argument.Location, GeneratorException.OptionNameCollision, label, owner, argument.Path);
-                    owners.Add(label, argument.Path);
+                    AddOwner(label, argument);
 
                     if (argument.Options.HasAliases && discriminatorOptions.Contains(label))
                         throw new GeneratorException(GeneratorException.DiscriminatorAliases, argument.Name, label);
                 }
             }
+
+            if (hasShortNumericArguments)
+                foreach (var name in shortOptions)
+                    if (name >= '0' && name <= '9')
+                        throw new GeneratorException(GeneratorException.NumericShortCollision, name);
 
             tokenization.Validate();
             var commandSchemas = new Dictionary<ITypeSymbol, CliCommandBoundaryInfo>(SymbolEqualityComparer.Default);
@@ -139,6 +144,13 @@ namespace Lokad.Cli.Generator
                 documentation,
                 tokenization,
                 boundary);
+
+            void AddOwner(string label, CliArgumentInfo argument)
+            {
+                if (owners.TryGetValue(label, out var owner))
+                    throw new GeneratorException(argument.Location, GeneratorException.OptionNameCollision, label, owner, argument.Path);
+                owners.Add(label, argument.Path);
+            }
 
             CliCommandBoundaryInfo BuildCommandSchema(ITypeSymbol declaration)
             {

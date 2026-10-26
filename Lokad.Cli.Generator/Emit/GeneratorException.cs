@@ -208,5 +208,10 @@ namespace Lokad.Cli.Generator.Emit
             "LKC0029", "Invalid boolean flag",
             "Boolean argument '{0}' requires a named option without ShortNumeric",
             "SourceGenerator", DiagnosticSeverity.Error, true);
+
+        public static readonly DiagnosticDescriptor NumericShortCollision = new DiagnosticDescriptor(
+            "LKC0030", "Ambiguous numeric short option",
+            "Short option '-{0}' cannot be used alongside ShortNumeric arguments in the reachable command graph",
+            "SourceGenerator", DiagnosticSeverity.Error, true);
     }
 }
