@@ -60,7 +60,7 @@ partial interface INestedDefault : global::Lokad.Cli.ICliParsed<global::Test.INe
         if (tokenized.HasPositionalPrefix(@"run"))
         {
             if (choice >= 0)
-                throw new global::Lokad.Cli.ParseException($"incompatible options `{choiceDiscriminator}` and `run`");
+                throw new global::Lokad.Cli.ParseException(@"incompatible options `" + choiceDiscriminator + @"` and `run`");
             choice = 0;
             choiceDiscriminator = @"run";
         }

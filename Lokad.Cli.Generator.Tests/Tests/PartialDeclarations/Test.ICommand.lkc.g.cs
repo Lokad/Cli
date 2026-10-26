@@ -55,14 +55,14 @@ partial interface ICommand : global::Lokad.Cli.ICliParsed<global::Test.ICommand>
         if (tokenized.HasPositionalPrefix(@"second"))
         {
             if (choice >= 0)
-                throw new global::Lokad.Cli.ParseException($"incompatible options `{choiceDiscriminator}` and `second`");
+                throw new global::Lokad.Cli.ParseException(@"incompatible options `" + choiceDiscriminator + @"` and `second`");
             choice = 0;
             choiceDiscriminator = @"second";
         }
         if (tokenized.HasPositionalPrefix(@"first"))
         {
             if (choice >= 0)
-                throw new global::Lokad.Cli.ParseException($"incompatible options `{choiceDiscriminator}` and `first`");
+                throw new global::Lokad.Cli.ParseException(@"incompatible options `" + choiceDiscriminator + @"` and `first`");
             choice = 1;
             choiceDiscriminator = @"first";
         }

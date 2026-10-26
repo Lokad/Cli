@@ -55,7 +55,7 @@ partial interface IParentChoice : global::Lokad.Cli.ICliParsed<global::Test.IPar
         if (tokenized.HasPositionalPrefix(@"nested"))
         {
             if (choice >= 0)
-                throw new global::Lokad.Cli.ParseException($"incompatible options `{choiceDiscriminator}` and `nested`");
+                throw new global::Lokad.Cli.ParseException(@"incompatible options `" + choiceDiscriminator + @"` and `nested`");
             choice = 0;
             choiceDiscriminator = @"nested";
         }

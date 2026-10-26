@@ -55,21 +55,21 @@ partial interface ICommand : global::Lokad.Cli.ICliParsed<global::Test.ICommand>
         if (tokenized.HasLongOption(@"add"))
         {
             if (choice >= 0)
-                throw new global::Lokad.Cli.ParseException($"incompatible options `{choiceDiscriminator}` and `--add`");
+                throw new global::Lokad.Cli.ParseException(@"incompatible options `" + choiceDiscriminator + @"` and `--add`");
             choice = 0;
             choiceDiscriminator = @"--add";
         }
         if (tokenized.HasShortOption('r'))
         {
             if (choice >= 0)
-                throw new global::Lokad.Cli.ParseException($"incompatible options `{choiceDiscriminator}` and `-r`");
+                throw new global::Lokad.Cli.ParseException(@"incompatible options `" + choiceDiscriminator + @"` and `-r`");
             choice = 1;
             choiceDiscriminator = @"-r";
         }
         if (tokenized.HasPositionalPrefix(@"list"))
         {
             if (choice >= 0)
-                throw new global::Lokad.Cli.ParseException($"incompatible options `{choiceDiscriminator}` and `list`");
+                throw new global::Lokad.Cli.ParseException(@"incompatible options `" + choiceDiscriminator + @"` and `list`");
             choice = 2;
             choiceDiscriminator = @"list";
         }

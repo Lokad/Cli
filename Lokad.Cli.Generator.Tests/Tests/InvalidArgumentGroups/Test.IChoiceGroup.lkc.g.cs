@@ -55,7 +55,7 @@ partial interface IChoiceGroup : global::Lokad.Cli.ICliParsed<global::Test.IChoi
         if (tokenized.HasPositionalPrefix(@"mode"))
         {
             if (choice >= 0)
-                throw new global::Lokad.Cli.ParseException($"incompatible options `{choiceDiscriminator}` and `mode`");
+                throw new global::Lokad.Cli.ParseException(@"incompatible options `" + choiceDiscriminator + @"` and `mode`");
             choice = 0;
             choiceDiscriminator = @"mode";
         }

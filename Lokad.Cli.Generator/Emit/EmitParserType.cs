@@ -1002,11 +1002,11 @@ $@"#nullable enable
                 lines.Append("        if (").Append(FormatDiscriminatorTest(discriminator)).AppendLine(")");
                 lines.AppendLine("        {");
                 lines.AppendLine("            if (choice >= 0)");
-                lines.Append("                throw new global::Lokad.Cli.ParseException($\"incompatible options `")
-                    .Append("{choiceDiscriminator}")
-                    .Append("` and `")
-                    .Append(EscapeInterpolatedStringText(discriminator.Display))
-                    .AppendLine("`\");");
+                lines.Append("                throw new global::Lokad.Cli.ParseException(")
+                    .Append(FormatStringLiteral("incompatible options `"))
+                    .Append(" + choiceDiscriminator + ")
+                    .Append(FormatStringLiteral("` and `" + discriminator.Display + "`"))
+                    .AppendLine(");");
                 lines.Append("            choice = ").Append(i).AppendLine(";");
                 lines.Append("            choiceDiscriminator = ").Append(FormatStringLiteral(discriminator.Display)).AppendLine(";");
                 lines.AppendLine("        }");
@@ -1130,7 +1130,5 @@ $@"#nullable enable
             SyntaxFacts.GetKeywordKind(name) != SyntaxKind.None || SyntaxFacts.GetContextualKeywordKind(name) != SyntaxKind.None
                 ? "@" + name : name;
 
-        private static string EscapeInterpolatedStringText(string value) =>
-            value.Replace("{", "{{").Replace("}", "}}").Replace("\"", "\\\"");
     }
 }
