@@ -320,7 +320,7 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
         if (arg7Value is null)
             throw new global::Lokad.Cli.ParseException("missing argument");
 
-        return new global::Test.TokenizationOptions(arg0Value, new global::System.ReadOnlyMemory<int>(arg1Value.ToArray()))
+        return new global::Test.TokenizationOptions((global::Test.SnapshotReferenceValue<string?>)(arg0Value), (global::System.ReadOnlyMemory<int>)(new global::System.ReadOnlyMemory<int>(arg1Value.ToArray())))
         {
             Verbose = arg2Value,
             Depth = arg3Seen ? arg3Value : default(global::System.Nullable<int>),

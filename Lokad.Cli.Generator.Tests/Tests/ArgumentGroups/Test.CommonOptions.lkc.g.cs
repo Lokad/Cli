@@ -113,7 +113,7 @@ partial record CommonOptions : global::Lokad.Cli.ICliParsed<global::Test.CommonO
         if (!arg0Seen)
             throw new global::Lokad.Cli.ParseException(@"missing option `--timeout`");
 
-        return new global::Test.CommonOptions(arg0Value, arg1Value);
+        return new global::Test.CommonOptions((int)(arg0Value), (bool)(arg1Value));
     }
 
     private static string DocumentCore__Cli(string commandName)

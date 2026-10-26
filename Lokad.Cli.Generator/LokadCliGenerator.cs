@@ -442,7 +442,7 @@ namespace Lokad.Cli.Generator
                         !isOptionalValue && collectionKind == CliCollectionKind.None && bindableType.SpecialType == SpecialType.System_Boolean,
                         bindableType.TypeKind == TypeKind.Enum,
                         collectionKind,
-                        isConstructorParameter,
+                        isConstructorParameter ? TypeName.FormatSymbol(type) : null,
                         GetConstructorString(annotation, 0) ?? string.Empty,
                         GetNamedString(annotation, "Name"),
                         names,

@@ -124,7 +124,7 @@ partial record CopyArgs : global::Lokad.Cli.ICliParsed<global::Test.CopyArgs>
         if (!arg1Seen)
             throw new global::Lokad.Cli.ParseException(@"missing option `--timeout`");
 
-        return new global::Test.CopyArgs(arg0Value, new global::Test.CommonOptions(arg1Value, arg2Value));
+        return new global::Test.CopyArgs((string)(arg0Value), (global::Test.CommonOptions)(new global::Test.CommonOptions((int)(arg1Value), (bool)(arg2Value))));
     }
 
     private static string DocumentCore__Cli(string commandName)

@@ -558,11 +558,12 @@ $@"#nullable enable
                 var first = true;
                 foreach (var member in members)
                 {
-                    if (!member.IsConstructorParameter)
+                    if (!(member.ConstructorParameterType is string parameterType))
                         continue;
                     if (!first)
                         expression.Append(", ");
-                    expression.Append(GetResultValueExpression(member, indent));
+                    expression.Append('(').Append(parameterType).Append(")(")
+                        .Append(GetResultValueExpression(member, indent)).Append(')');
                     first = false;
                 }
                 expression.Append(')');

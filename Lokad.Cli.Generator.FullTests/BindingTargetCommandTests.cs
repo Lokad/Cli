@@ -38,6 +38,17 @@ public sealed class BindingTargetCommandTests
         Assert.Equal("abc", parsed.value);
         Assert.Equal(8, Parser.Parse<ConstructorFieldArgs>(new[] { "--number=8" }).value);
     }
+
+    [Fact]
+    public void CallsTheAnnotatedReadOnlyListConstructor()
+    {
+        var parsed = Parser.Parse<ReadOnlyListConstructorArgs>(new[] { "--value=7" });
+        Assert.Equal("list", parsed.Constructor);
+        Assert.Equal(new[] { 7 }, parsed.Values);
+        var grouped = Parser.Parse<ReadOnlyListConstructorGroup>(new[] { "--value=8" });
+        Assert.Equal("list", grouped.Options.Constructor);
+        Assert.Equal(new[] { 8 }, grouped.Options.Values);
+    }
 }
 
 [Arguments("Read-only result.")]
@@ -90,3 +101,25 @@ public partial class ConstructorFieldArgs
     public ConstructorFieldArgs([Argument("Number.", Long = "number")] int value) => this.value = value;
     [Argument("Number.", Long = "number")] public readonly int value;
 }
+
+[Arguments("Read-only list constructor.")]
+public partial class ReadOnlyListConstructorArgs
+{
+    public ReadOnlyListConstructorArgs([Argument("Values.", Long = "value")] System.Collections.Generic.IReadOnlyList<int> values)
+    {
+        Constructor = "list";
+        Values = values;
+    }
+
+    public ReadOnlyListConstructorArgs(int[] values)
+    {
+        Constructor = "array";
+        Values = values;
+    }
+
+    public string Constructor { get; }
+    public System.Collections.Generic.IReadOnlyList<int> Values { get; }
+}
+
+[Arguments("Read-only list group.")]
+public partial record ReadOnlyListConstructorGroup([property: Argument("Options.")] ReadOnlyListConstructorArgs Options);

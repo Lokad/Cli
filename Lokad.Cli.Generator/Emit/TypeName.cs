@@ -23,8 +23,10 @@ namespace Lokad.Cli.Generator.Emit
         public string Namespace { get; }
 
         public static TypeName FromSymbol(ITypeSymbol symbol) => new TypeName(
-            symbol.WithNullableAnnotation(NullableAnnotation.NotAnnotated).ToDisplayString(DisplayFormat),
+            FormatSymbol(symbol.WithNullableAnnotation(NullableAnnotation.NotAnnotated)),
             symbol.Name,
             symbol.ContainingNamespace.IsGlobalNamespace ? "" : symbol.ContainingNamespace.ToDisplayString());
+
+        public static string FormatSymbol(ITypeSymbol symbol) => symbol.ToDisplayString(DisplayFormat);
     }
 }

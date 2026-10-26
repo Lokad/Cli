@@ -103,7 +103,7 @@ partial record CountGroup : global::Lokad.Cli.ICliParsed<global::Test.CountGroup
         if (!arg0Seen)
             throw new global::Lokad.Cli.ParseException(@"missing option `--count`");
 
-        return new global::Test.CountGroup(arg0Value);
+        return new global::Test.CountGroup((int)(arg0Value));
     }
 
     private static string DocumentCore__Cli(string commandName)

@@ -13,7 +13,7 @@ namespace Lokad.Cli.Generator.Emit
             bool isBoolean,
             bool isEnum,
             CliCollectionKind collectionKind,
-            bool isConstructorParameter,
+            string? constructorParameterType,
             string documentation,
             string? documentationName,
             CliOptionNames options,
@@ -36,7 +36,7 @@ namespace Lokad.Cli.Generator.Emit
             IsBoolean = isBoolean;
             IsEnum = isEnum;
             CollectionKind = collectionKind;
-            IsConstructorParameter = isConstructorParameter;
+            ConstructorParameterType = constructorParameterType;
             Documentation = documentation;
             DocumentationName = documentationName;
             Options = options;
@@ -72,7 +72,9 @@ namespace Lokad.Cli.Generator.Emit
 
         public bool IsCollection => CollectionKind != CliCollectionKind.None;
 
-        public bool IsConstructorParameter { get; }
+        public string? ConstructorParameterType { get; }
+
+        public bool IsConstructorParameter => ConstructorParameterType != null;
 
         public string Documentation { get; }
 

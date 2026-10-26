@@ -102,7 +102,7 @@ partial record GlobalArgs : global::Lokad.Cli.ICliParsed<global::GlobalArgs>
         if (!arg0Seen)
             throw new global::Lokad.Cli.ParseException(@"missing option `--value`");
 
-        return new global::GlobalArgs(arg0Value);
+        return new global::GlobalArgs((int)(arg0Value));
     }
 
     private static string DocumentCore__Cli(string commandName)
