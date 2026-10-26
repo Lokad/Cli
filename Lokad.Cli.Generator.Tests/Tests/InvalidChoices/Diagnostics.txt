@@ -1,0 +1,3 @@
+Error LKC0026: Command choices require an acyclic graph and unambiguous selectors: cyclic choices (InvalidChoices/Input.cs:6:26)
+Error LKC0026: Command choices require an acyclic graph and unambiguous selectors: multiple default choices (InvalidChoices/Input.cs:10:26)
+Error LKC0026: Command choices require an acyclic graph and unambiguous selectors: duplicate selector prefix:run (InvalidChoices/Input.cs:20:26)

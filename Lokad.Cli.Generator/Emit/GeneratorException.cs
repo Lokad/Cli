@@ -196,5 +196,10 @@ namespace Lokad.Cli.Generator.Emit
             "LKC0025", "Invalid argument binding target",
             "Argument '{0}' requires a constructor parameter, writable instance field or writable non-indexed instance property",
             "SourceGenerator", DiagnosticSeverity.Error, true);
+
+        public static readonly DiagnosticDescriptor InvalidChoiceSchema = new DiagnosticDescriptor(
+            "LKC0026", "Invalid command choices",
+            "Command choices require an acyclic graph and unambiguous selectors: {0}",
+            "SourceGenerator", DiagnosticSeverity.Error, true);
     }
 }

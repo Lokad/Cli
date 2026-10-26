@@ -99,11 +99,13 @@ namespace Lokad.Cli.Generator
             }
 
             tokenization.Validate();
-            var builtBoundaries = new Dictionary<ITypeSymbol, CliCommandBoundaryInfo>(SymbolEqualityComparer.Default);
-            var activeBoundaries = new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
+            var commandSchemas = new Dictionary<ITypeSymbol, CliCommandBoundaryInfo>(SymbolEqualityComparer.Default);
+            var activeCommands = new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
             var selectorDiagnostic = tokenization.RequiresBoundaries
-                ? GeneratorException.AmbiguousCommandBoundary : GeneratorException.AmbiguousHelpSchema;
-            var boundary = tokenization.RequiresBoundaries || tokenization.HasHelpPrefixes ? BuildBoundary(typeSymbol) : null;
+                ? GeneratorException.AmbiguousCommandBoundary
+                : tokenization.HasHelpPrefixes ? GeneratorException.AmbiguousHelpSchema : GeneratorException.InvalidChoiceSchema;
+            var schema = BuildCommandSchema(typeSymbol);
+            var boundary = tokenization.RequiresBoundaries || tokenization.HasHelpPrefixes ? schema : null;
             return new CliTypeInfo(
                 type.TypeName,
                 type.Kind,
@@ -119,11 +121,11 @@ namespace Lokad.Cli.Generator
                 tokenization,
                 boundary);
 
-            CliCommandBoundaryInfo BuildBoundary(ITypeSymbol declaration)
+            CliCommandBoundaryInfo BuildCommandSchema(ITypeSymbol declaration)
             {
-                if (builtBoundaries.TryGetValue(declaration, out var cached))
+                if (commandSchemas.TryGetValue(declaration, out var cached))
                     return cached;
-                if (!activeBoundaries.Add(declaration))
+                if (!activeCommands.Add(declaration))
                     throw new GeneratorException(selectorDiagnostic, "cyclic choices");
                 var info = collected[declaration];
                 var operands = new List<CliArgumentInfo>();
@@ -157,12 +159,14 @@ namespace Lokad.Cli.Generator
                 var hasDefault = false;
                 foreach (var choice in info.Choices)
                 {
-                    var child = BuildBoundary(choice);
+                    var child = BuildCommandSchema(choice);
                     var selector = child.Discriminator;
                     if (selector == null)
                     {
-                        if (hasDefault || (tokenization.RequiresBoundaries && child.Choices.Count > 0))
-                            throw new GeneratorException(selectorDiagnostic, "multiple defaults or a default with nested choices");
+                        if (hasDefault)
+                            throw new GeneratorException(selectorDiagnostic, "multiple default choices");
+                        if (tokenization.RequiresBoundaries && child.Choices.Count > 0)
+                            throw new GeneratorException(selectorDiagnostic, "a default choice with nested choices");
                         hasDefault = true;
                     }
                     else
@@ -174,8 +178,8 @@ namespace Lokad.Cli.Generator
                     childBoundaries.Add(child);
                 }
                 var result = new CliCommandBoundaryInfo(info.Discriminator, childBoundaries, remainderAfter, stopShort, stopLong, info.IsHelpPrefix);
-                activeBoundaries.Remove(declaration);
-                builtBoundaries.Add(declaration, result);
+                activeCommands.Remove(declaration);
+                commandSchemas.Add(declaration, result);
                 return result;
 
                 void AddSelector(string selector)
