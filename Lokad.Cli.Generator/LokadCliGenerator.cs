@@ -276,9 +276,9 @@ namespace Lokad.Cli.Generator
                 var isGroup = groupUsage != null;
                 activeGroups.Add(declaration.OriginalDefinition);
                 var members = new List<CliArgumentInfo>();
-                var constructorBoundNames = new HashSet<string>();
+                var constructorBoundMembers = new HashSet<ISymbol>(SymbolEqualityComparer.Default);
                 IMethodSymbol? boundConstructor = null;
-                var constructorArguments = new List<(IParameterSymbol Parameter, AttributeData Annotation)>();
+                var constructorArguments = new List<(IParameterSymbol Parameter, AttributeData Annotation, ISymbol? Member)>();
                 foreach (var member in declaration.GetMembers())
                 {
                     if (!(member is IMethodSymbol method) || method.MethodKind != MethodKind.Constructor)
@@ -286,16 +286,17 @@ namespace Lokad.Cli.Generator
                     // Record copy constructors do not describe command-line inputs.
                     if (method.IsImplicitlyDeclared && method.Parameters.Length > 0)
                         continue;
-                    var parameters = new List<(IParameterSymbol Parameter, AttributeData Annotation)>();
+                    var parameters = new List<(IParameterSymbol Parameter, AttributeData Annotation, ISymbol? Member)>();
                     foreach (var parameter in method.Parameters)
                     {
+                        var matchingMember = FindMatchingMember(parameter);
                         var annotation = parameter.TryGetAttribute(compilation, _argumentAttribute) ??
-                                         FindMatchingPropertyArgument(parameter);
+                                         (matchingMember is IPropertySymbol ? matchingMember.TryGetAttribute(compilation, _argumentAttribute) : null);
                         if (annotation == null)
                             continue;
                         if (parameter.RefKind != RefKind.None)
                             throw ConstructorError("bound parameters cannot use ref, in or out");
-                        parameters.Add((parameter, annotation));
+                        parameters.Add((parameter, annotation, matchingMember));
                     }
                     if (parameters.Count == 0)
                         continue;
@@ -319,12 +320,13 @@ namespace Lokad.Cli.Generator
                 }
                 foreach (var parameter in constructorArguments)
                 {
-                    constructorBoundNames.Add(parameter.Parameter.Name);
+                    if (parameter.Member != null)
+                        constructorBoundMembers.Add(parameter.Member);
                     AddMember(parameter.Parameter, parameter.Annotation, true);
                 }
                 foreach (var member in declaration.GetMembers())
                 {
-                    if (constructorBoundNames.Contains(member.Name))
+                    if (constructorBoundMembers.Contains(member))
                         continue;
                     foreach (var annotation in member.GetAttributes(compilation, _argumentAttribute))
                     {
@@ -474,11 +476,12 @@ namespace Lokad.Cli.Generator
                     }
                 }
 
-                AttributeData? FindMatchingPropertyArgument(IParameterSymbol parameter)
+                ISymbol? FindMatchingMember(IParameterSymbol parameter)
                 {
                     foreach (var member in declaration.GetMembers(parameter.Name))
-                        if (member is IPropertySymbol property && SymbolEqualityComparer.Default.Equals(property.Type, parameter.Type))
-                            return property.TryGetAttribute(compilation, _argumentAttribute);
+                        if ((member is IPropertySymbol property && SymbolEqualityComparer.Default.Equals(property.Type, parameter.Type)) ||
+                            (member is IFieldSymbol field && SymbolEqualityComparer.Default.Equals(field.Type, parameter.Type)))
+                            return member;
                     return null;
                 }
             }

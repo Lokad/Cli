@@ -29,6 +29,15 @@ public sealed class BindingTargetCommandTests
         Assert.Equal(9, Parser.Parse<ParamsConstructorGroup>(new[] { "--value=9" }).Options.Value);
         Assert.True(Parser.Parse<OptionalConstructorGroup>(new[] { "--value=10" }).Options.Initialized);
     }
+
+    [Fact]
+    public void KeepsDistinctMembersWithTheSameNameAsAConstructorParameter()
+    {
+        var parsed = Parser.Parse<DistinctConstructorMemberArgs>(new[] { "--number=7", "--text=abc" });
+        Assert.Equal(7, parsed.Number);
+        Assert.Equal("abc", parsed.value);
+        Assert.Equal(8, Parser.Parse<ConstructorFieldArgs>(new[] { "--number=8" }).value);
+    }
 }
 
 [Arguments("Read-only result.")]
@@ -66,3 +75,18 @@ public partial record ParamsConstructorGroup([property: Argument("Options.")] Pa
 
 [Arguments("Optional constructor group.")]
 public partial record OptionalConstructorGroup([property: Argument("Options.")] OptionalConstructorArgs Options);
+
+[Arguments("Distinct constructor and member values.")]
+public partial class DistinctConstructorMemberArgs
+{
+    public DistinctConstructorMemberArgs([Argument("Number.", Long = "number")] int value) => Number = value;
+    public int Number { get; }
+    [Argument("Text.", Long = "text")] public string? value { get; init; }
+}
+
+[Arguments("Constructor-bound field.")]
+public partial class ConstructorFieldArgs
+{
+    public ConstructorFieldArgs([Argument("Number.", Long = "number")] int value) => this.value = value;
+    [Argument("Number.", Long = "number")] public readonly int value;
+}
