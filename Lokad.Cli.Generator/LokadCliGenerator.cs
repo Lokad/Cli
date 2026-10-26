@@ -309,12 +309,13 @@ namespace Lokad.Cli.Generator
                     constructorArguments = parameters;
                 }
                 if (boundConstructor == null && declaration is INamedTypeSymbol named &&
-                    !System.Linq.Enumerable.Any(named.InstanceConstructors, constructor => constructor.Parameters.Length == 0 &&
-                        compilation.IsSymbolAccessibleWithin(constructor, constructionContext, declaration)))
+                    !System.Linq.Enumerable.Any(named.InstanceConstructors, constructor =>
+                        compilation.IsSymbolAccessibleWithin(constructor, constructionContext, declaration) &&
+                        System.Linq.Enumerable.All(constructor.Parameters, parameter => parameter.IsOptional || parameter.IsParams)))
                 {
                     if (groupUsage != null)
-                        throw GroupError(groupUsage, path, "its parameterless constructor is inaccessible from the containing command");
-                    throw ConstructorError("a parameterless constructor or a fully annotated constructor is required");
+                        throw GroupError(groupUsage, path, "no constructor callable without arguments is accessible from the containing command");
+                    throw ConstructorError("a constructor callable without arguments or a fully annotated constructor is required");
                 }
                 foreach (var parameter in constructorArguments)
                 {

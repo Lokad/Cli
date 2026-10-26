@@ -1,4 +1,4 @@
 Error LKC0028: CLI argument type 'Overloads' has an invalid constructor: only one constructor may bind arguments (InvalidConstructors/Input.cs:6:22)
 Error LKC0028: CLI argument type 'Incomplete' has an invalid constructor: every parameter of the bound constructor must be annotated or match an annotated property (InvalidConstructors/Input.cs:13:22)
-Error LKC0028: CLI argument type 'Unbound' has an invalid constructor: a parameterless constructor or a fully annotated constructor is required (InvalidConstructors/Input.cs:19:22)
+Error LKC0028: CLI argument type 'Unbound' has an invalid constructor: a constructor callable without arguments or a fully annotated constructor is required (InvalidConstructors/Input.cs:19:22)
 Error LKC0028: CLI argument type 'RefConstructor' has an invalid constructor: bound parameters cannot use ref, in or out (InvalidConstructors/Input.cs:25:22)
