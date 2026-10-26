@@ -16,5 +16,5 @@ Error LKC0024: Argument group 'Options.Options' is invalid: recursive argument g
 Error LKC0024: Argument group 'Options' is invalid: the group must be constructor-bound or writable (InvalidArgumentGroups/Input.cs:69:6)
 Error LKC0024: Argument group 'Options' is invalid: no constructor callable without arguments is accessible from the containing command (InvalidArgumentGroups/Input.cs:79:47)
 Error LKC0024: Argument group 'Options' is invalid: a bound member is inaccessible from the containing command (InvalidArgumentGroups/Input.cs:84:6)
-Error LKC0024: Argument group 'Options' is invalid: no constructor callable without arguments is accessible from the containing command (InvalidArgumentGroups/Input.cs:99:6)
+Error LKC0027: CLI argument type 'ProtectedGroup' is unsupported: inherited CLI annotations are not supported; use an unnamed argument group (InvalidArgumentGroups/Input.cs:97:22)
 Error LKC0027: CLI argument type 'ExpandingGroup' is unsupported: generic types are not supported (InvalidArgumentGroups/Input.cs:103:23)

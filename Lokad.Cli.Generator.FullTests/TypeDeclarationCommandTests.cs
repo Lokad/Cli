@@ -15,6 +15,14 @@ namespace Lokad.Cli.Generator.FullTests
         {
             Assert.Equal(7, Parser.Parse<global::GlobalParsedArgs>(new[] { "--value=7" }).Value);
         }
+
+        [Fact]
+        public void AllowsBaseClassesWithoutCliAnnotations()
+        {
+            var parsed = Parser.Parse<PlainDerivedArgs>(new[] { "--value=7" });
+            Assert.Equal(7, parsed.Value);
+            Assert.Equal("base", parsed.Description);
+        }
     }
 
     public partial record SplitParsedArgs
@@ -24,6 +32,17 @@ namespace Lokad.Cli.Generator.FullTests
 
     [Arguments("Split parsed arguments.")]
     public partial record SplitParsedArgs;
+
+    public class PlainArgsBase
+    {
+        public string Description => "base";
+    }
+
+    [Arguments("Plain base class.")]
+    public partial class PlainDerivedArgs : PlainArgsBase
+    {
+        [Argument("Value.", Long = "value")] public int Value { get; init; }
+    }
 }
 
 [Arguments("Global parsed arguments.")]

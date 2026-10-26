@@ -273,6 +273,18 @@ namespace Lokad.Cli.Generator
 
             CliArgumentInfo[] CollectMembers(ITypeSymbol declaration, string path, AttributeData? groupUsage, ITypeSymbol constructionContext)
             {
+                for (var parent = declaration.BaseType; parent != null &&
+                    parent.SpecialType != SpecialType.System_Object && parent.SpecialType != SpecialType.System_ValueType;
+                    parent = parent.BaseType)
+                {
+                    if (!HasCliAnnotation(compilation, parent) &&
+                        !System.Linq.Enumerable.Any(parent.GetMembers(), member => member.TryGetAttribute(compilation, _argumentAttribute) != null))
+                        continue;
+                    const string reason = "inherited CLI annotations are not supported; use an unnamed argument group";
+                    if (groupUsage != null)
+                        throw GroupError(groupUsage, path, reason);
+                    throw new GeneratorException(GeneratorException.UnsupportedArgumentType, declaration.Name, reason);
+                }
                 var isGroup = groupUsage != null;
                 activeGroups.Add(declaration.OriginalDefinition);
                 var members = new List<CliArgumentInfo>();

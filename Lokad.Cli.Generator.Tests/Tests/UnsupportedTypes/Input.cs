@@ -28,3 +28,20 @@ public static partial class StaticArgs { }
 
 [Arguments("Interface without choices.")]
 public partial interface IEmptyArgs { }
+
+public class AnnotatedMemberBase
+{
+    [Argument("Count.", Long = "count")] public int Count { get; init; }
+}
+
+[Arguments("Inherited member.")]
+public partial class InheritedMemberArgs : AnnotatedMemberBase { }
+
+[Arguments("Base parser.")]
+public partial class ParserBase { }
+
+[Arguments("Inherited parser.")]
+public partial class InheritedParserArgs : ParserBase { }
+
+[Arguments("Inherited group.")]
+public partial record InheritedGroupArgs([property: Argument("Options.")] InheritedMemberArgs Options);
