@@ -694,11 +694,16 @@ namespace Lokad.Cli.Generator
         private static CliDiscriminatorInfo? GetDiscriminator(AttributeData attribute)
         {
             var prefix = GetNamedString(attribute, "Prefix");
-            if (prefix != null && prefix.Length > 0)
-                return new CliDiscriminatorInfo(prefix, prefix, null, '\0');
             var longOption = GetNamedString(attribute, "Long");
             var shortOption = GetNamedChar(attribute, "Short");
-            if (!string.IsNullOrEmpty(longOption) || shortOption != '\0')
+            var hasNamedDiscriminator = !string.IsNullOrEmpty(longOption) || shortOption != '\0';
+            if (prefix != null && prefix.Length > 0)
+            {
+                if (hasNamedDiscriminator)
+                    throw new GeneratorException(GetAttributeLocation(attribute), GeneratorException.ConflictingDiscriminators);
+                return new CliDiscriminatorInfo(prefix, prefix, null, '\0');
+            }
+            if (hasNamedDiscriminator)
             {
                 var display = !string.IsNullOrEmpty(longOption) ? "--" + longOption : "-" + shortOption;
                 return new CliDiscriminatorInfo(display, null, longOption, shortOption);

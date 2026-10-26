@@ -223,5 +223,10 @@ namespace Lokad.Cli.Generator.Emit
             "LKC0032", "Required positional argument after optional argument",
             "Optional positional argument '{0}' cannot precede required positional argument '{1}'",
             "SourceGenerator", DiagnosticSeverity.Error, true);
+
+        public static readonly DiagnosticDescriptor ConflictingDiscriminators = new DiagnosticDescriptor(
+            "LKC0033", "Conflicting command discriminators",
+            "A positional Prefix cannot be combined with Long or Short discriminators",
+            "SourceGenerator", DiagnosticSeverity.Error, true);
     }
 }

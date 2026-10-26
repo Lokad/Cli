@@ -24,6 +24,7 @@ namespace Lokad.Cli
 
         /// <summary>
         ///     Positional discriminator prefix required for this argument shape.
+        ///     Cannot be combined with <see cref="Long"/> or <see cref="Short"/>.
         /// </summary>
         public string? Prefix { get; set; }
 

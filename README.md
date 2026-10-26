@@ -170,6 +170,7 @@ A discriminator can be requested as part of the `[Arguments]` itself:
  - `[Arguments("...", Long = "def")]` expects `--def` (without arguments) to appear as a long argument.
  - `[Arguments("...", Short = 'g')]` expects `-g` (without arguments) to appear as a short argument.
  
+Choose a positional `Prefix` or named `Long`/`Short` discriminators (`LKC0033`); `Long` and `Short` can be combined.
 Being used as a discriminator does not prevent the option from appearing on an argument as well.
 
 The `[Choice]` annotation is added to an interface that can represent multiple ways of parsing arguments. 

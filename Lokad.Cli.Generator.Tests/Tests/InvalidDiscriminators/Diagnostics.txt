@@ -1,0 +1,3 @@
+Error LKC0033: A positional Prefix cannot be combined with Long or Short discriminators (InvalidDiscriminators/Input.cs:5:2)
+Error LKC0033: A positional Prefix cannot be combined with Long or Short discriminators (InvalidDiscriminators/Input.cs:8:2)
+Error LKC0033: A positional Prefix cannot be combined with Long or Short discriminators (InvalidDiscriminators/Input.cs:11:2)

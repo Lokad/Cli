@@ -17,6 +17,7 @@ public class GeneratorTests
     [Fact] public void InvalidChoices() => GeneratorTestFixture.Test(nameof(InvalidChoices));
     [Fact] public void InvalidCollectionBoundaries() => GeneratorTestFixture.Test(nameof(InvalidCollectionBoundaries));
     [Fact] public void InvalidConstructors() => GeneratorTestFixture.Test(nameof(InvalidConstructors));
+    [Fact] public void InvalidDiscriminators() => GeneratorTestFixture.Test(nameof(InvalidDiscriminators));
     [Fact] public void InvalidHelp() => GeneratorTestFixture.Test(nameof(InvalidHelp));
     [Fact] public void InvalidNumericOptions() => GeneratorTestFixture.Test(nameof(InvalidNumericOptions));
     [Fact] public void InvalidOptionAliases() => GeneratorTestFixture.Test(nameof(InvalidOptionAliases));
