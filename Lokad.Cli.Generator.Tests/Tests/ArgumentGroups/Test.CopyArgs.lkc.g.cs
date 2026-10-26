@@ -3,7 +3,7 @@ namespace Test;
 partial record CopyArgs : global::Lokad.Cli.ICliParsed<global::Test.CopyArgs>
 {
     // A separate holder allows parsing from the argument type's static initializers.
-    private static class __CliOptionNames
+    private static class OptionNames__Cli
     {
         public static readonly char[] Short = new char[] { 'v' };
         public static readonly string[] Long = new string[] { @"timeout" };
@@ -11,12 +11,12 @@ partial record CopyArgs : global::Lokad.Cli.ICliParsed<global::Test.CopyArgs>
 
     public static global::Test.CopyArgs Parse(global::System.Collections.Generic.IReadOnlyList<string> arguments)
     {
-        return ParseTokenizedCore(TokenizeCore(arguments));
+        return ParseTokenizedCore__Cli(TokenizeCore__Cli(arguments));
     }
 
     public static global::Lokad.Cli.TokenizedArguments Tokenize(global::System.Collections.Generic.IReadOnlyList<string> arguments)
     {
-        return TokenizeCore(arguments);
+        return TokenizeCore__Cli(arguments);
     }
 
     static bool global::Lokad.Cli.ICliParsed<global::Test.CopyArgs>.IsHelpRequested(global::Lokad.Cli.TokenizedArguments arguments)
@@ -30,24 +30,24 @@ partial record CopyArgs : global::Lokad.Cli.ICliParsed<global::Test.CopyArgs>
     {
         if (arguments == null) throw new global::System.ArgumentNullException(nameof(arguments));
 
-        return ParseTokenizedCore(arguments);
+        return ParseTokenizedCore__Cli(arguments);
     }
 
     public static string Document(string commandName)
     {
-        return DocumentCore(commandName);
+        return DocumentCore__Cli(commandName);
     }
 
-    private static global::Lokad.Cli.TokenizedArguments TokenizeCore(global::System.Collections.Generic.IReadOnlyList<string> arguments)
+    private static global::Lokad.Cli.TokenizedArguments TokenizeCore__Cli(global::System.Collections.Generic.IReadOnlyList<string> arguments)
     {
         return global::Lokad.Cli.ArgumentTokenizer.Tokenize(
             arguments,
-            __CliOptionNames.Short,
-            __CliOptionNames.Long,
+            OptionNames__Cli.Short,
+            OptionNames__Cli.Long,
             false);
     }
 
-    private static global::Test.CopyArgs ParseTokenizedCore(global::Lokad.Cli.TokenizedArguments tokenized)
+    private static global::Test.CopyArgs ParseTokenizedCore__Cli(global::Lokad.Cli.TokenizedArguments tokenized)
     {
         // Discrimination
         _ = tokenized;
@@ -67,7 +67,7 @@ partial record CopyArgs : global::Lokad.Cli.ICliParsed<global::Test.CopyArgs>
                 case global::Lokad.Cli.LongArgWithValue longArgWithValue:
                     if (longArgWithValue.Name == @"timeout")
                     {
-                        arg1Value = ParseInt32(longArgWithValue.Value, @"--timeout");
+                        arg1Value = ParseInt32__Cli(longArgWithValue.Value, @"--timeout");
                         arg1Seen = true;
                         break;
                     }
@@ -78,7 +78,7 @@ partial record CopyArgs : global::Lokad.Cli.ICliParsed<global::Test.CopyArgs>
                         var valueToken = tokenized.Shift();
                         if (!(valueToken is global::Lokad.Cli.ValueArg optionValue))
                             throw new global::Lokad.Cli.ParseException(@"option `--timeout` expects a value");
-                        arg1Value = ParseInt32(optionValue.Value, @"--timeout");
+                        arg1Value = ParseInt32__Cli(optionValue.Value, @"--timeout");
                         arg1Seen = true;
                         break;
                     }
@@ -125,18 +125,18 @@ partial record CopyArgs : global::Lokad.Cli.ICliParsed<global::Test.CopyArgs>
         return new global::Test.CopyArgs(arg0Value, new global::Test.CommonOptions(arg1Value, arg2Value));
     }
 
-    private static string DocumentCore(string commandName)
+    private static string DocumentCore__Cli(string commandName)
     {
         if (commandName == null) throw new global::System.ArgumentNullException(nameof(commandName));
 
-        var lines = new global::System.Collections.Generic.List<string> { FormatDocumentationLine(commandName + @" <Input>", @"Copy.") };
+        var lines = new global::System.Collections.Generic.List<string> { FormatDocumentationLine__Cli(commandName + @" <Input>", @"Copy.") };
         lines.Add(@"  <Input>: Input.");
         lines.Add(@"  --timeout: Timeout.");
         lines.Add(@"  -v: Verbose.");
         return string.Join(global::System.Environment.NewLine, lines);
     }
 
-    private static string FormatDocumentationLine(string commandName, string documentation)
+    private static string FormatDocumentationLine__Cli(string commandName, string documentation)
     {
         if (documentation.Length == 0)
             return commandName;
@@ -145,15 +145,15 @@ partial record CopyArgs : global::Lokad.Cli.ICliParsed<global::Test.CopyArgs>
     }
 
 
-    private static int ParseInt32(string value, string label)
+    private static int ParseInt32__Cli(string value, string label)
     {
-        if (TryParseInt32(value, out var parsed))
+        if (TryParseInt32__Cli(value, out var parsed))
             return parsed;
 
         throw new global::Lokad.Cli.ParseException($"invalid value `{value}` for `{label}`");
     }
 
-    private static bool TryParseInt32(string value, out int parsed)
+    private static bool TryParseInt32__Cli(string value, out int parsed)
     {
         return global::System.Int32.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out parsed);
     }

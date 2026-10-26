@@ -3,7 +3,7 @@ namespace Test;
 partial interface ICountGroupPolicy : global::Lokad.Cli.ICliParsed<global::Test.ICountGroupPolicy>
 {
     // A separate holder allows parsing from the argument type's static initializers.
-    private static class __CliOptionNames
+    private static class OptionNames__Cli
     {
         public static readonly char[] Short = global::System.Array.Empty<char>();
         public static readonly string[] Long = new string[] { @"count" };
@@ -11,12 +11,12 @@ partial interface ICountGroupPolicy : global::Lokad.Cli.ICliParsed<global::Test.
 
     static global::Test.ICountGroupPolicy global::Lokad.Cli.ICliParsed<global::Test.ICountGroupPolicy>.Parse(global::System.Collections.Generic.IReadOnlyList<string> arguments)
     {
-        return ParseTokenizedCore(TokenizeCore(arguments));
+        return ParseTokenizedCore__Cli(TokenizeCore__Cli(arguments));
     }
 
     static global::Lokad.Cli.TokenizedArguments global::Lokad.Cli.ICliParsed<global::Test.ICountGroupPolicy>.Tokenize(global::System.Collections.Generic.IReadOnlyList<string> arguments)
     {
-        return TokenizeCore(arguments);
+        return TokenizeCore__Cli(arguments);
     }
 
     static bool global::Lokad.Cli.ICliParsed<global::Test.ICountGroupPolicy>.IsHelpRequested(global::Lokad.Cli.TokenizedArguments arguments)
@@ -30,24 +30,24 @@ partial interface ICountGroupPolicy : global::Lokad.Cli.ICliParsed<global::Test.
     {
         if (arguments == null) throw new global::System.ArgumentNullException(nameof(arguments));
 
-        return ParseTokenizedCore(arguments);
+        return ParseTokenizedCore__Cli(arguments);
     }
 
     static string global::Lokad.Cli.ICliParsed<global::Test.ICountGroupPolicy>.Document(string commandName)
     {
-        return DocumentCore(commandName);
+        return DocumentCore__Cli(commandName);
     }
 
-    private static global::Lokad.Cli.TokenizedArguments TokenizeCore(global::System.Collections.Generic.IReadOnlyList<string> arguments)
+    private static global::Lokad.Cli.TokenizedArguments TokenizeCore__Cli(global::System.Collections.Generic.IReadOnlyList<string> arguments)
     {
         return global::Lokad.Cli.ArgumentTokenizer.Tokenize(
             arguments,
-            __CliOptionNames.Short,
-            __CliOptionNames.Long,
+            OptionNames__Cli.Short,
+            OptionNames__Cli.Long,
             false);
     }
 
-    private static global::Test.ICountGroupPolicy ParseTokenizedCore(global::Lokad.Cli.TokenizedArguments tokenized)
+    private static global::Test.ICountGroupPolicy ParseTokenizedCore__Cli(global::Lokad.Cli.TokenizedArguments tokenized)
     {
         // Discrimination
         var choice = -1;
@@ -58,31 +58,31 @@ partial interface ICountGroupPolicy : global::Lokad.Cli.ICliParsed<global::Test.
         switch (choice)
         {
             case 0:
-                return ParseChoice<global::Test.CountGroup>(tokenized);
+                return ParseChoice__Cli<global::Test.CountGroup>(tokenized);
         }
 
         // Binding
         throw new global::System.InvalidOperationException();
     }
 
-    private static string DocumentCore(string commandName)
+    private static string DocumentCore__Cli(string commandName)
     {
         if (commandName == null) throw new global::System.ArgumentNullException(nameof(commandName));
 
         var documentedCommandName = commandName;
         var lines = new global::System.Collections.Generic.List<string>();
-        lines.Add(FormatDocumentationLine(documentedCommandName, @"Count policy."));
-        AddDocumentation(lines, DocumentChoice<global::Test.CountGroup>(documentedCommandName));
+        lines.Add(FormatDocumentationLine__Cli(documentedCommandName, @"Count policy."));
+        AddDocumentation__Cli(lines, DocumentChoice__Cli<global::Test.CountGroup>(documentedCommandName));
         return string.Join(global::System.Environment.NewLine, lines);
     }
 
-    private static string DocumentChoice<TChoice>(string commandName)
+    private static string DocumentChoice__Cli<TChoice>(string commandName)
         where TChoice : global::Lokad.Cli.ICliParsed<TChoice>
     {
         return TChoice.Document(commandName);
     }
 
-    private static void AddDocumentation(global::System.Collections.Generic.List<string> lines, string documentation)
+    private static void AddDocumentation__Cli(global::System.Collections.Generic.List<string> lines, string documentation)
     {
         if (documentation.Length == 0)
             return;
@@ -92,7 +92,7 @@ partial interface ICountGroupPolicy : global::Lokad.Cli.ICliParsed<global::Test.
             lines.Add(line);
     }
 
-    private static string FormatDocumentationLine(string commandName, string documentation)
+    private static string FormatDocumentationLine__Cli(string commandName, string documentation)
     {
         if (documentation.Length == 0)
             return commandName;
@@ -100,7 +100,7 @@ partial interface ICountGroupPolicy : global::Lokad.Cli.ICliParsed<global::Test.
         return commandName + ": " + documentation;
     }
 
-    private static TChoice ParseChoice<TChoice>(global::Lokad.Cli.TokenizedArguments arguments)
+    private static TChoice ParseChoice__Cli<TChoice>(global::Lokad.Cli.TokenizedArguments arguments)
         where TChoice : global::Lokad.Cli.ICliParsed<TChoice>
     {
         return TChoice.ParseTokenized(arguments);

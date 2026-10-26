@@ -15,12 +15,12 @@ $@"#nullable enable
 
     {GetParserMethodDeclaration(CliParserMethods.Parse, type.TypeName.FullName, "global::System.Collections.Generic.IReadOnlyList<string> arguments")}
     {{
-        return ParseTokenizedCore(TokenizeCore(arguments));
+        return ParseTokenizedCore{type.ImplementationSuffix}(TokenizeCore{type.ImplementationSuffix}(arguments));
     }}
 
     {GetParserMethodDeclaration(CliParserMethods.Tokenize, "global::Lokad.Cli.TokenizedArguments", "global::System.Collections.Generic.IReadOnlyList<string> arguments")}
     {{
-        return TokenizeCore(arguments);
+        return TokenizeCore{type.ImplementationSuffix}(arguments);
     }}
 
     {GetHelpMethodDeclaration(type)}
@@ -34,24 +34,24 @@ $@"#nullable enable
     {{
         if (arguments == null) throw new global::System.ArgumentNullException(nameof(arguments));
 
-        return ParseTokenizedCore(arguments);
+        return ParseTokenizedCore{type.ImplementationSuffix}(arguments);
     }}
 
     {GetParserMethodDeclaration(CliParserMethods.Document, "string", "string commandName")}
     {{
-        return DocumentCore(commandName);
+        return DocumentCore{type.ImplementationSuffix}(commandName);
     }}
 
-    private static global::Lokad.Cli.TokenizedArguments TokenizeCore(global::System.Collections.Generic.IReadOnlyList<string> arguments)
+    private static global::Lokad.Cli.TokenizedArguments TokenizeCore{type.ImplementationSuffix}(global::System.Collections.Generic.IReadOnlyList<string> arguments)
     {{
         return global::Lokad.Cli.ArgumentTokenizer.Tokenize(
             arguments,
-            __CliOptionNames.Short,
-            __CliOptionNames.Long,
+            OptionNames{type.ImplementationSuffix}.Short,
+            OptionNames{type.ImplementationSuffix}.Long,
             {FormatBoolean(type.HasShortNumericArguments)}{GetLexicalPolicies(type)});
     }}
 
-    private static {type.TypeName.FullName} ParseTokenizedCore(global::Lokad.Cli.TokenizedArguments tokenized)
+    private static {type.TypeName.FullName} ParseTokenizedCore{type.ImplementationSuffix}(global::Lokad.Cli.TokenizedArguments tokenized)
     {{{EmitTokenizedParseArguments(type)}
         // Discrimination
 {EmitDiscrimination(type)}
@@ -79,8 +79,8 @@ $@"#nullable enable
                 "static bool global::Lokad.Cli.ICliParsed<" + parserType.TypeName.FullName + ">.IsHelpRequested(global::Lokad.Cli.TokenizedArguments arguments)";
 
             static string GetHelpInspection(CliTypeInfo parserType) => parserType.Tokenization.HasHelp
-                ? "return arguments.IsHelpRequested(__CliOptionNames.HelpShort, __CliOptionNames.HelpLong, " +
-                    (parserType.CommandBoundary != null ? "__CliOptionNames.Boundary" : "global::Lokad.Cli.CommandBoundary.Empty") + ");"
+                ? "return arguments.IsHelpRequested(OptionNames" + parserType.ImplementationSuffix + ".HelpShort, OptionNames" + parserType.ImplementationSuffix + ".HelpLong, " +
+                    (parserType.CommandBoundary != null ? "OptionNames" + parserType.ImplementationSuffix + ".Boundary" : "global::Lokad.Cli.CommandBoundary.Empty") + ");"
                 : "return false;";
 
             static string EmitOptionNames(CliTypeInfo parserType)
@@ -102,7 +102,7 @@ $@"#nullable enable
                       "        public static readonly " + FormatOptions("string", "HelpLong", parserType.Tokenization.HelpLongOptions, FormatStringLiteral) + ";" + Environment.NewLine
                     : string.Empty;
                 return $@"    // A separate holder allows parsing from the argument type's static initializers.
-    private static class __CliOptionNames
+    private static class OptionNames{parserType.ImplementationSuffix}
     {{
         public static readonly {shortDeclaration};
         public static readonly {longDeclaration};
@@ -166,7 +166,7 @@ $@"#nullable enable
                 ? "," + Environment.NewLine + "            global::Lokad.Cli.ShortOptionSyntax." + parserType.Tokenization.ShortOptionSyntax +
                   "," + Environment.NewLine + "            " + FormatBoolean(parserType.Tokenization.AllowSingleDashLongOptions)
                   + (parserType.CommandBoundary == null ? string.Empty : "," + Environment.NewLine + "            " +
-                      FormatBoolean(parserType.Tokenization.StopAtFirstOperand) + ", __CliOptionNames.Boundary")
+                      FormatBoolean(parserType.Tokenization.StopAtFirstOperand) + ", OptionNames" + parserType.ImplementationSuffix + ".Boundary")
                 : string.Empty;
 
             static string GetTypeDeclaration(CliTypeInfo parserType)
@@ -337,7 +337,7 @@ $@"#nullable enable
                     }
                     if (positional[p].ConsumeUntilBoundary)
                     {
-                        var method = GetParseMethod(positional[p]);
+                        var method = GetParseMethod(type, positional[p]);
                         if (method.Length == 0)
                         {
                             lines.AppendLine("                        tokenized.Shift();");
@@ -359,7 +359,7 @@ $@"#nullable enable
                     }
                     if (useCollectionBoundaries)
                         lines.AppendLine("                        tokenized.Shift();");
-                    lines.Append(EmitAssign(argumentIndex, positional[p], "positionalValue", "\"argument\"", "                        "));
+                    lines.Append(EmitAssign(type, argumentIndex, positional[p], "positionalValue", "\"argument\"", "                        "));
                     if (!positional[p].IsCollection || p < positional.Length - 1)
                         lines.AppendLine("                        positionalIndex++;");
                     lines.AppendLine("                        break;");
@@ -386,7 +386,7 @@ $@"#nullable enable
                     .Append(FormatOptionMatch("longArgWithValue.Name", argument.Options.LongOptions, FormatStringLiteral))
                     .AppendLine(")");
                 lines.AppendLine("                    {");
-                lines.Append(EmitAssign(i, argument, "longArgWithValue.Value", FormatStringLiteral(GetOptionLabel(argument, argument.Options.LongOptions, "--")), "                        "));
+                lines.Append(EmitAssign(type, i, argument, "longArgWithValue.Value", FormatStringLiteral(GetOptionLabel(argument, argument.Options.LongOptions, "--")), "                        "));
                 lines.AppendLine("                        break;");
                 lines.AppendLine("                    }");
             }
@@ -414,7 +414,7 @@ $@"#nullable enable
                 }
                 else if (argument.IsBoolean)
                 {
-                    lines.Append(EmitBooleanFlag(i, argument, GetOptionLabel(argument, argument.Options.LongOptions, "--"), "                        "));
+                    lines.Append(EmitBooleanFlag(type, i, argument, GetOptionLabel(argument, argument.Options.LongOptions, "--"), "                        "));
                 }
                 else
                 {
@@ -423,7 +423,7 @@ $@"#nullable enable
                     lines.Append("                            throw new global::Lokad.Cli.ParseException(")
                         .Append(FormatStringLiteral("option `" + GetOptionLabel(argument, argument.Options.LongOptions, "--") + "` expects a value"))
                         .AppendLine(");");
-                    lines.Append(EmitAssign(i, argument, "optionValue.Value", FormatStringLiteral(GetOptionLabel(argument, argument.Options.LongOptions, "--")), "                        "));
+                    lines.Append(EmitAssign(type, i, argument, "optionValue.Value", FormatStringLiteral(GetOptionLabel(argument, argument.Options.LongOptions, "--")), "                        "));
                 }
 
                 lines.AppendLine("                        break;");
@@ -452,7 +452,7 @@ $@"#nullable enable
                     .Append(FormatOptionMatch("shortArgWithValue.Name", argument.Options.ShortOptions, FormatCharLiteral))
                     .AppendLine(")");
                 lines.AppendLine("                    {");
-                lines.Append(EmitAssign(i, argument, "shortArgWithValue.Value", FormatStringLiteral(GetOptionLabel(argument, argument.Options.ShortOptions, "-")), "                        "));
+                lines.Append(EmitAssign(type, i, argument, "shortArgWithValue.Value", FormatStringLiteral(GetOptionLabel(argument, argument.Options.ShortOptions, "-")), "                        "));
                 lines.AppendLine("                        break;");
                 lines.AppendLine("                    }");
             }
@@ -480,7 +480,7 @@ $@"#nullable enable
                 }
                 else if (argument.IsBoolean)
                 {
-                    lines.Append(EmitBooleanFlag(i, argument, GetOptionLabel(argument, argument.Options.ShortOptions, "-"), "                            "));
+                    lines.Append(EmitBooleanFlag(type, i, argument, GetOptionLabel(argument, argument.Options.ShortOptions, "-"), "                            "));
                 }
                 else
                 {
@@ -489,7 +489,7 @@ $@"#nullable enable
                     lines.Append("                                throw new global::Lokad.Cli.ParseException(")
                         .Append(FormatStringLiteral("option `" + GetOptionLabel(argument, argument.Options.ShortOptions, "-") + "` expects a value"))
                         .AppendLine(");");
-                    lines.Append(EmitAssign(i, argument, "optionValue.Value", FormatStringLiteral(GetOptionLabel(argument, argument.Options.ShortOptions, "-")), "                            "));
+                    lines.Append(EmitAssign(type, i, argument, "optionValue.Value", FormatStringLiteral(GetOptionLabel(argument, argument.Options.ShortOptions, "-")), "                            "));
                 }
 
                 lines.AppendLine("                            continue;");
@@ -520,7 +520,7 @@ $@"#nullable enable
         private static string GetOptionLabel<T>(CliArgumentInfo argument, System.Collections.Generic.IReadOnlyList<T> names, string prefix) =>
             argument.Options.HasAliases ? argument.Options.PrimaryLabel : prefix + names[0];
 
-        private static string EmitBooleanFlag(int index, CliArgumentInfo argument, string label, string indent)
+        private static string EmitBooleanFlag(CliTypeInfo type, int index, CliArgumentInfo argument, string label, string indent)
         {
             var lines = new System.Text.StringBuilder();
             if (!argument.AllowRepeated)
@@ -531,7 +531,7 @@ $@"#nullable enable
                     .AppendLine(");");
             }
 
-            lines.Append(EmitAssign(index, argument, "true", FormatStringLiteral(label), indent));
+            lines.Append(EmitAssign(type, index, argument, "true", FormatStringLiteral(label), indent));
             return lines.ToString();
         }
 
@@ -546,7 +546,7 @@ $@"#nullable enable
 
                 lines.AppendLine("                    {");
                 var label = argument.Options.HasAliases ? FormatStringLiteral(argument.Options.PrimaryLabel) : "\"-\" + numericShortArg.Value";
-                lines.Append(EmitAssign(i, argument, "numericShortArg.Value", label, "                        "));
+                lines.Append(EmitAssign(type, i, argument, "numericShortArg.Value", label, "                        "));
                 lines.AppendLine("                        break;");
                 lines.AppendLine("                    }");
                 return lines.ToString();
@@ -617,7 +617,7 @@ $@"#nullable enable
             }
         }
 
-        private static string EmitAssign(int index, CliArgumentInfo argument, string valueExpression, string labelExpression, string indent)
+        private static string EmitAssign(CliTypeInfo type, int index, CliArgumentInfo argument, string valueExpression, string labelExpression, string indent)
         {
             if (argument.IsBoolean)
             {
@@ -628,14 +628,14 @@ $@"#nullable enable
                 return lines.ToString();
             }
 
-            var expression = GetParseExpression(argument, valueExpression, labelExpression);
+            var expression = GetParseExpression(type, argument, valueExpression, labelExpression);
             if (argument.IsOptionalValue)
                 expression = "new " + GetBoundValueType(argument) + "(" + expression + ")";
             return EmitStore(index, argument, expression, indent);
 
-            static string GetParseExpression(CliArgumentInfo argument, string valueExpression, string labelExpression)
+            static string GetParseExpression(CliTypeInfo type, CliArgumentInfo argument, string valueExpression, string labelExpression)
             {
-                var method = GetParseMethod(argument);
+                var method = GetParseMethod(type, argument);
                 if (method == string.Empty)
                     return valueExpression;
 
@@ -656,9 +656,18 @@ $@"#nullable enable
             return lines.ToString();
         }
 
-        private static string GetParseMethod(CliArgumentInfo argument) =>
-            GetBuiltInParseMethod(argument.TypeName.FullName) ??
-            (argument.IsEnum ? "ParseEnum<" + argument.TypeName.FullName + ">" : "ParseCustom<" + argument.TypeName.FullName + ">");
+        private static string GetParseMethod(CliTypeInfo type, CliArgumentInfo argument)
+        {
+            var method = GetBuiltInParseMethod(argument.TypeName.FullName) ??
+                (argument.IsEnum ? "ParseEnum<" + argument.TypeName.FullName + ">" : "ParseCustom<" + argument.TypeName.FullName + ">");
+            return method.Length == 0 ? method : GetImplementationName(type, method);
+        }
+
+        private static string GetImplementationName(CliTypeInfo type, string method)
+        {
+            var generic = method.IndexOf('<');
+            return generic < 0 ? method + type.ImplementationSuffix : method.Insert(generic, type.ImplementationSuffix);
+        }
 
         private static string? GetBuiltInParseMethod(string type)
         {
@@ -717,11 +726,11 @@ $@"#nullable enable
                 if (lines.Length > 0)
                     lines.AppendLine().AppendLine();
 
-                lines.AppendLine(@"    private static TChoice ParseChoice<TChoice>(global::Lokad.Cli.TokenizedArguments arguments)
+                lines.AppendLine($@"    private static TChoice ParseChoice{type.ImplementationSuffix}<TChoice>(global::Lokad.Cli.TokenizedArguments arguments)
         where TChoice : global::Lokad.Cli.ICliParsed<TChoice>
-    {
+    {{
         return TChoice.ParseTokenized(arguments);
-    }");
+    }}");
 
             }
 
@@ -789,8 +798,9 @@ $@"#nullable enable
                 return false;
             }
 
-            static string EmitValueParser(string returnType, string method, string tryExpression, string constraints, string outAnnotation)
+            string EmitValueParser(string returnType, string method, string tryExpression, string constraints, string outAnnotation)
             {
+                method = GetImplementationName(type, method);
                 var constraintLine = constraints.Length == 0 ? string.Empty : "        " + constraints + Environment.NewLine;
                 return $@"
     private static {returnType} {method}(string value, string label)
@@ -813,7 +823,7 @@ $@"#nullable enable
         {
             var lines = new System.Text.StringBuilder();
 
-            lines.AppendLine("    private static string DocumentCore(string commandName)");
+            lines.Append("    private static string DocumentCore").Append(type.ImplementationSuffix).AppendLine("(string commandName)");
             lines.AppendLine("    {");
             lines.AppendLine("        if (commandName == null) throw new global::System.ArgumentNullException(nameof(commandName));");
             lines.AppendLine();
@@ -826,14 +836,14 @@ $@"#nullable enable
                 lines.AppendLine("        var lines = new global::System.Collections.Generic.List<string>();");
                 if (type.Documentation != null)
                 {
-                    lines.Append("        lines.Add(FormatDocumentationLine(documentedCommandName, ")
+                    lines.Append("        lines.Add(FormatDocumentationLine").Append(type.ImplementationSuffix).Append("(documentedCommandName, ")
                         .Append(FormatStringLiteral(type.Documentation))
                         .AppendLine("));");
                 }
 
                 for (var i = 0; i < type.Choices.Length; i++)
                 {
-                    lines.Append("        AddDocumentation(lines, DocumentChoice<")
+                    lines.Append("        AddDocumentation").Append(type.ImplementationSuffix).Append("(lines, DocumentChoice").Append(type.ImplementationSuffix).Append('<')
                         .Append(type.Choices[i].TypeName.FullName)
                         .AppendLine(">(documentedCommandName));");
                 }
@@ -842,7 +852,7 @@ $@"#nullable enable
             }
             else
             {
-                lines.Append("        var lines = new global::System.Collections.Generic.List<string> { FormatDocumentationLine(")
+                lines.Append("        var lines = new global::System.Collections.Generic.List<string> { FormatDocumentationLine").Append(type.ImplementationSuffix).Append('(')
                     .Append(GetDocumentedCommandNameExpression(type, "commandName"))
                     .Append(", ")
                     .Append(FormatStringLiteral(type.Documentation ?? string.Empty))
@@ -863,31 +873,31 @@ $@"#nullable enable
             if (type.Choices.Length > 0)
             {
                 lines.AppendLine();
-                lines.AppendLine(@"    private static string DocumentChoice<TChoice>(string commandName)
+                lines.AppendLine($@"    private static string DocumentChoice{type.ImplementationSuffix}<TChoice>(string commandName)
         where TChoice : global::Lokad.Cli.ICliParsed<TChoice>
-    {
+    {{
         return TChoice.Document(commandName);
-    }
+    }}
 
-    private static void AddDocumentation(global::System.Collections.Generic.List<string> lines, string documentation)
-    {
+    private static void AddDocumentation{type.ImplementationSuffix}(global::System.Collections.Generic.List<string> lines, string documentation)
+    {{
         if (documentation.Length == 0)
             return;
 
-        var split = documentation.Split(new[] { global::System.Environment.NewLine }, global::System.StringSplitOptions.None);
+        var split = documentation.Split(new[] {{ global::System.Environment.NewLine }}, global::System.StringSplitOptions.None);
         foreach (var line in split)
             lines.Add(line);
-    }");
+    }}");
             }
 
             lines.AppendLine();
-            lines.AppendLine(@"    private static string FormatDocumentationLine(string commandName, string documentation)
-    {
+            lines.AppendLine($@"    private static string FormatDocumentationLine{type.ImplementationSuffix}(string commandName, string documentation)
+    {{
         if (documentation.Length == 0)
             return commandName;
 
         return commandName + "": "" + documentation;
-    }");
+    }}");
 
             return lines.ToString().TrimEnd();
         }
@@ -1009,7 +1019,7 @@ $@"#nullable enable
             for (var i = 0; i < type.Choices.Length; i++)
             {
                 lines.Append("            case ").Append(i).AppendLine(":");
-                lines.Append("                return ParseChoice<").Append(type.Choices[i].TypeName.FullName).AppendLine(">(tokenized);");
+                lines.Append("                return ParseChoice").Append(type.ImplementationSuffix).Append('<').Append(type.Choices[i].TypeName.FullName).AppendLine(">(tokenized);");
             }
 
             lines.AppendLine("        }");

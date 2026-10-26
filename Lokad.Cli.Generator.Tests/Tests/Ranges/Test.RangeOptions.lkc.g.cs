@@ -3,7 +3,7 @@ namespace Test;
 partial record RangeOptions : global::Lokad.Cli.ICliParsed<global::Test.RangeOptions>
 {
     // A separate holder allows parsing from the argument type's static initializers.
-    private static class __CliOptionNames
+    private static class OptionNames__Cli
     {
         public static readonly char[] Short = new char[] { 'r' };
         public static readonly string[] Long = new string[] { @"ranges" };
@@ -11,12 +11,12 @@ partial record RangeOptions : global::Lokad.Cli.ICliParsed<global::Test.RangeOpt
 
     public static global::Test.RangeOptions Parse(global::System.Collections.Generic.IReadOnlyList<string> arguments)
     {
-        return ParseTokenizedCore(TokenizeCore(arguments));
+        return ParseTokenizedCore__Cli(TokenizeCore__Cli(arguments));
     }
 
     public static global::Lokad.Cli.TokenizedArguments Tokenize(global::System.Collections.Generic.IReadOnlyList<string> arguments)
     {
-        return TokenizeCore(arguments);
+        return TokenizeCore__Cli(arguments);
     }
 
     static bool global::Lokad.Cli.ICliParsed<global::Test.RangeOptions>.IsHelpRequested(global::Lokad.Cli.TokenizedArguments arguments)
@@ -30,24 +30,24 @@ partial record RangeOptions : global::Lokad.Cli.ICliParsed<global::Test.RangeOpt
     {
         if (arguments == null) throw new global::System.ArgumentNullException(nameof(arguments));
 
-        return ParseTokenizedCore(arguments);
+        return ParseTokenizedCore__Cli(arguments);
     }
 
     public static string Document(string commandName)
     {
-        return DocumentCore(commandName);
+        return DocumentCore__Cli(commandName);
     }
 
-    private static global::Lokad.Cli.TokenizedArguments TokenizeCore(global::System.Collections.Generic.IReadOnlyList<string> arguments)
+    private static global::Lokad.Cli.TokenizedArguments TokenizeCore__Cli(global::System.Collections.Generic.IReadOnlyList<string> arguments)
     {
         return global::Lokad.Cli.ArgumentTokenizer.Tokenize(
             arguments,
-            __CliOptionNames.Short,
-            __CliOptionNames.Long,
+            OptionNames__Cli.Short,
+            OptionNames__Cli.Long,
             false);
     }
 
-    private static global::Test.RangeOptions ParseTokenizedCore(global::Lokad.Cli.TokenizedArguments tokenized)
+    private static global::Test.RangeOptions ParseTokenizedCore__Cli(global::Lokad.Cli.TokenizedArguments tokenized)
     {
         // Discrimination
         _ = tokenized;
@@ -63,7 +63,7 @@ partial record RangeOptions : global::Lokad.Cli.ICliParsed<global::Test.RangeOpt
                 case global::Lokad.Cli.LongArgWithValue longArgWithValue:
                     if (longArgWithValue.Name == @"ranges")
                     {
-                        arg0Value = ParseCustom<global::Lokad.Cli.Ranges>(longArgWithValue.Value, @"--ranges");
+                        arg0Value = ParseCustom__Cli<global::Lokad.Cli.Ranges>(longArgWithValue.Value, @"--ranges");
                         arg0Seen = true;
                         break;
                     }
@@ -74,7 +74,7 @@ partial record RangeOptions : global::Lokad.Cli.ICliParsed<global::Test.RangeOpt
                         var valueToken = tokenized.Shift();
                         if (!(valueToken is global::Lokad.Cli.ValueArg optionValue))
                             throw new global::Lokad.Cli.ParseException(@"option `--ranges` expects a value");
-                        arg0Value = ParseCustom<global::Lokad.Cli.Ranges>(optionValue.Value, @"--ranges");
+                        arg0Value = ParseCustom__Cli<global::Lokad.Cli.Ranges>(optionValue.Value, @"--ranges");
                         arg0Seen = true;
                         break;
                     }
@@ -82,7 +82,7 @@ partial record RangeOptions : global::Lokad.Cli.ICliParsed<global::Test.RangeOpt
                 case global::Lokad.Cli.ShortArgWithValue shortArgWithValue:
                     if (shortArgWithValue.Name == 'r')
                     {
-                        arg0Value = ParseCustom<global::Lokad.Cli.Ranges>(shortArgWithValue.Value, @"-r");
+                        arg0Value = ParseCustom__Cli<global::Lokad.Cli.Ranges>(shortArgWithValue.Value, @"-r");
                         arg0Seen = true;
                         break;
                     }
@@ -95,7 +95,7 @@ partial record RangeOptions : global::Lokad.Cli.ICliParsed<global::Test.RangeOpt
                             var valueToken = tokenized.Shift();
                             if (!(valueToken is global::Lokad.Cli.ValueArg optionValue))
                                 throw new global::Lokad.Cli.ParseException(@"option `-r` expects a value");
-                            arg0Value = ParseCustom<global::Lokad.Cli.Ranges>(optionValue.Value, @"-r");
+                            arg0Value = ParseCustom__Cli<global::Lokad.Cli.Ranges>(optionValue.Value, @"-r");
                             arg0Seen = true;
                             continue;
                         }
@@ -122,16 +122,16 @@ partial record RangeOptions : global::Lokad.Cli.ICliParsed<global::Test.RangeOpt
         };
     }
 
-    private static string DocumentCore(string commandName)
+    private static string DocumentCore__Cli(string commandName)
     {
         if (commandName == null) throw new global::System.ArgumentNullException(nameof(commandName));
 
-        var lines = new global::System.Collections.Generic.List<string> { FormatDocumentationLine(commandName, @"Ranges command.") };
+        var lines = new global::System.Collections.Generic.List<string> { FormatDocumentationLine__Cli(commandName, @"Ranges command.") };
         lines.Add(@"  --ranges, -r: Line ranges.");
         return string.Join(global::System.Environment.NewLine, lines);
     }
 
-    private static string FormatDocumentationLine(string commandName, string documentation)
+    private static string FormatDocumentationLine__Cli(string commandName, string documentation)
     {
         if (documentation.Length == 0)
             return commandName;
@@ -140,16 +140,16 @@ partial record RangeOptions : global::Lokad.Cli.ICliParsed<global::Test.RangeOpt
     }
 
 
-    private static TValue ParseCustom<TValue>(string value, string label)
+    private static TValue ParseCustom__Cli<TValue>(string value, string label)
         where TValue : global::System.IParsable<TValue>
     {
-        if (TryParseCustom<TValue>(value, out var parsed))
+        if (TryParseCustom__Cli<TValue>(value, out var parsed))
             return parsed;
 
         throw new global::Lokad.Cli.ParseException($"invalid value `{value}` for `{label}`");
     }
 
-    private static bool TryParseCustom<TValue>(string value, [global::System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TValue parsed)
+    private static bool TryParseCustom__Cli<TValue>(string value, [global::System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TValue parsed)
         where TValue : global::System.IParsable<TValue>
     {
         return TValue.TryParse(value, null, out parsed);

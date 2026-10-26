@@ -3,7 +3,7 @@ namespace Test;
 partial interface IParentChoice : global::Lokad.Cli.ICliParsed<global::Test.IParentChoice>
 {
     // A separate holder allows parsing from the argument type's static initializers.
-    private static class __CliOptionNames
+    private static class OptionNames__Cli
     {
         public static readonly global::System.Collections.Generic.IReadOnlyDictionary<char, global::Lokad.Cli.OptionValueMode> Short = new global::System.Collections.Generic.Dictionary<char, global::Lokad.Cli.OptionValueMode> { ['g'] = global::Lokad.Cli.OptionValueMode.None, ['G'] = global::Lokad.Cli.OptionValueMode.None };
         public static readonly global::System.Collections.Generic.IReadOnlyDictionary<string, global::Lokad.Cli.OptionValueMode> Long = new global::System.Collections.Generic.Dictionary<string, global::Lokad.Cli.OptionValueMode> {  };
@@ -11,12 +11,12 @@ partial interface IParentChoice : global::Lokad.Cli.ICliParsed<global::Test.IPar
 
     static global::Test.IParentChoice global::Lokad.Cli.ICliParsed<global::Test.IParentChoice>.Parse(global::System.Collections.Generic.IReadOnlyList<string> arguments)
     {
-        return ParseTokenizedCore(TokenizeCore(arguments));
+        return ParseTokenizedCore__Cli(TokenizeCore__Cli(arguments));
     }
 
     static global::Lokad.Cli.TokenizedArguments global::Lokad.Cli.ICliParsed<global::Test.IParentChoice>.Tokenize(global::System.Collections.Generic.IReadOnlyList<string> arguments)
     {
-        return TokenizeCore(arguments);
+        return TokenizeCore__Cli(arguments);
     }
 
     static bool global::Lokad.Cli.ICliParsed<global::Test.IParentChoice>.IsHelpRequested(global::Lokad.Cli.TokenizedArguments arguments)
@@ -30,26 +30,26 @@ partial interface IParentChoice : global::Lokad.Cli.ICliParsed<global::Test.IPar
     {
         if (arguments == null) throw new global::System.ArgumentNullException(nameof(arguments));
 
-        return ParseTokenizedCore(arguments);
+        return ParseTokenizedCore__Cli(arguments);
     }
 
     static string global::Lokad.Cli.ICliParsed<global::Test.IParentChoice>.Document(string commandName)
     {
-        return DocumentCore(commandName);
+        return DocumentCore__Cli(commandName);
     }
 
-    private static global::Lokad.Cli.TokenizedArguments TokenizeCore(global::System.Collections.Generic.IReadOnlyList<string> arguments)
+    private static global::Lokad.Cli.TokenizedArguments TokenizeCore__Cli(global::System.Collections.Generic.IReadOnlyList<string> arguments)
     {
         return global::Lokad.Cli.ArgumentTokenizer.Tokenize(
             arguments,
-            __CliOptionNames.Short,
-            __CliOptionNames.Long,
+            OptionNames__Cli.Short,
+            OptionNames__Cli.Long,
             false,
             global::Lokad.Cli.ShortOptionSyntax.GroupedValues,
             true);
     }
 
-    private static global::Test.IParentChoice ParseTokenizedCore(global::Lokad.Cli.TokenizedArguments tokenized)
+    private static global::Test.IParentChoice ParseTokenizedCore__Cli(global::Lokad.Cli.TokenizedArguments tokenized)
     {
         // Discrimination
         var choice = -1;
@@ -68,31 +68,31 @@ partial interface IParentChoice : global::Lokad.Cli.ICliParsed<global::Test.IPar
         switch (choice)
         {
             case 0:
-                return ParseChoice<global::Test.NestedDiscriminatorAlias>(tokenized);
+                return ParseChoice__Cli<global::Test.NestedDiscriminatorAlias>(tokenized);
         }
 
         // Binding
         throw new global::System.InvalidOperationException();
     }
 
-    private static string DocumentCore(string commandName)
+    private static string DocumentCore__Cli(string commandName)
     {
         if (commandName == null) throw new global::System.ArgumentNullException(nameof(commandName));
 
         var documentedCommandName = commandName + @" -g";
         var lines = new global::System.Collections.Generic.List<string>();
-        lines.Add(FormatDocumentationLine(documentedCommandName, @"Parent discriminator."));
-        AddDocumentation(lines, DocumentChoice<global::Test.NestedDiscriminatorAlias>(documentedCommandName));
+        lines.Add(FormatDocumentationLine__Cli(documentedCommandName, @"Parent discriminator."));
+        AddDocumentation__Cli(lines, DocumentChoice__Cli<global::Test.NestedDiscriminatorAlias>(documentedCommandName));
         return string.Join(global::System.Environment.NewLine, lines);
     }
 
-    private static string DocumentChoice<TChoice>(string commandName)
+    private static string DocumentChoice__Cli<TChoice>(string commandName)
         where TChoice : global::Lokad.Cli.ICliParsed<TChoice>
     {
         return TChoice.Document(commandName);
     }
 
-    private static void AddDocumentation(global::System.Collections.Generic.List<string> lines, string documentation)
+    private static void AddDocumentation__Cli(global::System.Collections.Generic.List<string> lines, string documentation)
     {
         if (documentation.Length == 0)
             return;
@@ -102,7 +102,7 @@ partial interface IParentChoice : global::Lokad.Cli.ICliParsed<global::Test.IPar
             lines.Add(line);
     }
 
-    private static string FormatDocumentationLine(string commandName, string documentation)
+    private static string FormatDocumentationLine__Cli(string commandName, string documentation)
     {
         if (documentation.Length == 0)
             return commandName;
@@ -110,7 +110,7 @@ partial interface IParentChoice : global::Lokad.Cli.ICliParsed<global::Test.IPar
         return commandName + ": " + documentation;
     }
 
-    private static TChoice ParseChoice<TChoice>(global::Lokad.Cli.TokenizedArguments arguments)
+    private static TChoice ParseChoice__Cli<TChoice>(global::Lokad.Cli.TokenizedArguments arguments)
         where TChoice : global::Lokad.Cli.ICliParsed<TChoice>
     {
         return TChoice.ParseTokenized(arguments);

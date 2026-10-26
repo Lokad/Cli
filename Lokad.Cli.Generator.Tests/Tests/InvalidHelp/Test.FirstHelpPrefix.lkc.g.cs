@@ -3,7 +3,7 @@ namespace Test;
 partial record FirstHelpPrefix : global::Lokad.Cli.ICliParsed<global::Test.FirstHelpPrefix>
 {
     // A separate holder allows parsing from the argument type's static initializers.
-    private static class __CliOptionNames
+    private static class OptionNames__Cli
     {
         public static readonly global::System.Collections.Generic.IReadOnlyDictionary<char, global::Lokad.Cli.OptionValueMode> Short = new global::System.Collections.Generic.Dictionary<char, global::Lokad.Cli.OptionValueMode> {  };
         public static readonly global::System.Collections.Generic.IReadOnlyDictionary<string, global::Lokad.Cli.OptionValueMode> Long = new global::System.Collections.Generic.Dictionary<string, global::Lokad.Cli.OptionValueMode> {  };
@@ -14,46 +14,46 @@ partial record FirstHelpPrefix : global::Lokad.Cli.ICliParsed<global::Test.First
 
     public static global::Test.FirstHelpPrefix Parse(global::System.Collections.Generic.IReadOnlyList<string> arguments)
     {
-        return ParseTokenizedCore(TokenizeCore(arguments));
+        return ParseTokenizedCore__Cli(TokenizeCore__Cli(arguments));
     }
 
     public static global::Lokad.Cli.TokenizedArguments Tokenize(global::System.Collections.Generic.IReadOnlyList<string> arguments)
     {
-        return TokenizeCore(arguments);
+        return TokenizeCore__Cli(arguments);
     }
 
     static bool global::Lokad.Cli.ICliParsed<global::Test.FirstHelpPrefix>.IsHelpRequested(global::Lokad.Cli.TokenizedArguments arguments)
     {
         if (arguments == null) throw new global::System.ArgumentNullException(nameof(arguments));
 
-        return arguments.IsHelpRequested(__CliOptionNames.HelpShort, __CliOptionNames.HelpLong, __CliOptionNames.Boundary);
+        return arguments.IsHelpRequested(OptionNames__Cli.HelpShort, OptionNames__Cli.HelpLong, OptionNames__Cli.Boundary);
     }
 
     public static global::Test.FirstHelpPrefix ParseTokenized(global::Lokad.Cli.TokenizedArguments arguments)
     {
         if (arguments == null) throw new global::System.ArgumentNullException(nameof(arguments));
 
-        return ParseTokenizedCore(arguments);
+        return ParseTokenizedCore__Cli(arguments);
     }
 
     public static string Document(string commandName)
     {
-        return DocumentCore(commandName);
+        return DocumentCore__Cli(commandName);
     }
 
-    private static global::Lokad.Cli.TokenizedArguments TokenizeCore(global::System.Collections.Generic.IReadOnlyList<string> arguments)
+    private static global::Lokad.Cli.TokenizedArguments TokenizeCore__Cli(global::System.Collections.Generic.IReadOnlyList<string> arguments)
     {
         return global::Lokad.Cli.ArgumentTokenizer.Tokenize(
             arguments,
-            __CliOptionNames.Short,
-            __CliOptionNames.Long,
+            OptionNames__Cli.Short,
+            OptionNames__Cli.Long,
             false,
             global::Lokad.Cli.ShortOptionSyntax.GroupedValues,
             true,
-            false, __CliOptionNames.Boundary);
+            false, OptionNames__Cli.Boundary);
     }
 
-    private static global::Test.FirstHelpPrefix ParseTokenizedCore(global::Lokad.Cli.TokenizedArguments tokenized)
+    private static global::Test.FirstHelpPrefix ParseTokenizedCore__Cli(global::Lokad.Cli.TokenizedArguments tokenized)
     {
         tokenized.SkipPositional(@"help");
 
@@ -92,15 +92,15 @@ partial record FirstHelpPrefix : global::Lokad.Cli.ICliParsed<global::Test.First
         return new global::Test.FirstHelpPrefix();
     }
 
-    private static string DocumentCore(string commandName)
+    private static string DocumentCore__Cli(string commandName)
     {
         if (commandName == null) throw new global::System.ArgumentNullException(nameof(commandName));
 
-        var lines = new global::System.Collections.Generic.List<string> { FormatDocumentationLine(commandName + @" help", @"Help.") };
+        var lines = new global::System.Collections.Generic.List<string> { FormatDocumentationLine__Cli(commandName + @" help", @"Help.") };
         return string.Join(global::System.Environment.NewLine, lines);
     }
 
-    private static string FormatDocumentationLine(string commandName, string documentation)
+    private static string FormatDocumentationLine__Cli(string commandName, string documentation)
     {
         if (documentation.Length == 0)
             return commandName;

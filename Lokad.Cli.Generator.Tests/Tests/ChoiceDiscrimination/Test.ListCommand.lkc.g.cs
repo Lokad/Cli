@@ -3,7 +3,7 @@ namespace Test;
 partial record ListCommand : global::Lokad.Cli.ICliParsed<global::Test.ListCommand>
 {
     // A separate holder allows parsing from the argument type's static initializers.
-    private static class __CliOptionNames
+    private static class OptionNames__Cli
     {
         public static readonly char[] Short = new char[] { 'r', 'i' };
         public static readonly string[] Long = new string[] { @"add", @"name" };
@@ -11,12 +11,12 @@ partial record ListCommand : global::Lokad.Cli.ICliParsed<global::Test.ListComma
 
     public static global::Test.ListCommand Parse(global::System.Collections.Generic.IReadOnlyList<string> arguments)
     {
-        return ParseTokenizedCore(TokenizeCore(arguments));
+        return ParseTokenizedCore__Cli(TokenizeCore__Cli(arguments));
     }
 
     public static global::Lokad.Cli.TokenizedArguments Tokenize(global::System.Collections.Generic.IReadOnlyList<string> arguments)
     {
-        return TokenizeCore(arguments);
+        return TokenizeCore__Cli(arguments);
     }
 
     static bool global::Lokad.Cli.ICliParsed<global::Test.ListCommand>.IsHelpRequested(global::Lokad.Cli.TokenizedArguments arguments)
@@ -30,24 +30,24 @@ partial record ListCommand : global::Lokad.Cli.ICliParsed<global::Test.ListComma
     {
         if (arguments == null) throw new global::System.ArgumentNullException(nameof(arguments));
 
-        return ParseTokenizedCore(arguments);
+        return ParseTokenizedCore__Cli(arguments);
     }
 
     public static string Document(string commandName)
     {
-        return DocumentCore(commandName);
+        return DocumentCore__Cli(commandName);
     }
 
-    private static global::Lokad.Cli.TokenizedArguments TokenizeCore(global::System.Collections.Generic.IReadOnlyList<string> arguments)
+    private static global::Lokad.Cli.TokenizedArguments TokenizeCore__Cli(global::System.Collections.Generic.IReadOnlyList<string> arguments)
     {
         return global::Lokad.Cli.ArgumentTokenizer.Tokenize(
             arguments,
-            __CliOptionNames.Short,
-            __CliOptionNames.Long,
+            OptionNames__Cli.Short,
+            OptionNames__Cli.Long,
             false);
     }
 
-    private static global::Test.ListCommand ParseTokenizedCore(global::Lokad.Cli.TokenizedArguments tokenized)
+    private static global::Test.ListCommand ParseTokenizedCore__Cli(global::Lokad.Cli.TokenizedArguments tokenized)
     {
         tokenized.SkipPositional(@"list");
 
@@ -86,15 +86,15 @@ partial record ListCommand : global::Lokad.Cli.ICliParsed<global::Test.ListComma
         return new global::Test.ListCommand();
     }
 
-    private static string DocumentCore(string commandName)
+    private static string DocumentCore__Cli(string commandName)
     {
         if (commandName == null) throw new global::System.ArgumentNullException(nameof(commandName));
 
-        var lines = new global::System.Collections.Generic.List<string> { FormatDocumentationLine(commandName + @" list", @"List command.") };
+        var lines = new global::System.Collections.Generic.List<string> { FormatDocumentationLine__Cli(commandName + @" list", @"List command.") };
         return string.Join(global::System.Environment.NewLine, lines);
     }
 
-    private static string FormatDocumentationLine(string commandName, string documentation)
+    private static string FormatDocumentationLine__Cli(string commandName, string documentation)
     {
         if (documentation.Length == 0)
             return commandName;

@@ -134,21 +134,23 @@ namespace Lokad.Cli.Generator
             var schema = BuildCommandSchema(typeSymbol);
             tokenization.Validate();
             var boundary = tokenization.RequiresBoundaries || tokenization.HasHelpPrefixes ? schema : null;
+            var existingNames = new HashSet<string>(StringComparer.Ordinal);
+            for (var current = typeSymbol; current != null; current = current.BaseType)
+                ReserveNames(current);
+            foreach (var inherited in typeSymbol.AllInterfaces)
+                ReserveNames(inherited);
             var explicitParserMethods = CliParserMethods.None;
             foreach (var method in new[] { CliParserMethods.Parse, CliParserMethods.Tokenize, CliParserMethods.ParseTokenized, CliParserMethods.Document })
-            {
-                var name = method.ToString();
-                for (var current = typeSymbol; current != null; current = current.BaseType)
-                    if (current.Name == name || current.GetMembers(name).Length > 0)
-                    {
-                        explicitParserMethods |= method;
-                        break;
-                    }
-            }
+                if (existingNames.Contains(method.ToString()))
+                    explicitParserMethods |= method;
+            var implementationSuffix = "__Cli";
+            while (System.Linq.Enumerable.Any(existingNames, name => name.EndsWith(implementationSuffix, StringComparison.Ordinal)))
+                implementationSuffix += "_";
             return new CliTypeInfo(
                 TypeName.FromSymbol(typeSymbol),
                 GetTypeKind(typeSymbol),
                 explicitParserMethods,
+                implementationSuffix,
                 shortOptions.ToArray(),
                 longOptions.ToArray(),
                 hasShortNumericArguments,
@@ -159,6 +161,13 @@ namespace Lokad.Cli.Generator
                 documentation,
                 tokenization,
                 boundary);
+
+            void ReserveNames(ITypeSymbol declaration)
+            {
+                existingNames.Add(declaration.Name);
+                foreach (var member in declaration.GetMembers())
+                    existingNames.Add(member.Name);
+            }
 
             static CliTypeKind GetTypeKind(ITypeSymbol symbol)
             {
