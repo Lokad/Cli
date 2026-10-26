@@ -55,6 +55,8 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
 
     private static global::Test.TokenizationOptions ParseTokenizedCore__Cli(global::Lokad.Cli.TokenizedArguments tokenized)
     {
+        tokenized.SelectDiscriminator(@"mode", 'm');
+
         // Discrimination
         _ = tokenized;
 
@@ -189,7 +191,7 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
                         arg11Value = true;
                         break;
                     }
-                    if (longArg.Name == @"mode")
+                    if (tokenized.IsSelectedLongOption(longArg.Name))
                         break;
                     throw new global::Lokad.Cli.ParseException($"unexpected option `--{longArg.Name}`");
                 case global::Lokad.Cli.ShortArgWithValue shortArgWithValue:
@@ -272,7 +274,7 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
                             arg11Value = true;
                             continue;
                         }
-                        if (shortOption == 'm')
+                        if (tokenized.IsSelectedShortOption(shortOption))
                             continue;
                         throw new global::Lokad.Cli.ParseException($"unexpected option `-{shortOption}`");
                     }

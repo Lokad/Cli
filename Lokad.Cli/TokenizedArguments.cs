@@ -23,6 +23,9 @@ namespace Lokad.Cli
         /// </summary>
         private readonly Queue<string> _skipPositional = new Queue<string>();
 
+        private HashSet<string>? _selectedLongOptions;
+        private HashSet<char>? _selectedShortOptions;
+
         /// <summary>
         ///     Initializes a token stream from a pre-tokenized argument list.
         /// </summary>
@@ -31,6 +34,27 @@ namespace Lokad.Cli
         {
             _arguments = arguments ?? throw new ArgumentNullException(nameof(arguments));
         }
+
+        /// <summary>Registers the option selectors of a selected command without consuming the cursor.</summary>
+        /// <param name="longOption">The command's long selector, or null.</param>
+        /// <param name="shortOption">The command's short selector, or '\0'.</param>
+        public void SelectDiscriminator(string? longOption, char shortOption)
+        {
+            if (longOption != null)
+                (_selectedLongOptions ??= new HashSet<string>(StringComparer.Ordinal)).Add(longOption);
+            if (shortOption != '\0')
+                (_selectedShortOptions ??= new HashSet<char>()).Add(shortOption);
+        }
+
+        /// <summary>Whether a bare long option belongs to the selected command path; binding actual members takes precedence.</summary>
+        /// <param name="option">Long option name without dashes.</param>
+        /// <returns>Whether binding may ignore the bare selector.</returns>
+        public bool IsSelectedLongOption(string option) => _selectedLongOptions?.Contains(option) ?? false;
+
+        /// <summary>Whether a bare short option belongs to the selected command path; binding actual members takes precedence.</summary>
+        /// <param name="option">Short option name without a dash.</param>
+        /// <returns>Whether binding may ignore the bare selector.</returns>
+        public bool IsSelectedShortOption(char option) => _selectedShortOptions?.Contains(option) ?? false;
 
         /// <summary>
         ///     Returns whether the token stream contains a specific short option.

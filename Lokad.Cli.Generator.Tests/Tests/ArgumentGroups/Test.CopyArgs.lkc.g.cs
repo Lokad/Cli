@@ -84,6 +84,8 @@ partial record CopyArgs : global::Lokad.Cli.ICliParsed<global::Test.CopyArgs>
                         arg1Seen = true;
                         break;
                     }
+                    if (tokenized.IsSelectedLongOption(longArg.Name))
+                        break;
                     throw new global::Lokad.Cli.ParseException($"unexpected option `--{longArg.Name}`");
                 case global::Lokad.Cli.ShortArgWithValue shortArgWithValue:
                     throw new global::Lokad.Cli.ParseException($"unexpected option `-{shortArgWithValue.Name}`");
@@ -98,6 +100,8 @@ partial record CopyArgs : global::Lokad.Cli.ICliParsed<global::Test.CopyArgs>
                             arg2Value = true;
                             continue;
                         }
+                        if (tokenized.IsSelectedShortOption(shortOption))
+                            continue;
                         throw new global::Lokad.Cli.ParseException($"unexpected option `-{shortOption}`");
                     }
                     break;

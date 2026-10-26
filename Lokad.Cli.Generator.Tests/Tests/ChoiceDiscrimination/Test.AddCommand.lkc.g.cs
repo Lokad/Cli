@@ -51,6 +51,8 @@ partial record AddCommand : global::Lokad.Cli.ICliParsed<global::Test.AddCommand
 
     private static global::Test.AddCommand ParseTokenizedCore__Cli(global::Lokad.Cli.TokenizedArguments tokenized)
     {
+        tokenized.SelectDiscriminator(@"add", '\0');
+
         // Discrimination
         _ = tokenized;
 
@@ -77,7 +79,7 @@ partial record AddCommand : global::Lokad.Cli.ICliParsed<global::Test.AddCommand
                         arg0Value = optionValue.Value;
                         break;
                     }
-                    if (longArg.Name == @"add")
+                    if (tokenized.IsSelectedLongOption(longArg.Name))
                         break;
                     throw new global::Lokad.Cli.ParseException($"unexpected option `--{longArg.Name}`");
                 case global::Lokad.Cli.ShortArgWithValue shortArgWithValue:
@@ -85,6 +87,8 @@ partial record AddCommand : global::Lokad.Cli.ICliParsed<global::Test.AddCommand
                 case global::Lokad.Cli.ShortArgSet shortArgSet:
                     foreach (var shortOption in shortArgSet.Options)
                     {
+                        if (tokenized.IsSelectedShortOption(shortOption))
+                            continue;
                         throw new global::Lokad.Cli.ParseException($"unexpected option `-{shortOption}`");
                     }
                     break;

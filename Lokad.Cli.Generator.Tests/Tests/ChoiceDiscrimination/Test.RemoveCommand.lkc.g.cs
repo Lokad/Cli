@@ -51,6 +51,8 @@ partial record RemoveCommand : global::Lokad.Cli.ICliParsed<global::Test.RemoveC
 
     private static global::Test.RemoveCommand ParseTokenizedCore__Cli(global::Lokad.Cli.TokenizedArguments tokenized)
     {
+        tokenized.SelectDiscriminator(null, 'r');
+
         // Discrimination
         _ = tokenized;
 
@@ -65,6 +67,8 @@ partial record RemoveCommand : global::Lokad.Cli.ICliParsed<global::Test.RemoveC
                 case global::Lokad.Cli.LongArgWithValue longArgWithValue:
                     throw new global::Lokad.Cli.ParseException($"unexpected option `--{longArgWithValue.Name}`");
                 case global::Lokad.Cli.LongArg longArg:
+                    if (tokenized.IsSelectedLongOption(longArg.Name))
+                        break;
                     throw new global::Lokad.Cli.ParseException($"unexpected option `--{longArg.Name}`");
                 case global::Lokad.Cli.ShortArgWithValue shortArgWithValue:
                     if (shortArgWithValue.Name == 'i')
@@ -86,7 +90,7 @@ partial record RemoveCommand : global::Lokad.Cli.ICliParsed<global::Test.RemoveC
                             arg0Seen = true;
                             continue;
                         }
-                        if (shortOption == 'r')
+                        if (tokenized.IsSelectedShortOption(shortOption))
                             continue;
                         throw new global::Lokad.Cli.ParseException($"unexpected option `-{shortOption}`");
                     }

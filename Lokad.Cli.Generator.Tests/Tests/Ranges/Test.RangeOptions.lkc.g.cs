@@ -80,6 +80,8 @@ partial record RangeOptions : global::Lokad.Cli.ICliParsed<global::Test.RangeOpt
                         arg0Seen = true;
                         break;
                     }
+                    if (tokenized.IsSelectedLongOption(longArg.Name))
+                        break;
                     throw new global::Lokad.Cli.ParseException($"unexpected option `--{longArg.Name}`");
                 case global::Lokad.Cli.ShortArgWithValue shortArgWithValue:
                     if (shortArgWithValue.Name == 'r')
@@ -101,6 +103,8 @@ partial record RangeOptions : global::Lokad.Cli.ICliParsed<global::Test.RangeOpt
                             arg0Seen = true;
                             continue;
                         }
+                        if (tokenized.IsSelectedShortOption(shortOption))
+                            continue;
                         throw new global::Lokad.Cli.ParseException($"unexpected option `-{shortOption}`");
                     }
                     break;

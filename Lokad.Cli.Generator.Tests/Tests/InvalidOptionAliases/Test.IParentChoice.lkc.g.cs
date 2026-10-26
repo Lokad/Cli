@@ -51,6 +51,8 @@ partial interface IParentChoice : global::Lokad.Cli.ICliParsed<global::Test.IPar
 
     private static global::Test.IParentChoice ParseTokenizedCore__Cli(global::Lokad.Cli.TokenizedArguments tokenized)
     {
+        tokenized.SelectDiscriminator(null, 'g');
+
         // Discrimination
         var choice = -1;
         string? choiceDiscriminator = null;

@@ -79,12 +79,16 @@ partial record GlobalArgs : global::Lokad.Cli.ICliParsed<global::GlobalArgs>
                         arg0Seen = true;
                         break;
                     }
+                    if (tokenized.IsSelectedLongOption(longArg.Name))
+                        break;
                     throw new global::Lokad.Cli.ParseException($"unexpected option `--{longArg.Name}`");
                 case global::Lokad.Cli.ShortArgWithValue shortArgWithValue:
                     throw new global::Lokad.Cli.ParseException($"unexpected option `-{shortArgWithValue.Name}`");
                 case global::Lokad.Cli.ShortArgSet shortArgSet:
                     foreach (var shortOption in shortArgSet.Options)
                     {
+                        if (tokenized.IsSelectedShortOption(shortOption))
+                            continue;
                         throw new global::Lokad.Cli.ParseException($"unexpected option `-{shortOption}`");
                     }
                     break;

@@ -175,14 +175,17 @@ $@"#nullable enable
 
         private static string EmitTokenizedParseArguments(CliTypeInfo type)
         {
-            if (type.Discriminator?.Prefix == null)
+            if (type.Discriminator == null)
                 return string.Empty;
 
             var lines = new System.Text.StringBuilder();
             lines.AppendLine();
-            lines.Append("        tokenized.SkipPositional(")
-                .Append(FormatStringLiteral(type.Discriminator.Prefix))
-                .AppendLine(");");
+            if (type.Discriminator.Prefix is string prefix)
+                lines.Append("        tokenized.SkipPositional(").Append(FormatStringLiteral(prefix)).AppendLine(");");
+            else
+                lines.Append("        tokenized.SelectDiscriminator(")
+                    .Append(type.Discriminator.LongOption is string name ? FormatStringLiteral(name) : "null")
+                    .Append(", ").Append(FormatCharLiteral(type.Discriminator.ShortOption)).AppendLine(");");
 
             return lines.ToString();
         }
@@ -419,11 +422,8 @@ $@"#nullable enable
                 lines.AppendLine("                    }");
             }
 
-            if (type.Discriminator?.LongOption != null)
-            {
-                lines.Append("                    if (longArg.Name == ").Append(FormatStringLiteral(type.Discriminator.LongOption)).AppendLine(")");
-                lines.AppendLine("                        break;");
-            }
+            lines.AppendLine("                    if (tokenized.IsSelectedLongOption(longArg.Name))");
+            lines.AppendLine("                        break;");
             lines.AppendLine("                    throw new global::Lokad.Cli.ParseException($\"unexpected option `--{longArg.Name}`\");");
             return lines.ToString();
         }
@@ -485,13 +485,8 @@ $@"#nullable enable
                 lines.AppendLine("                        }");
             }
 
-            if (type.Discriminator?.ShortOption != '\0' && type.Discriminator?.ShortOption != null)
-            {
-                lines.Append("                        if (shortOption == ")
-                    .Append(FormatCharLiteral(type.Discriminator.ShortOption))
-                    .AppendLine(")");
-                lines.AppendLine("                            continue;");
-            }
+            lines.AppendLine("                        if (tokenized.IsSelectedShortOption(shortOption))");
+            lines.AppendLine("                            continue;");
 
             lines.AppendLine("                        throw new global::Lokad.Cli.ParseException($\"unexpected option `-{shortOption}`\");");
             lines.AppendLine("                    }");

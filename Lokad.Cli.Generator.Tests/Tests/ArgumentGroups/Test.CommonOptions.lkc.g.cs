@@ -82,6 +82,8 @@ partial record CommonOptions : global::Lokad.Cli.ICliParsed<global::Test.CommonO
                         arg0Seen = true;
                         break;
                     }
+                    if (tokenized.IsSelectedLongOption(longArg.Name))
+                        break;
                     throw new global::Lokad.Cli.ParseException($"unexpected option `--{longArg.Name}`");
                 case global::Lokad.Cli.ShortArgWithValue shortArgWithValue:
                     throw new global::Lokad.Cli.ParseException($"unexpected option `-{shortArgWithValue.Name}`");
@@ -96,6 +98,8 @@ partial record CommonOptions : global::Lokad.Cli.ICliParsed<global::Test.CommonO
                             arg1Value = true;
                             continue;
                         }
+                        if (tokenized.IsSelectedShortOption(shortOption))
+                            continue;
                         throw new global::Lokad.Cli.ParseException($"unexpected option `-{shortOption}`");
                     }
                     break;
