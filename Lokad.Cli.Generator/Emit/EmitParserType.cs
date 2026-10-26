@@ -116,8 +116,6 @@ $@"#nullable enable
                         var children = new System.Collections.Generic.List<string>();
                         foreach (var child in boundary.Choices)
                             children.Add(Visit(child));
-                        var shorts = new System.Collections.Generic.List<char>(boundary.StopAfterShortOptions).ToArray();
-                        var longs = new System.Collections.Generic.List<string>(boundary.StopAfterLongOptions).ToArray();
                         lines.Append("        public static readonly global::Lokad.Cli.CommandBoundary ").Append(name)
                             .Append(" = new global::Lokad.Cli.CommandBoundary(")
                             .Append(boundary.Discriminator?.Prefix is string prefix ? FormatStringLiteral(prefix) : "null").Append(", ")
@@ -125,9 +123,15 @@ $@"#nullable enable
                             .Append(FormatCharLiteral(boundary.Discriminator?.ShortOption ?? '\0')).Append(", ")
                             .Append("new global::Lokad.Cli.CommandBoundary[] { ").Append(string.Join(", ", children)).Append(" }, ")
                             .Append(boundary.RemainderAfterOperands?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "null").Append(", ")
-                            .Append(FormatCharArray(shorts)).Append(", ").Append(FormatStringArray(longs)).Append(", ")
+                            .Append(FormatArray(boundary.StopAfterShortOptions, "char", FormatCharLiteral)).Append(", ")
+                            .Append(FormatArray(boundary.StopAfterLongOptions, "string", FormatStringLiteral)).Append(", ")
                             .Append(FormatBoolean(boundary.IsHelpPrefix)).AppendLine(");");
                         return name;
+
+                        static string FormatArray<T>(
+                            System.Collections.Generic.IReadOnlyList<T> values, string typeName, Func<T, string> format) => values.Count == 0
+                            ? "global::System.Array.Empty<" + typeName + ">()"
+                            : "new " + typeName + "[] { " + string.Join(", ", System.Linq.Enumerable.Select(values, format)) + " }";
                     }
                 }
 
@@ -142,14 +146,6 @@ $@"#nullable enable
                     return "global::System.Collections.Generic.IReadOnlyDictionary<" + keyType + ", global::Lokad.Cli.OptionValueMode> " + name +
                         " = new global::System.Collections.Generic.Dictionary<" + keyType + ", global::Lokad.Cli.OptionValueMode> { " + string.Join(", ", entries) + " }";
                 }
-
-                static string FormatCharArray(char[] values) => values.Length == 0
-                    ? "global::System.Array.Empty<char>()"
-                    : "new char[] { " + string.Join(", ", Array.ConvertAll(values, FormatCharLiteral)) + " }";
-
-                static string FormatStringArray(string[] values) => values.Length == 0
-                    ? "global::System.Array.Empty<string>()"
-                    : "new string[] { " + string.Join(", ", Array.ConvertAll(values, FormatStringLiteral)) + " }";
             }
 
             static string GetLexicalPolicies(CliTypeInfo parserType) =>
