@@ -24,3 +24,13 @@ public partial record FirstRun : IDuplicateSelectors;
 
 [Arguments("Second run.", Prefix = "run")]
 public partial record SecondRun : IDuplicateSelectors;
+
+[Choice(typeof(Unrelated))]
+public partial interface IUnrelatedChoice { }
+
+public class Unrelated { }
+
+[Choice(typeof(Unannotated))]
+public partial interface IUnannotatedChoice { }
+
+public class Unannotated : IUnannotatedChoice { }

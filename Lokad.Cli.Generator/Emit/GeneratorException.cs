@@ -213,5 +213,10 @@ namespace Lokad.Cli.Generator.Emit
             "LKC0030", "Ambiguous numeric short option",
             "Short option '-{0}' cannot be used alongside ShortNumeric arguments in the reachable command graph",
             "SourceGenerator", DiagnosticSeverity.Error, true);
+
+        public static readonly DiagnosticDescriptor InvalidChoiceTarget = new DiagnosticDescriptor(
+            "LKC0031", "Invalid command choice target",
+            "Choice '{0}' on '{1}' is invalid: {2}",
+            "SourceGenerator", DiagnosticSeverity.Error, true);
     }
 }

@@ -3,3 +3,6 @@ Error LKC0027: CLI argument type 'NestedArgs' is unsupported: nested types are n
 Error LKC0027: CLI argument type 'RefArgs' is unsupported: ref-like types cannot implement the parser contract (UnsupportedTypes/Input.cs:15:27)
 Error LKC0027: CLI argument type 'NonPartialArgs' is unsupported: argument types must be partial (UnsupportedTypes/Input.cs:18:15)
 Error LKC0027: CLI argument type 'FileArgs' is unsupported: file-local types cannot be extended from generated source (UnsupportedTypes/Input.cs:21:21)
+Error LKC0027: CLI argument type 'AbstractArgs' is unsupported: argument types must be concrete (UnsupportedTypes/Input.cs:24:32)
+Error LKC0027: CLI argument type 'StaticArgs' is unsupported: static types cannot implement the parser contract (UnsupportedTypes/Input.cs:27:29)
+Error LKC0027: CLI argument type 'IEmptyArgs' is unsupported: interfaces require at least one choice (UnsupportedTypes/Input.cs:30:26)

@@ -50,6 +50,15 @@ namespace Lokad.Cli.Generator
                 throw Unsupported("generic types are not supported");
             if (typeSymbol is INamedTypeSymbol refLike && refLike.IsRefLikeType)
                 throw Unsupported("ref-like types cannot implement the parser contract");
+            if (typeSymbol.IsStatic)
+                throw Unsupported("static types cannot implement the parser contract");
+            if (typeSymbol.TypeKind == TypeKind.Interface)
+            {
+                if (typeSymbol.TryGetAttribute(compilation, _choiceAttribute) == null)
+                    throw Unsupported("interfaces require at least one choice");
+            }
+            else if (typeSymbol.IsAbstract)
+                throw Unsupported("argument types must be concrete");
             foreach (var reference in typeSymbol.DeclaringSyntaxReferences)
             {
                 if (!(reference.GetSyntax() is TypeDeclarationSyntax declaration))
@@ -255,8 +264,9 @@ namespace Lokad.Cli.Generator
                 }
             }
 
-            CliArgumentInfo[] CollectMembers(ITypeSymbol declaration, string path, bool isGroup, ITypeSymbol constructionContext)
+            CliArgumentInfo[] CollectMembers(ITypeSymbol declaration, string path, AttributeData? groupUsage, ITypeSymbol constructionContext)
             {
+                var isGroup = groupUsage != null;
                 activeGroups.Add(declaration.OriginalDefinition);
                 var members = new List<CliArgumentInfo>();
                 var constructorBoundNames = new HashSet<string>();
@@ -276,6 +286,8 @@ namespace Lokad.Cli.Generator
                                          FindMatchingPropertyArgument(parameter);
                         if (annotation == null)
                             continue;
+                        if (parameter.RefKind != RefKind.None)
+                            throw ConstructorError("bound parameters cannot use ref, in or out");
                         parameters.Add((parameter, annotation));
                     }
                     if (parameters.Count == 0)
@@ -288,6 +300,14 @@ namespace Lokad.Cli.Generator
                         throw GroupError(parameters[0].Annotation, path, "its constructor is inaccessible from the containing command");
                     boundConstructor = method;
                     constructorArguments = parameters;
+                }
+                if (boundConstructor == null && declaration is INamedTypeSymbol named &&
+                    !System.Linq.Enumerable.Any(named.InstanceConstructors, constructor => constructor.Parameters.Length == 0 &&
+                        compilation.IsSymbolAccessibleWithin(constructor, constructionContext, declaration)))
+                {
+                    if (groupUsage != null)
+                        throw GroupError(groupUsage, path, "its parameterless constructor is inaccessible from the containing command");
+                    throw ConstructorError("a parameterless constructor or a fully annotated constructor is required");
                 }
                 foreach (var parameter in constructorArguments)
                 {
@@ -465,12 +485,7 @@ namespace Lokad.Cli.Generator
                 if (activeGroups.Contains(declaration.OriginalDefinition))
                     throw GroupError(usage, path, "recursive argument groups are not supported");
                 ConfigureTokenization(declaration);
-                var members = CollectMembers(declaration, path, true, constructionContext);
-                if (!Array.Exists(members, member => member.IsConstructorParameter) && declaration is INamedTypeSymbol named &&
-                    !System.Linq.Enumerable.Any(named.InstanceConstructors, constructor => constructor.Parameters.Length == 0 &&
-                        compilation.IsSymbolAccessibleWithin(constructor, constructionContext, declaration)))
-                    throw GroupError(usage, path, "its parameterless constructor is inaccessible from the containing command");
-                return members;
+                return CollectMembers(declaration, path, usage, constructionContext);
             }
 
             CliDiscriminatorInfo? Collect(ITypeSymbol declaration)
@@ -506,7 +521,7 @@ namespace Lokad.Cli.Generator
 
                 ConfigureTokenization(declaration);
                 var members = declaration.TypeKind == TypeKind.Interface
-                    ? Array.Empty<CliArgumentInfo>() : CollectMembers(declaration, "", false, declaration);
+                    ? Array.Empty<CliArgumentInfo>() : CollectMembers(declaration, "", null, declaration);
                 if (isRoot)
                     rootMembers = members;
                 var leaves = new List<CliArgumentInfo>();
@@ -521,7 +536,17 @@ namespace Lokad.Cli.Generator
                         !(choice.ConstructorArguments[0].Value is ITypeSymbol choiceType))
                         continue;
 
+                    if (!compilation.ClassifyCommonConversion(choiceType, declaration).IsImplicit)
+                        throw InvalidChoice("the target must implement the choice interface");
+                    if (!HasCliAnnotation(compilation, choiceType))
+                        throw InvalidChoice("the target requires Arguments or Choice annotations");
+                    if (!compilation.IsSymbolAccessibleWithin(choiceType, declaration))
+                        throw InvalidChoice("the target must be accessible from the choice interface");
                     choiceTypes.Add(choiceType);
+
+                    GeneratorException InvalidChoice(string reason) =>
+                        new GeneratorException(GetAttributeLocation(choice), GeneratorException.InvalidChoiceTarget,
+                            choiceType.Name, declaration.Name, reason);
                 }
                 // Cache before following choices and implemented interfaces, which can lead back here.
                 collected.Add(declaration, new CollectedDeclaration(ownDiscriminator, flattened, choiceTypes, isHelpPrefix));

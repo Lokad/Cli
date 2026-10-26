@@ -14,3 +14,15 @@ public partial class Incomplete
 {
     public Incomplete([Argument("Number.", Long = "number")] int number, string text) { }
 }
+
+[Arguments("Unbound constructor.")]
+public partial class Unbound
+{
+    public Unbound(int number) { }
+}
+
+[Arguments("Ref constructor.")]
+public partial class RefConstructor
+{
+    public RefConstructor([Argument("Number.", Long = "number")] ref int number) { }
+}

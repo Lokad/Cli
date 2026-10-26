@@ -19,3 +19,12 @@ public record NonPartialArgs;
 
 [Arguments("File-local.")]
 file partial record FileArgs;
+
+[Arguments("Abstract.")]
+public abstract partial record AbstractArgs;
+
+[Arguments("Static.")]
+public static partial class StaticArgs { }
+
+[Arguments("Interface without choices.")]
+public partial interface IEmptyArgs { }
