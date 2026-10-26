@@ -24,6 +24,7 @@ public class GeneratorTests
     [Fact] public void InvalidRemainders() => Run();
     [Fact] public void InvalidRepeatedFlags() => Run();
     [Fact] public void InvalidTokenizationPolicies() => Run();
+    [Fact] public void PartialDeclarations() => Run();
     [Fact] public void Ranges() => Run();
     [Fact] public void TokenizationOptions() => Run();
 

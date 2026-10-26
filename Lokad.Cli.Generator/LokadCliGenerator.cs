@@ -37,18 +37,15 @@ namespace Lokad.Cli.Generator
         {
         }
 
-        protected override ITypeGenerationStrategy? GetGenerationStrategyForSymbol(
+        protected override ITypeGenerationStrategy GetGenerationStrategyForSymbol(
             Compilation compilation,
             ITypeSymbol typeSymbol,
             CliTypeInfo type)
         {
-            if (!HasCliAnnotation(compilation, typeSymbol))
-                return null;
-
             return new ParserGenerationStrategy(CollectParserInfo(compilation, typeSymbol, type));
         }
 
-        private bool HasCliAnnotation(Compilation compilation, ITypeSymbol typeSymbol) =>
+        protected override bool HasCliAnnotation(Compilation compilation, ITypeSymbol typeSymbol) =>
             typeSymbol.TryGetAttribute(compilation, _argumentsAttribute) != null ||
             typeSymbol.TryGetAttribute(compilation, _choiceAttribute) != null;
 

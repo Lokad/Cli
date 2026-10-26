@@ -32,19 +32,17 @@ namespace Lokad.Cli.Generator
                 GenerateImplementation!);
         }
 
-        protected virtual ITypeGenerationStrategy? GetGenerationStrategyForSymbol(
+        /// <summary>Whether a symbol carries annotations requesting a CLI parser.</summary>
+        protected abstract bool HasCliAnnotation(Compilation compilation, ITypeSymbol typeSymbol);
+
+        /// <summary>Builds a parser strategy for an annotated symbol; declaration failures may throw generator diagnostics.</summary>
+        protected abstract ITypeGenerationStrategy GetGenerationStrategyForSymbol(
             Compilation compilation,
             ITypeSymbol typeSymbol,
-            CliTypeInfo type)
-        {
-            return null;
-        }
+            CliTypeInfo type);
 
         private static bool IsTypeDeclaration(SyntaxNode node, CancellationToken cancel) =>
-            node is ClassDeclarationSyntax ||
-            node is StructDeclarationSyntax ||
-            node is InterfaceDeclarationSyntax ||
-            node is RecordDeclarationSyntax;
+            node is TypeDeclarationSyntax declaration && declaration.AttributeLists.Count > 0;
 
         private GenerationItem? GetSymbolAndStrategy(
             GeneratorSyntaxContext context,
@@ -53,13 +51,25 @@ namespace Lokad.Cli.Generator
             var declaration = (TypeDeclarationSyntax)context.Node;
             if (!(context.SemanticModel.GetDeclaredSymbol(declaration, cancel) is ITypeSymbol typeSymbol))
                 return null;
+            if (!HasCliAnnotation(context.SemanticModel.Compilation, typeSymbol))
+                return null;
+
+            // Symbols merge all partial parts. Only the first attributed part owns generation.
+            foreach (var reference in typeSymbol.DeclaringSyntaxReferences)
+            {
+                if (!(reference.GetSyntax(cancel) is TypeDeclarationSyntax part) || part.AttributeLists.Count == 0)
+                    continue;
+                if (reference.SyntaxTree != declaration.SyntaxTree || reference.Span != declaration.Span)
+                    return null;
+                break;
+            }
 
             var type = GetTypeInfo(typeSymbol);
 
             try
             {
                 var strategy = GetGenerationStrategyForSymbol(context.SemanticModel.Compilation, typeSymbol, type);
-                return strategy == null ? null : new GenerationItem(strategy, GetPrimaryLocation(typeSymbol));
+                return new GenerationItem(strategy, GetPrimaryLocation(typeSymbol));
             }
             catch (Exception ex)
             {
