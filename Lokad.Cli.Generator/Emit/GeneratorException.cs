@@ -36,14 +36,6 @@ namespace Lokad.Cli.Generator.Emit
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
-        public static readonly DiagnosticDescriptor NotImplemented = new DiagnosticDescriptor(
-            id: "LKC0002",
-            title: "Generator not implemented",
-            messageFormat: "Lokad.Cli source generation is not implemented yet for type '{0}'",
-            category: "SourceGenerator",
-            DiagnosticSeverity.Error,
-            isEnabledByDefault: true);
-
         public static readonly DiagnosticDescriptor InvalidRepeatedFlag = new DiagnosticDescriptor(
             id: "LKC0003",
             title: "Invalid repeated flag",

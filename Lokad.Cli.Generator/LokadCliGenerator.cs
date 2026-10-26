@@ -126,7 +126,6 @@ namespace Lokad.Cli.Generator
             return new CliTypeInfo(
                 type.TypeName,
                 type.Kind,
-                type.Location,
                 shortOptions.ToArray(),
                 longOptions.ToArray(),
                 hasShortNumericArguments,

@@ -23,13 +23,7 @@ namespace Lokad.Cli.Generator
                 predicate: IsTypeDeclaration,
                 transform: GetSymbolAndStrategy);
 
-            context.RegisterSourceOutput(
-                allTypes.Where(item => item != null && item.Strategy.WillEmitSource),
-                GenerateSource!);
-
-            context.RegisterImplementationSourceOutput(
-                allTypes.Where(item => item != null && item.Strategy.WillEmitImplementation),
-                GenerateImplementation!);
+            context.RegisterSourceOutput(allTypes, GenerateSource);
         }
 
         /// <summary>Whether a symbol carries annotations requesting a CLI parser.</summary>
@@ -77,46 +71,22 @@ namespace Lokad.Cli.Generator
             }
         }
 
-        private void GenerateSource(SourceProductionContext context, GenerationItem item)
+        private void GenerateSource(SourceProductionContext context, GenerationItem? item)
         {
+            if (item == null)
+                return;
             var strategy = item.Strategy;
 
             try
             {
                 ReportDiagnostics(context, item);
 
-                var source = strategy.EmitSource()
-                             ?? throw new NullReferenceException(
-                                 $"{nameof(ITypeGenerationStrategy.EmitSource)} returned null.");
-
-                context.AddSource(
-                    (strategy.Type.TypeName.Namespace.Length == 0 ? "" : strategy.Type.TypeName.Namespace + ".") +
-                    $"{strategy.Type.TypeName.Name}.{_slug}.g.cs",
-                    source);
-            }
-            catch (Exception ex)
-            {
-                ReportDiagnostics(context, new GenerationItem(
-                    new ErrorReportStrategy(ex, strategy.Type),
-                    item.PrimaryLocation));
-            }
-        }
-
-        private void GenerateImplementation(SourceProductionContext context, GenerationItem item)
-        {
-            var strategy = item.Strategy;
-
-            try
-            {
-                ReportDiagnostics(context, item);
-
-                var source = strategy.EmitImplementation()
-                             ?? throw new NullReferenceException(
-                                 $"{nameof(ITypeGenerationStrategy.EmitImplementation)} returned null.");
-
-                context.AddSource(
-                    $"{strategy.Type.TypeName.Namespace}.{strategy.Type.TypeName.Name}.{_slug}.impl.cs",
-                    source);
+                var source = strategy.EmitSource();
+                if (source != null)
+                    context.AddSource(
+                        (strategy.Type.TypeName.Namespace.Length == 0 ? "" : strategy.Type.TypeName.Namespace + ".") +
+                        $"{strategy.Type.TypeName.Name}.{_slug}.g.cs",
+                        source);
             }
             catch (Exception ex)
             {
@@ -128,25 +98,12 @@ namespace Lokad.Cli.Generator
 
         private static CliTypeInfo GetTypeInfo(ITypeSymbol typeSymbol)
         {
-            var location = GetPrimaryLocation(typeSymbol);
-            SourceLocationInfo? sourceLocation = null;
-
-            if (location != null)
-            {
-                var lineSpan = location.GetLineSpan();
-                sourceLocation = new SourceLocationInfo(
-                    lineSpan.Path,
-                    lineSpan.StartLinePosition.Line + 1,
-                    lineSpan.StartLinePosition.Character + 1);
-            }
-
             return new CliTypeInfo(
                 new TypeName(
                     typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                     typeSymbol.Name,
                     typeSymbol.ContainingNamespace.IsGlobalNamespace ? "" : typeSymbol.ContainingNamespace.ToDisplayString()),
-                GetTypeKind(typeSymbol),
-                sourceLocation);
+                GetTypeKind(typeSymbol));
         }
 
         private static CliTypeKind GetTypeKind(ITypeSymbol typeSymbol)

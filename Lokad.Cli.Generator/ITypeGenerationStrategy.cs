@@ -9,12 +9,7 @@ namespace Lokad.Cli.Generator
 
         IReadOnlyList<GeneratorException> Diagnostics { get; }
 
-        bool WillEmitSource { get; }
-
+        /// <summary>Returns generated source, or null when only diagnostics should be emitted.</summary>
         string? EmitSource();
-
-        bool WillEmitImplementation { get; }
-
-        string? EmitImplementation();
     }
 }

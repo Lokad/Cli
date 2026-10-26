@@ -23,12 +23,6 @@ namespace Lokad.Cli.Generator.Analysis
 
         public IReadOnlyList<GeneratorException> Diagnostics { get; }
 
-        public bool WillEmitSource => true;
-
-        public string EmitSource() => "";
-
-        public bool WillEmitImplementation => false;
-
-        public string? EmitImplementation() => null;
+        public string? EmitSource() => null;
     }
 }

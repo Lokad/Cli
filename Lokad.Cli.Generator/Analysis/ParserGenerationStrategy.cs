@@ -12,19 +12,8 @@ namespace Lokad.Cli.Generator.Analysis
 
         public CliTypeInfo Type { get; }
 
-        public IReadOnlyList<GeneratorException> Diagnostics => EmptyDiagnostics.Value;
+        public IReadOnlyList<GeneratorException> Diagnostics => System.Array.Empty<GeneratorException>();
 
-        public bool WillEmitSource => true;
-
-        public string? EmitSource() => EmitParserType.EmitFor(Type);
-
-        public bool WillEmitImplementation => false;
-
-        public string? EmitImplementation() => null;
-
-        private static class EmptyDiagnostics
-        {
-            public static readonly IReadOnlyList<GeneratorException> Value = new GeneratorException[0];
-        }
+        public string EmitSource() => EmitParserType.EmitFor(Type);
     }
 }
