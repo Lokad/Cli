@@ -152,6 +152,14 @@ $@"#nullable enable
                     return "global::System.Collections.Generic.IReadOnlyDictionary<" + keyType + ", global::Lokad.Cli.OptionValueMode> " + name +
                         " = new global::System.Collections.Generic.Dictionary<" + keyType + ", global::Lokad.Cli.OptionValueMode> { " + string.Join(", ", entries) + " }";
                 }
+
+                static string FormatCharArray(char[] values) => values.Length == 0
+                    ? "global::System.Array.Empty<char>()"
+                    : "new char[] { " + string.Join(", ", Array.ConvertAll(values, FormatCharLiteral)) + " }";
+
+                static string FormatStringArray(string[] values) => values.Length == 0
+                    ? "global::System.Array.Empty<string>()"
+                    : "new string[] { " + string.Join(", ", Array.ConvertAll(values, FormatStringLiteral)) + " }";
             }
 
             static string GetLexicalPolicies(CliTypeInfo parserType) => parserType.Tokenization.RequiresSchema
@@ -160,39 +168,18 @@ $@"#nullable enable
                   + (parserType.CommandBoundary == null ? string.Empty : "," + Environment.NewLine + "            " +
                       FormatBoolean(parserType.Tokenization.StopAtFirstOperand) + ", __CliOptionNames.Boundary")
                 : string.Empty;
-        }
 
-        private static string GetTypeDeclaration(CliTypeInfo type)
-        {
-            switch (type.Kind)
+            static string GetTypeDeclaration(CliTypeInfo parserType)
             {
-                case CliTypeKind.Class:
-                    return "class";
-                case CliTypeKind.Struct:
-                    return "struct";
-                case CliTypeKind.Interface:
-                    return "interface";
-                case CliTypeKind.RecordStruct:
-                    return "record struct";
-                default:
-                    return "record";
+                switch (parserType.Kind)
+                {
+                    case CliTypeKind.Class: return "class";
+                    case CliTypeKind.Struct: return "struct";
+                    case CliTypeKind.Interface: return "interface";
+                    case CliTypeKind.RecordStruct: return "record struct";
+                    default: return "record";
+                }
             }
-        }
-
-        private static string FormatCharArray(char[] values)
-        {
-            if (values.Length == 0)
-                return "global::System.Array.Empty<char>()";
-
-            return "new char[] { " + string.Join(", ", Array.ConvertAll(values, FormatCharLiteral)) + " }";
-        }
-
-        private static string FormatStringArray(string[] values)
-        {
-            if (values.Length == 0)
-                return "global::System.Array.Empty<string>()";
-
-            return "new string[] { " + string.Join(", ", Array.ConvertAll(values, FormatStringLiteral)) + " }";
         }
 
         private static string FormatBoolean(bool value) => value ? "true" : "false";
@@ -702,18 +689,16 @@ $@"#nullable enable
             }
         }
 
-        private static string GetValueType(CliArgumentInfo argument)
+        private static string GetBoundValueType(CliArgumentInfo argument)
         {
             var type = argument.TypeName.FullName;
             if (type == "string" || type == "global::System.String")
                 type = "string";
 
-            return argument.IsNullable ? type + "?" : type;
+            if (argument.IsNullable)
+                type += "?";
+            return argument.IsOptionalValue ? "global::Lokad.Cli.OptionalValue<" + type + ">" : type;
         }
-
-        private static string GetBoundValueType(CliArgumentInfo argument) => argument.IsOptionalValue
-            ? "global::Lokad.Cli.OptionalValue<" + GetValueType(argument) + ">"
-            : GetValueType(argument);
 
         private static CliArgumentInfo[] GetPositionalArguments(CliTypeInfo type) =>
             Array.FindAll(type.Arguments, argument => !argument.IsOption);
@@ -745,37 +730,37 @@ $@"#nullable enable
 
             var helpers = new System.Text.StringBuilder();
 
-            if (UsesType(type, "int", "global::System.Int32"))
+            if (UsesType("int", "global::System.Int32"))
                 helpers.Append(EmitValueParser("int", "ParseInt32",
                     "global::System.Int32.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out parsed)",
                     string.Empty, string.Empty));
 
-            if (UsesType(type, "uint", "global::System.UInt32"))
+            if (UsesType("uint", "global::System.UInt32"))
                 helpers.Append(EmitValueParser("uint", "ParseUInt32",
                     "global::System.UInt32.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out parsed)",
                     string.Empty, string.Empty));
 
-            if (UsesType(type, "long", "global::System.Int64"))
+            if (UsesType("long", "global::System.Int64"))
                 helpers.Append(EmitValueParser("long", "ParseInt64",
                     "global::System.Int64.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out parsed)",
                     string.Empty, string.Empty));
 
-            if (UsesType(type, "ulong", "global::System.UInt64"))
+            if (UsesType("ulong", "global::System.UInt64"))
                 helpers.Append(EmitValueParser("ulong", "ParseUInt64",
                     "global::System.UInt64.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out parsed)",
                     string.Empty, string.Empty));
 
-            if (UsesType(type, "double", "global::System.Double"))
+            if (UsesType("double", "global::System.Double"))
                 helpers.Append(EmitValueParser("double", "ParseDouble",
                     "global::System.Double.TryParse(value, global::System.Globalization.NumberStyles.Float | global::System.Globalization.NumberStyles.AllowThousands, global::System.Globalization.CultureInfo.InvariantCulture, out parsed)",
                     string.Empty, string.Empty));
 
-            if (UsesType(type, "global::System.DateTime"))
+            if (UsesType("global::System.DateTime"))
                 helpers.Append(EmitValueParser("global::System.DateTime", "ParseDateTime",
                     "global::System.DateTime.TryParse(value, global::System.Globalization.CultureInfo.InvariantCulture, global::System.Globalization.DateTimeStyles.None, out parsed)",
                     string.Empty, string.Empty));
 
-            if (UsesEnum(type))
+            if (Array.Exists(type.Arguments, argument => argument.IsEnum))
                 helpers.Append(EmitValueParser("TEnum", "ParseEnum<TEnum>",
                     "global::System.Enum.TryParse<TEnum>(value, ignoreCase: false, out parsed)",
                     "where TEnum : struct, global::System.Enum", string.Empty));
@@ -794,6 +779,15 @@ $@"#nullable enable
 
             lines.Append(helpers);
             return lines.ToString();
+
+            bool UsesType(params string[] typeNames)
+            {
+                foreach (var argument in type.Arguments)
+                    foreach (var typeName in typeNames)
+                        if (argument.TypeName.FullName == typeName)
+                            return true;
+                return false;
+            }
 
             static string EmitValueParser(string returnType, string method, string tryExpression, string constraints, string outAnnotation)
             {
@@ -964,25 +958,6 @@ $@"#nullable enable
             return name == null || name.Length == 0 ? argument.Name : name;
         }
 
-        private static bool UsesType(CliTypeInfo type, params string[] typeNames)
-        {
-            foreach (var argument in type.Arguments)
-                foreach (var typeName in typeNames)
-                    if (argument.TypeName.FullName == typeName)
-                        return true;
-
-            return false;
-        }
-
-        private static bool UsesEnum(CliTypeInfo type)
-        {
-            foreach (var argument in type.Arguments)
-                if (argument.IsEnum)
-                    return true;
-
-            return false;
-        }
-
         private static string EmitDiscrimination(CliTypeInfo type)
         {
             if (type.Choices.Length == 0)
@@ -1012,14 +987,14 @@ $@"#nullable enable
                 lines.AppendLine("        }");
             }
 
-            var defaultChoice = GetDefaultChoice(type);
+            var defaultChoice = Array.FindIndex(type.Choices, choice => choice.Discriminator == null);
             if (defaultChoice >= 0)
             {
                 lines.AppendLine();
                 lines.AppendLine("        if (choice < 0)");
                 lines.Append("            choice = ").Append(defaultChoice).AppendLine(";");
             }
-            else if (AllChoicesHaveDiscriminators(type))
+            else
             {
                 lines.AppendLine();
                 lines.AppendLine("        if (choice < 0)");
@@ -1039,67 +1014,50 @@ $@"#nullable enable
 
             lines.AppendLine("        }");
             return lines.ToString().TrimEnd();
-        }
 
-        private static string FormatDiscriminatorTest(CliDiscriminatorInfo discriminator)
-        {
-            var tests = new System.Collections.Generic.List<string>();
-
-            if (discriminator.ShortOption != '\0')
-                tests.Add("tokenized.HasShortOption(" + FormatCharLiteral(discriminator.ShortOption) + ")");
-
-            if (discriminator.LongOption != null)
-                tests.Add("tokenized.HasLongOption(" + FormatStringLiteral(discriminator.LongOption) + ")");
-
-            if (discriminator.Prefix != null)
-                tests.Add("tokenized.HasPositionalPrefix(" + FormatStringLiteral(discriminator.Prefix) + ")");
-
-            if (tests.Count == 0)
-                throw new InvalidOperationException("Discriminator has no value.");
-
-            return string.Join(" || ", tests);
-        }
-
-        private static bool AllChoicesHaveDiscriminators(CliTypeInfo type)
-        {
-            foreach (var choice in type.Choices)
-                if (choice.Discriminator == null)
-                    return false;
-
-            return true;
-        }
-
-        private static int GetDefaultChoice(CliTypeInfo type)
-        {
-            for (var i = 0; i < type.Choices.Length; i++)
-                if (type.Choices[i].Discriminator == null)
-                    return i;
-
-            return -1;
-        }
-
-        private static string FormatExpectedDiscriminators(CliTypeInfo type)
-        {
-            var discriminators = Array.FindAll(
-                Array.ConvertAll(type.Choices, choice => choice.Discriminator),
-                discriminator => discriminator != null);
-
-            if (discriminators.Length == 1)
-                return "`" + discriminators[0]!.Display + "`";
-
-            if (discriminators.Length == 2)
-                return "`" + discriminators[0]!.Display + "` or `" + discriminators[1]!.Display + "`";
-
-            var text = new System.Text.StringBuilder();
-            for (var i = 0; i < discriminators.Length; i++)
+            static string FormatDiscriminatorTest(CliDiscriminatorInfo discriminator)
             {
-                if (i > 0)
-                    text.Append(i == discriminators.Length - 1 ? " or " : ", ");
+                var tests = new System.Collections.Generic.List<string>();
 
-                text.Append('`').Append(discriminators[i]!.Display).Append('`');
+                if (discriminator.ShortOption != '\0')
+                    tests.Add("tokenized.HasShortOption(" + FormatCharLiteral(discriminator.ShortOption) + ")");
+
+                if (discriminator.LongOption != null)
+                    tests.Add("tokenized.HasLongOption(" + FormatStringLiteral(discriminator.LongOption) + ")");
+
+                if (discriminator.Prefix != null)
+                    tests.Add("tokenized.HasPositionalPrefix(" + FormatStringLiteral(discriminator.Prefix) + ")");
+
+                if (tests.Count == 0)
+                    throw new InvalidOperationException("Discriminator has no value.");
+
+                return string.Join(" || ", tests);
             }
 
-            return text.ToString();
+            static string FormatExpectedDiscriminators(CliTypeInfo type)
+            {
+                var discriminators = new System.Collections.Generic.List<CliDiscriminatorInfo>();
+                foreach (var choice in type.Choices)
+                    if (choice.Discriminator is CliDiscriminatorInfo discriminator)
+                        discriminators.Add(discriminator);
+
+                if (discriminators.Count == 1)
+                    return "`" + discriminators[0].Display + "`";
+
+                if (discriminators.Count == 2)
+                    return "`" + discriminators[0].Display + "` or `" + discriminators[1].Display + "`";
+
+                var text = new System.Text.StringBuilder();
+                for (var i = 0; i < discriminators.Count; i++)
+                {
+                    if (i > 0)
+                        text.Append(i == discriminators.Count - 1 ? " or " : ", ");
+
+                    text.Append('`').Append(discriminators[i].Display).Append('`');
+                }
+
+                return text.ToString();
+            }
         }
 
         private static string FormatCharLiteral(char value)
@@ -1129,6 +1087,5 @@ $@"#nullable enable
         private static string FormatIdentifier(string name) =>
             SyntaxFacts.GetKeywordKind(name) != SyntaxKind.None || SyntaxFacts.GetContextualKeywordKind(name) != SyntaxKind.None
                 ? "@" + name : name;
-
     }
 }
