@@ -104,6 +104,9 @@ namespace Lokad.Cli.Generator
                         throw new GeneratorException(GeneratorException.InvalidRepeatedFlag, argument.Name);
                 }
 
+                if (argument.IsBoolean && (!argument.Options.HasNamedOption || argument.ShortNumeric))
+                    throw new GeneratorException(argument.Location, GeneratorException.InvalidBooleanFlag, argument.Path);
+
                 foreach (var label in argument.Options.Labels)
                 {
                     if (owners.TryGetValue(label, out var owner))

@@ -203,5 +203,10 @@ namespace Lokad.Cli.Generator.Emit
             "LKC0028", "Invalid argument constructor",
             "CLI argument type '{0}' has an invalid constructor: {1}",
             "SourceGenerator", DiagnosticSeverity.Error, true);
+
+        public static readonly DiagnosticDescriptor InvalidBooleanFlag = new DiagnosticDescriptor(
+            "LKC0029", "Invalid boolean flag",
+            "Boolean argument '{0}' requires a named option without ShortNumeric",
+            "SourceGenerator", DiagnosticSeverity.Error, true);
     }
 }

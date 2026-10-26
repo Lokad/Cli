@@ -1,0 +1,4 @@
+Error LKC0029: Boolean argument 'Value' requires a named option without ShortNumeric (InvalidBooleanFlags/Input.cs:6:49)
+Error LKC0029: Boolean argument 'Value' requires a named option without ShortNumeric (InvalidBooleanFlags/Input.cs:9:57)
+Error LKC0029: Boolean argument 'Value' requires a named option without ShortNumeric (InvalidBooleanFlags/Input.cs:12:46)
+Error LKC0029: Boolean argument 'Value' requires a named option without ShortNumeric (InvalidBooleanFlags/Input.cs:15:51)
