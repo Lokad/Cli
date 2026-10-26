@@ -111,12 +111,7 @@ namespace Lokad.Cli.Generator
                 if (argument.ShortNumeric)
                     AddOwner("-<number>", argument);
                 foreach (var label in argument.Options.Labels)
-                {
                     AddOwner(label, argument);
-
-                    if (argument.Options.HasAliases && discriminatorOptions.Contains(label))
-                        throw new GeneratorException(GeneratorException.DiscriminatorAliases, argument.Name, label);
-                }
             }
 
             if (hasShortNumericArguments)
@@ -193,6 +188,10 @@ namespace Lokad.Cli.Generator
                 var stopLong = new List<string>();
                 foreach (var argument in info.Arguments)
                 {
+                    if (argument.Options.HasAliases)
+                        foreach (var label in argument.Options.Labels)
+                            if (discriminatorOptions.Contains(label))
+                                throw new GeneratorException(argument.Location, GeneratorException.DiscriminatorAliases, argument.Name, label);
                     if (!argument.IsOption)
                         operands.Add(argument);
                     if (argument.StopOptionParsing)
@@ -626,7 +625,7 @@ namespace Lokad.Cli.Generator
                         new GeneratorException(GetAttributeLocation(choice), GeneratorException.InvalidChoiceTarget,
                             choiceType.Name, declaration.Name, reason);
                 }
-                // Cache before following choices and implemented interfaces, which can lead back here.
+                // Cache before following choices so command-schema validation can diagnose cycles.
                 collected.Add(declaration, new CollectedDeclaration(ownDiscriminator, flattened, choiceTypes, isHelpPrefix));
                 foreach (var choiceType in choiceTypes)
                 {
@@ -634,10 +633,6 @@ namespace Lokad.Cli.Generator
                     if (isRoot)
                         choices.Add(new CliChoiceInfo(TypeName.FromSymbol(choiceType), choiceDiscriminator));
                 }
-
-                foreach (var implementedInterface in declaration.AllInterfaces)
-                    if (HasCliAnnotation(compilation, implementedInterface))
-                        Collect(implementedInterface);
 
                 return ownDiscriminator;
 

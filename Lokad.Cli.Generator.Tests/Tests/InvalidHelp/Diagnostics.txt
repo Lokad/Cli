@@ -1,6 +1,4 @@
 Error LKC0011: Option '--help' has conflicting value modes across reachable choices; value-aware tokenization requires an unambiguous mode (InvalidHelp/Input.cs:25:26)
-Error LKC0011: Option '--help' has conflicting value modes across reachable choices; value-aware tokenization requires an unambiguous mode (InvalidHelp/Input.cs:28:23)
-Error LKC0011: Option '--help' has conflicting value modes across reachable choices; value-aware tokenization requires an unambiguous mode (InvalidHelp/Input.cs:31:23)
 Error LKC0021: Argument 'Help' uses IsHelp, which requires a named bool or bool? flag without ShortNumeric (InvalidHelp/Input.cs:6:23)
 Error LKC0021: Argument 'Help' uses IsHelp, which requires a named bool or bool? flag without ShortNumeric (InvalidHelp/Input.cs:9:23)
 Error LKC0021: Argument 'Help' uses IsHelp, which requires a named bool or bool? flag without ShortNumeric (InvalidHelp/Input.cs:12:23)

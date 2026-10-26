@@ -7,9 +7,6 @@ partial record SecondHelpPrefix : global::Lokad.Cli.ICliParsed<global::Test.Seco
     {
         public static readonly global::System.Collections.Generic.IReadOnlyDictionary<char, global::Lokad.Cli.OptionValueMode> Short = new global::System.Collections.Generic.Dictionary<char, global::Lokad.Cli.OptionValueMode> {  };
         public static readonly global::System.Collections.Generic.IReadOnlyDictionary<string, global::Lokad.Cli.OptionValueMode> Long = new global::System.Collections.Generic.Dictionary<string, global::Lokad.Cli.OptionValueMode> {  };
-        public static readonly global::System.Collections.Generic.IReadOnlyDictionary<char, global::Lokad.Cli.OptionValueMode> HelpShort = new global::System.Collections.Generic.Dictionary<char, global::Lokad.Cli.OptionValueMode> {  };
-        public static readonly global::System.Collections.Generic.IReadOnlyDictionary<string, global::Lokad.Cli.OptionValueMode> HelpLong = new global::System.Collections.Generic.Dictionary<string, global::Lokad.Cli.OptionValueMode> {  };
-        public static readonly global::Lokad.Cli.CommandBoundary Boundary = new global::Lokad.Cli.CommandBoundary(@"help", null, '\0', new global::Lokad.Cli.CommandBoundary[] {  }, null, global::System.Array.Empty<char>(), global::System.Array.Empty<string>(), false);
     }
 
     public static global::Test.SecondHelpPrefix Parse(global::System.Collections.Generic.IReadOnlyList<string> arguments)
@@ -26,7 +23,7 @@ partial record SecondHelpPrefix : global::Lokad.Cli.ICliParsed<global::Test.Seco
     {
         if (arguments == null) throw new global::System.ArgumentNullException(nameof(arguments));
 
-        return arguments.IsHelpRequested(OptionNames__Cli.HelpShort, OptionNames__Cli.HelpLong, OptionNames__Cli.Boundary);
+        return false;
     }
 
     public static global::Test.SecondHelpPrefix ParseTokenized(global::Lokad.Cli.TokenizedArguments arguments)
@@ -49,8 +46,7 @@ partial record SecondHelpPrefix : global::Lokad.Cli.ICliParsed<global::Test.Seco
             OptionNames__Cli.Long,
             false,
             global::Lokad.Cli.ShortOptionSyntax.GroupedValues,
-            true,
-            false, OptionNames__Cli.Boundary);
+            true);
     }
 
     private static global::Test.SecondHelpPrefix ParseTokenizedCore__Cli(global::Lokad.Cli.TokenizedArguments tokenized)

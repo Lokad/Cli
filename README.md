@@ -79,6 +79,7 @@ var parsed = Lokad.Cli.Parser.ParseTokenized<MyArgs>(tokens);
 ```
 
 Each call returns a fresh mutable cursor. Presence checks do not advance it; `Shift` and `ParseTokenized` consume it. Unknown option names still produce `ParseException`, but missing arguments, invalid converted values, duplicate flags, and choice conflicts are checked during binding or discrimination.
+Only the entrypoint and its choices supply option names and help markers; implemented interfaces supply lexical policies.
 
 Callers can rewrite token records and pass a new `TokenizedArguments` to `ParseTokenized<T>`. Preserve option-value boundaries: the tokens do not expose option arity. Reconstructing raw argument strings and tokenizing them again can change their interpretation, so normalize tokens directly. Reusable option names remain private to the generated type.
 

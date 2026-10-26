@@ -5,7 +5,7 @@ partial record AddCommand : global::Lokad.Cli.ICliParsed<global::Test.AddCommand
     // A separate holder allows parsing from the argument type's static initializers.
     private static class OptionNames__Cli
     {
-        public static readonly global::System.Collections.Generic.IReadOnlyDictionary<char, global::Lokad.Cli.OptionValueMode> Short = new global::System.Collections.Generic.Dictionary<char, global::Lokad.Cli.OptionValueMode> { ['i'] = global::Lokad.Cli.OptionValueMode.None, ['r'] = global::Lokad.Cli.OptionValueMode.None };
+        public static readonly global::System.Collections.Generic.IReadOnlyDictionary<char, global::Lokad.Cli.OptionValueMode> Short = new global::System.Collections.Generic.Dictionary<char, global::Lokad.Cli.OptionValueMode> {  };
         public static readonly global::System.Collections.Generic.IReadOnlyDictionary<string, global::Lokad.Cli.OptionValueMode> Long = new global::System.Collections.Generic.Dictionary<string, global::Lokad.Cli.OptionValueMode> { [@"name"] = global::Lokad.Cli.OptionValueMode.None, [@"add"] = global::Lokad.Cli.OptionValueMode.None };
     }
 

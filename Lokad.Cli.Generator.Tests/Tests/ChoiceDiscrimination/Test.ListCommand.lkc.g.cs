@@ -5,8 +5,8 @@ partial record ListCommand : global::Lokad.Cli.ICliParsed<global::Test.ListComma
     // A separate holder allows parsing from the argument type's static initializers.
     private static class OptionNames__Cli
     {
-        public static readonly global::System.Collections.Generic.IReadOnlyDictionary<char, global::Lokad.Cli.OptionValueMode> Short = new global::System.Collections.Generic.Dictionary<char, global::Lokad.Cli.OptionValueMode> { ['i'] = global::Lokad.Cli.OptionValueMode.None, ['r'] = global::Lokad.Cli.OptionValueMode.None };
-        public static readonly global::System.Collections.Generic.IReadOnlyDictionary<string, global::Lokad.Cli.OptionValueMode> Long = new global::System.Collections.Generic.Dictionary<string, global::Lokad.Cli.OptionValueMode> { [@"name"] = global::Lokad.Cli.OptionValueMode.None, [@"add"] = global::Lokad.Cli.OptionValueMode.None };
+        public static readonly global::System.Collections.Generic.IReadOnlyDictionary<char, global::Lokad.Cli.OptionValueMode> Short = new global::System.Collections.Generic.Dictionary<char, global::Lokad.Cli.OptionValueMode> {  };
+        public static readonly global::System.Collections.Generic.IReadOnlyDictionary<string, global::Lokad.Cli.OptionValueMode> Long = new global::System.Collections.Generic.Dictionary<string, global::Lokad.Cli.OptionValueMode> {  };
     }
 
     public static global::Test.ListCommand Parse(global::System.Collections.Generic.IReadOnlyList<string> arguments)

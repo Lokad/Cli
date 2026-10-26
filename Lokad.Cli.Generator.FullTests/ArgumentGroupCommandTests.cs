@@ -109,8 +109,9 @@ public sealed class ArgumentGroupCommandTests
     [Fact]
     public void InheritsInterfacePoliciesWithoutImportingTheirChoiceOptions()
     {
-        var other = Parser.Tokenize<SharedGroupOptions>(new[] { "--other-only=value" });
-        Assert.Equal(new LongArgWithValue("other-only", "value"), other.Peek());
+        Assert.Throws<ParseException>(() => Parser.Tokenize<SharedGroupOptions>(new[] { "--other-only=value" }));
+        Assert.Equal("value", Assert.IsType<OtherGroupPolicyArgs>(Parser.Parse<ISharedGroupPolicy>(
+            new[] { "other", "--other-only=value" })).Value);
         Assert.Throws<ParseException>(() => Parser.Tokenize<GroupInspectArgs>(new[] { "--other-only=value" }));
         Assert.Throws<ParseException>(() => Parser.Tokenize<SharedGroupOptions>(new[] { "-timeout=30" }));
         Assert.Throws<ParseException>(() => Parser.Tokenize<GroupInspectArgs>(new[] { "-timeout=30" }));
