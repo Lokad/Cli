@@ -599,51 +599,48 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
         {
             var lines = new System.Text.StringBuilder();
             lines.AppendLine();
-            lines.Append("        return new ").Append(type.TypeName.FullName).Append('(');
-
-            var first = true;
-            for (var i = 0; i < type.Arguments.Length; i++)
-            {
-                if (!type.Arguments[i].IsConstructorParameter)
-                    continue;
-
-                if (!first)
-                    lines.Append(", ");
-
-                lines.Append(GetResultValueExpression(i, type.Arguments[i]));
-                first = false;
-            }
-
-            lines.Append(')');
-            var hasInitializer = false;
-            for (var i = 0; i < type.Arguments.Length; i++)
-            {
-                var argument = type.Arguments[i];
-                if (argument.IsConstructorParameter || !argument.IsSettableMember)
-                    continue;
-
-                if (!hasInitializer)
-                {
-                    lines.AppendLine();
-                    lines.AppendLine("        {");
-                    hasInitializer = true;
-                }
-
-                lines.Append("            ").Append(argument.Name).Append(" = ").Append(GetResultValueExpression(i, argument)).AppendLine(",");
-            }
-
-            if (hasInitializer)
-            {
-                lines.Append("        }");
-            }
-
-            lines.AppendLine(";");
+            lines.Append("        return ").Append(Construct(type.TypeName, type.Members, "        ")).AppendLine(";");
             return lines.ToString();
 
-            static string GetResultValueExpression(int index, CliArgumentInfo argument)
+            string Construct(TypeName typeName, System.Collections.Generic.IReadOnlyList<CliArgumentInfo> members, string indent)
             {
+                var expression = new System.Text.StringBuilder("new " + typeName.FullName + "(");
+                var first = true;
+                foreach (var member in members)
+                {
+                    if (!member.IsConstructorParameter)
+                        continue;
+                    if (!first)
+                        expression.Append(", ");
+                    expression.Append(GetResultValueExpression(member, indent));
+                    first = false;
+                }
+                expression.Append(')');
+                var hasInitializer = false;
+                foreach (var member in members)
+                {
+                    if (member.IsConstructorParameter || !member.IsSettableMember)
+                        continue;
+                    if (!hasInitializer)
+                    {
+                        expression.AppendLine().Append(indent).AppendLine("{");
+                        hasInitializer = true;
+                    }
+                    expression.Append(indent).Append("    ").Append(member.Name).Append(" = ")
+                        .Append(GetResultValueExpression(member, indent + "    ")).AppendLine(",");
+                }
+                if (hasInitializer)
+                    expression.Append(indent).Append('}');
+                return expression.ToString();
+            }
+
+            string GetResultValueExpression(CliArgumentInfo argument, string indent)
+            {
+                if (argument.GroupMembers is System.Collections.Generic.IReadOnlyList<CliArgumentInfo> members)
+                    return Construct(argument.TypeName, members, indent);
+                var index = Array.IndexOf(type.Arguments, argument);
                 var value = GetValueName(index);
-                var type = argument.TypeName.FullName;
+                var valueType = argument.TypeName.FullName;
                 if (argument.IsCollection)
                 {
                     var array = value + ".ToArray()";
@@ -655,7 +652,7 @@ partial {GetTypeDeclaration(type)} {type.TypeName.Name} : global::Lokad.Cli.ICli
                 if (argument.IsOptionalValue || argument.IsReferenceType || !argument.IsNullable)
                     return value;
 
-                return GetSeenName(index) + " ? " + value + " : default(global::System.Nullable<" + type + ">)";
+                return GetSeenName(index) + " ? " + value + " : default(global::System.Nullable<" + valueType + ">)";
             }
         }
 

@@ -11,8 +11,10 @@ public class GeneratorTests
 
     #region AUTO-GENERATED CODE
 
+    [Fact] public void ArgumentGroups() => Run();
     [Fact] public void ChoiceDiscrimination() => Run();
     [Fact] public void Empty() => Run();
+    [Fact] public void InvalidArgumentGroups() => Run();
     [Fact] public void InvalidCollectionBoundaries() => Run();
     [Fact] public void InvalidHelp() => Run();
     [Fact] public void InvalidOptionAliases() => Run();

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Lokad.Cli.Generator.Emit
 {
     public sealed class CliTypeInfo
@@ -11,6 +13,7 @@ namespace Lokad.Cli.Generator.Emit
                 new string[0],
                 false,
                 new CliChoiceInfo[0],
+                new CliArgumentInfo[0],
                 new CliArgumentInfo[0],
                 null,
                 null,
@@ -27,6 +30,7 @@ namespace Lokad.Cli.Generator.Emit
             string[] longOptions,
             bool hasShortNumericArguments,
             CliChoiceInfo[] choices,
+            IReadOnlyList<CliArgumentInfo> members,
             CliArgumentInfo[] arguments,
             CliDiscriminatorInfo? discriminator,
             string? documentation,
@@ -40,6 +44,7 @@ namespace Lokad.Cli.Generator.Emit
             LongOptions = longOptions;
             HasShortNumericArguments = hasShortNumericArguments;
             Choices = choices;
+            Members = members;
             Arguments = arguments;
             Discriminator = discriminator;
             Documentation = documentation;
@@ -62,6 +67,8 @@ namespace Lokad.Cli.Generator.Emit
         public CliChoiceInfo[] Choices { get; }
 
         public CliArgumentInfo[] Arguments { get; }
+
+        public IReadOnlyList<CliArgumentInfo> Members { get; }
 
         public CliDiscriminatorInfo? Discriminator { get; }
 

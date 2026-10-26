@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using Microsoft.CodeAnalysis;
+
 namespace Lokad.Cli.Generator.Emit
 {
     public sealed class CliArgumentInfo
@@ -22,7 +25,10 @@ namespace Lokad.Cli.Generator.Emit
             bool isOptionalValue,
             bool isRemainder,
             bool stopOptionParsing,
-            bool isHelp)
+            bool isHelp,
+            IReadOnlyList<CliArgumentInfo>? groupMembers,
+            string path,
+            Location? location)
         {
             Name = name;
             TypeName = typeName;
@@ -44,6 +50,9 @@ namespace Lokad.Cli.Generator.Emit
             IsRemainder = isRemainder;
             StopOptionParsing = stopOptionParsing;
             IsHelp = isHelp;
+            GroupMembers = groupMembers;
+            Path = path;
+            Location = location;
         }
 
         public string Name { get; }
@@ -90,6 +99,13 @@ namespace Lokad.Cli.Generator.Emit
         public bool StopOptionParsing { get; }
 
         public bool IsHelp { get; }
+
+        /// <summary>Members used to construct a nested group, or null for a scalar or collection argument.</summary>
+        public IReadOnlyList<CliArgumentInfo>? GroupMembers { get; }
+
+        public string Path { get; }
+
+        public Location? Location { get; }
 
         public bool IsOption => Options.Labels.Count > 0 || ShortNumeric;
 

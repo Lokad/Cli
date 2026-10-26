@@ -5,7 +5,6 @@ using Lokad.Cli.Generator.Analysis;
 using Lokad.Cli.Generator.Emit;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Text;
 
 namespace Lokad.Cli.Generator
 {
@@ -165,23 +164,9 @@ namespace Lokad.Cli.Generator
             {
                 context.ReportDiagnostic(Diagnostic.Create(
                     diagnostic.Descriptor,
-                    diagnostic.Location == null
-                        ? item.PrimaryLocation
-                        : ToRoslynLocation(diagnostic.Location),
+                    diagnostic.Location ?? item.PrimaryLocation,
                     diagnostic.MessageArgs));
             }
-        }
-
-        private static Location? ToRoslynLocation(SourceLocationInfo? location)
-        {
-            if (location == null)
-                return null;
-
-            var linePosition = new LinePosition(location.Line - 1, location.Column - 1);
-            return Location.Create(
-                location.Path,
-                new TextSpan(0, 0),
-                new LinePositionSpan(linePosition, linePosition));
         }
 
         private sealed class GenerationItem

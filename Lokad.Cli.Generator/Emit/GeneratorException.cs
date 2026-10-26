@@ -12,7 +12,7 @@ namespace Lokad.Cli.Generator.Emit
             MessageArgs = messageArgs;
         }
 
-        public GeneratorException(SourceLocationInfo? location, DiagnosticDescriptor descriptor, params object?[] messageArgs)
+        public GeneratorException(Location? location, DiagnosticDescriptor descriptor, params object?[] messageArgs)
             : base(descriptor.Title.ToString())
         {
             Location = location;
@@ -24,7 +24,7 @@ namespace Lokad.Cli.Generator.Emit
 
         public object?[] MessageArgs { get; }
 
-        public SourceLocationInfo? Location { get; }
+        public Location? Location { get; }
 
 #pragma warning disable RS2008
 
@@ -185,6 +185,11 @@ namespace Lokad.Cli.Generator.Emit
         public static readonly DiagnosticDescriptor AmbiguousHelpSchema = new DiagnosticDescriptor(
             "LKC0023", "Ambiguous help command schema",
             "Help prefix inspection requires unambiguous command selectors: {0}",
+            "SourceGenerator", DiagnosticSeverity.Error, true);
+
+        public static readonly DiagnosticDescriptor InvalidArgumentGroup = new DiagnosticDescriptor(
+            "LKC0024", "Invalid argument group",
+            "Argument group '{0}' is invalid: {1}",
             "SourceGenerator", DiagnosticSeverity.Error, true);
     }
 }

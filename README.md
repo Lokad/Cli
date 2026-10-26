@@ -244,50 +244,28 @@ For a supported element type `T`, `T[]`, `IReadOnlyList<T>`, and `ReadOnlyMemory
 A nonfinal positional collection captures one value by default. Set `ConsumeUntilBoundary = true` on its `[Argument]` to collect until conversion fails or an option follows its first element. The next positional member receives the unconverted value. For `int[] numbers`, `string label`, and `int count`, input `10 11 label 12` then binds `[10, 11]`, `"label"`, and `12`. No trailing values are reserved: a string collection needs an option boundary to pass values to later members. This mode requires a nonfinal positional collection followed by a scalar; invalid declarations produce `LKC0008` or `LKC0009`.
 
 ### Reusable option groups
-  
-There is a special behavior for types that are annotated with `[Arguments]`:
-  - the type must be used as a positional property
-  - the type must be used as-is (no `?` or collection)
-  - the type must not contain a positional discriminator
 
-A C# compiler error is reported by the source generator if a type annotated with `[Arguments]` is used in a way that does not satisfy these two constraints. 
-
-In preparation for the binding phase, the members of the inner type are inserted into the outer type as if they had been present at that position. This means that: 
+Embed an `[Arguments]` type as an unnamed `[Argument]` to share its members:
 
 ```csharp
-[Arguments("Inner arguments.")]
-public partial record Inner
-{
-  [Argument("A value.")] public int A { get; init }
-  [Argument("B flag.", Short="b")] public bool B { get; init; }
-}
+[Arguments("Common options.")]
+public partial record CommonOptions(
+    [property: Argument("Timeout.", Long = "timeout")] int Timeout,
+    [property: Argument("Verbose.", Short = 'v')] bool Verbose);
 
-[Arguments("Outer arguments.")]
-public partial record Outer
-{
-  [Argument("C value.")] public string C { get; init; }
-  [Argument("Inner group.")] public Inner I { get; init; }
-  [Argument("D value.", Short="d")] public string? D { get; init; }
-}
+[Arguments("Copy.")]
+public partial record CopyArgs(
+    [property: Argument("Input.")] string Input,
+    [property: Argument("Common options.")] CommonOptions Common);
 ```
 
-Will follow exactly the same parsing rules as: 
+`app input.txt --timeout 30 -v` fills `Input` and constructs `Common`.
+Nested groups are supported; their leaves bind and appear in documentation at
+that position, using the same parsing, help and tokenization rules as flat members.
+Explicit lexical settings on commands, groups and their annotated interfaces
+must agree.
 
-
-```csharp
-[Arguments("Outer arguments.")]
-public partial record Outer
-{
-  [Argument("C value.")] public string C { get; init; }
-  [Argument("A value.")] public int A { get; init }
-  [Argument("B flag.", Short="b")] public bool B { get; init; }
-  [Argument("D value.", Short="d")] public string? D { get; init; }
-}
-```
-
-
-
-
-
-     
-       
+Groups must be non-nullable, non-collection concrete types without choices or
+discriminators. Their constructors and assigned members must be accessible from
+the containing command. Invalid group uses and cycles produce `LKC0024`;
+conflicting option names produce `LKC0005` with member paths.

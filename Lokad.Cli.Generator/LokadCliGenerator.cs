@@ -58,21 +58,24 @@ namespace Lokad.Cli.Generator
             var longOptions = new List<string>();
             var hasShortNumericArguments = false;
             var choices = new List<CliChoiceInfo>();
-            var arguments = new List<CliArgumentInfo>();
+            var rootMembers = Array.Empty<CliArgumentInfo>();
             var documentation = default(string);
             var discriminatorOptions = new HashSet<string>(StringComparer.Ordinal);
             var tokenization = new CliTokenizationInfo();
             var collected = new Dictionary<ITypeSymbol, CollectedDeclaration>(SymbolEqualityComparer.Default);
+            var activeGroups = new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
+            var configuredPolicies = new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
             var discriminator = Collect(typeSymbol);
+            var arguments = collected[typeSymbol].Arguments;
 
             var owners = new Dictionary<string, string>(StringComparer.Ordinal);
-            var positional = arguments.FindAll(argument => !argument.IsOption);
+            var positional = Array.FindAll(arguments, argument => !argument.IsOption);
             foreach (var argument in arguments)
             {
                 if (argument.ConsumeUntilBoundary)
                 {
-                    var position = positional.IndexOf(argument);
-                    if (!argument.IsCollection || position < 0 || position == positional.Count - 1)
+                    var position = Array.IndexOf(positional, argument);
+                    if (!argument.IsCollection || position < 0 || position == positional.Length - 1)
                         throw new GeneratorException(GeneratorException.InvalidCollectionBoundary, argument.Name);
                     if (positional[position + 1].IsCollection)
                         throw new GeneratorException(GeneratorException.AdjacentCollectionBoundary, argument.Name, positional[position + 1].Name);
@@ -87,8 +90,8 @@ namespace Lokad.Cli.Generator
                 foreach (var label in argument.Options.Labels)
                 {
                     if (owners.TryGetValue(label, out var owner))
-                        throw new GeneratorException(GeneratorException.OptionNameCollision, label, owner, argument.Name);
-                    owners.Add(label, argument.Name);
+                        throw new GeneratorException(argument.Location, GeneratorException.OptionNameCollision, label, owner, argument.Path);
+                    owners.Add(label, argument.Path);
 
                     if (argument.Options.HasAliases && discriminatorOptions.Contains(label))
                         throw new GeneratorException(GeneratorException.DiscriminatorAliases, argument.Name, label);
@@ -109,7 +112,8 @@ namespace Lokad.Cli.Generator
                 longOptions.ToArray(),
                 hasShortNumericArguments,
                 choices.ToArray(),
-                arguments.ToArray(),
+                rootMembers,
+                arguments,
                 discriminator,
                 documentation,
                 tokenization,
@@ -181,6 +185,219 @@ namespace Lokad.Cli.Generator
                 }
             }
 
+            void ConfigureTokenization(ITypeSymbol declaration)
+            {
+                Configure(declaration);
+                foreach (var implementedInterface in declaration.AllInterfaces)
+                    Configure(implementedInterface);
+
+                void Configure(ITypeSymbol source)
+                {
+                    if (!configuredPolicies.Add(source))
+                        return;
+                    foreach (var annotation in source.GetAttributes(compilation, _argumentsAttribute))
+                        foreach (var setting in annotation.NamedArguments)
+                        {
+                            if (setting.Key == "ShortOptionSyntax" && setting.Value.Value is int syntax)
+                                tokenization.ConfigureShortOptions((CliShortOptionSyntax)syntax);
+                            if (setting.Key == "AllowSingleDashLongOptions" && setting.Value.Value is bool allow)
+                                tokenization.ConfigureSingleDashLongOptions(allow);
+                            if (setting.Key == "StopAtFirstOperand" && setting.Value.Value is bool stop)
+                                tokenization.ConfigureStopAtFirstOperand(stop);
+                        }
+                }
+            }
+
+            CliArgumentInfo[] CollectMembers(ITypeSymbol declaration, string path, bool isGroup, ITypeSymbol constructionContext)
+            {
+                activeGroups.Add(declaration.OriginalDefinition);
+                var members = new List<CliArgumentInfo>();
+                var constructorBoundNames = new HashSet<string>();
+                foreach (var member in declaration.GetMembers())
+                {
+                    if (!(member is IMethodSymbol method) || method.MethodKind != MethodKind.Constructor)
+                        continue;
+                    foreach (var parameter in method.Parameters)
+                    {
+                        var annotation = parameter.TryGetAttribute(compilation, _argumentAttribute) ??
+                                         FindMatchingPropertyArgument(parameter);
+                        if (annotation == null)
+                            continue;
+                        if (isGroup && !compilation.IsSymbolAccessibleWithin(method, constructionContext, declaration))
+                            throw GroupError(annotation, path, "its constructor is inaccessible from the containing command");
+                        constructorBoundNames.Add(parameter.Name);
+                        AddMember(parameter, annotation, true);
+                    }
+                }
+                foreach (var member in declaration.GetMembers())
+                {
+                    if (constructorBoundNames.Contains(member.Name))
+                        continue;
+                    foreach (var annotation in member.GetAttributes(compilation, _argumentAttribute))
+                    {
+                        var assignment = member is IPropertySymbol property ? property.SetMethod : member;
+                        if (isGroup && assignment != null && !compilation.IsSymbolAccessibleWithin(assignment, constructionContext, declaration))
+                            throw GroupError(annotation, path, "a bound member is inaccessible from the containing command");
+                        AddMember(member, annotation, false);
+                    }
+                }
+                activeGroups.Remove(declaration.OriginalDefinition);
+                return members.ToArray();
+
+                void AddMember(ISymbol member, AttributeData annotation, bool isConstructorParameter)
+                {
+                    var names = CollectArgumentNames(annotation, shortOptions, longOptions, ref hasShortNumericArguments);
+                    var memberPath = path.Length == 0 ? member.Name : path + "." + member.Name;
+                    var type = default(ITypeSymbol);
+                    var isSettableMember = false;
+
+                    if (member is IPropertySymbol property)
+                    {
+                        type = property.Type;
+                        isSettableMember = property.SetMethod != null;
+                    }
+                    else if (member is IFieldSymbol field)
+                    {
+                        type = field.Type;
+                        isSettableMember = !field.IsReadOnly;
+                    }
+                    else if (member is IParameterSymbol parameter)
+                    {
+                        type = parameter.Type;
+                    }
+
+                    if (type == null)
+                        return;
+
+                    var collectionKind = CliCollectionKind.None;
+                    var containerType = UnwrapNullable(type);
+                    var valueType = type;
+                    if (containerType is IArrayTypeSymbol array && array.Rank == 1)
+                    {
+                        collectionKind = CliCollectionKind.Array;
+                        valueType = array.ElementType;
+                    }
+                    else if (containerType is INamedTypeSymbol named && named.TypeArguments.Length == 1)
+                    {
+                        if (_readOnlyList(compilation, named.OriginalDefinition))
+                            collectionKind = CliCollectionKind.ReadOnlyList;
+                        else if (_readOnlyMemory(compilation, named.OriginalDefinition))
+                            collectionKind = CliCollectionKind.ReadOnlyMemory;
+
+                        if (collectionKind != CliCollectionKind.None)
+                            valueType = named.TypeArguments[0];
+                    }
+
+                    var isOptionalValue = false;
+                    var optionalContainer = UnwrapNullable(valueType);
+                    if (optionalContainer is INamedTypeSymbol optional && _optionalValue(compilation, optional.OriginalDefinition))
+                    {
+                        if (!SymbolEqualityComparer.Default.Equals(optionalContainer, valueType))
+                            throw new GeneratorException(GeneratorException.InvalidOptionalValue, member.Name);
+                        isOptionalValue = true;
+                        valueType = optional.TypeArguments[0];
+                        if (UnwrapNullable(valueType) is INamedTypeSymbol nested && _optionalValue(compilation, nested.OriginalDefinition))
+                            throw new GeneratorException(GeneratorException.InvalidOptionalValue, member.Name);
+                    }
+
+                    var bindableType = UnwrapNullable(valueType);
+                    var isNullable = !SymbolEqualityComparer.Default.Equals(bindableType, valueType) ||
+                                     valueType.NullableAnnotation == NullableAnnotation.Annotated;
+                    IReadOnlyList<CliArgumentInfo>? groupMembers = null;
+                    if (HasCliAnnotation(compilation, bindableType))
+                    {
+                        if (names.HasNamedOption || isNullable || collectionKind != CliCollectionKind.None || isOptionalValue ||
+                            GetNamedBool(annotation, "ShortNumeric") || GetNamedBool(annotation, "AllowRepeated") ||
+                            GetNamedBool(annotation, "ConsumeUntilBoundary") || GetNamedBool(annotation, "ConsumeNextValueVerbatim") ||
+                            GetNamedBool(annotation, "Remainder") || GetNamedBool(annotation, "StopOptionParsing") || GetNamedBool(annotation, "IsHelp"))
+                            throw GroupError(annotation, memberPath, "use a non-nullable positional member without a collection or scalar binding options");
+                        if (!isConstructorParameter && !isSettableMember)
+                            throw GroupError(annotation, memberPath, "the group must be constructor-bound or writable");
+                        groupMembers = CollectGroup(bindableType, memberPath, annotation, constructionContext);
+                    }
+                    var argument = new CliArgumentInfo(
+                        member.Name,
+                        GetTypeName(bindableType),
+                        bindableType.IsReferenceType,
+                        isNullable,
+                        !isOptionalValue && collectionKind == CliCollectionKind.None && bindableType.SpecialType == SpecialType.System_Boolean,
+                        bindableType.TypeKind == TypeKind.Enum,
+                        collectionKind,
+                        isConstructorParameter,
+                        isSettableMember,
+                        GetConstructorString(annotation, 0) ?? string.Empty,
+                        GetNamedString(annotation, "Name"),
+                        names,
+                        GetNamedBool(annotation, "ShortNumeric"),
+                        GetNamedBool(annotation, "AllowRepeated"),
+                        GetNamedBool(annotation, "ConsumeUntilBoundary"),
+                        GetNamedBool(annotation, "ConsumeNextValueVerbatim"),
+                        isOptionalValue,
+                        GetNamedBool(annotation, "Remainder"),
+                        GetNamedBool(annotation, "StopOptionParsing"),
+                        GetNamedBool(annotation, "IsHelp"),
+                        groupMembers,
+                        memberPath,
+                        GetAttributeLocation(annotation));
+
+                    if (argument.IsHelp && (!argument.IsBoolean || argument.ShortNumeric || !names.HasNamedOption))
+                        throw new GeneratorException(GeneratorException.InvalidHelpFlag, argument.Name);
+
+                    if (argument.IsRemainder && (argument.IsOption || !argument.IsCollection || isOptionalValue ||
+                        bindableType.SpecialType != SpecialType.System_String || argument.ConsumeUntilBoundary))
+                        throw new GeneratorException(GeneratorException.InvalidRemainder, argument.Name);
+
+                    if (argument.StopOptionParsing && (argument.IsBoolean || argument.IsCollection || isOptionalValue ||
+                        argument.ShortNumeric || !names.HasNamedOption))
+                        throw new GeneratorException(GeneratorException.InvalidStopOption, argument.Name);
+
+                    if (isOptionalValue && (!names.HasNamedOption || argument.ShortNumeric || argument.AllowRepeated || argument.ConsumeNextValueVerbatim))
+                        throw new GeneratorException(GeneratorException.InvalidOptionalValue, argument.Name);
+
+                    if (argument.ConsumeNextValueVerbatim &&
+                        (argument.IsBoolean || argument.ShortNumeric || !argument.Options.HasNamedOption))
+                        throw new GeneratorException(GeneratorException.InvalidVerbatimValue, argument.Name);
+
+                    members.Add(argument);
+
+                    static ITypeSymbol UnwrapNullable(ITypeSymbol value)
+                    {
+                        if (value is INamedTypeSymbol nullable &&
+                            nullable.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+                        {
+                            return nullable.TypeArguments[0];
+                        }
+
+                        return value;
+                    }
+                }
+
+                AttributeData? FindMatchingPropertyArgument(IParameterSymbol parameter)
+                {
+                    foreach (var member in declaration.GetMembers(parameter.Name))
+                        if (member is IPropertySymbol property)
+                            return property.TryGetAttribute(compilation, _argumentAttribute);
+                    return null;
+                }
+            }
+
+            IReadOnlyList<CliArgumentInfo> CollectGroup(ITypeSymbol declaration, string path, AttributeData usage, ITypeSymbol constructionContext)
+            {
+                var annotation = declaration.TryGetAttribute(compilation, _argumentsAttribute);
+                if (annotation == null || declaration.TryGetAttribute(compilation, _choiceAttribute) != null ||
+                    declaration.TypeKind == TypeKind.Interface || declaration.IsAbstract || GetDiscriminator(annotation) != null)
+                    throw GroupError(usage, path, "use a concrete [Arguments] type without choices or a discriminator");
+                if (activeGroups.Contains(declaration.OriginalDefinition))
+                    throw GroupError(usage, path, "recursive argument groups are not supported");
+                ConfigureTokenization(declaration);
+                var members = CollectMembers(declaration, path, true, constructionContext);
+                if (!Array.Exists(members, member => member.IsConstructorParameter) && declaration is INamedTypeSymbol named &&
+                    !System.Linq.Enumerable.Any(named.InstanceConstructors, constructor => constructor.Parameters.Length == 0 &&
+                        compilation.IsSymbolAccessibleWithin(constructor, constructionContext, declaration)))
+                    throw GroupError(usage, path, "its parameterless constructor is inaccessible from the containing command");
+                return members;
+            }
+
             CliDiscriminatorInfo? Collect(ITypeSymbol declaration)
             {
                 if (collected.TryGetValue(declaration, out var cached))
@@ -210,21 +427,17 @@ namespace Lokad.Cli.Generator
                     CollectArgumentNames(annotation, shortOptions, longOptions, ref hasShortNumericArguments);
                     if (isRoot)
                         documentation = GetConstructorString(annotation, 0);
-                    foreach (var setting in annotation.NamedArguments)
-                    {
-                        if (setting.Key == "ShortOptionSyntax" && setting.Value.Value is int syntax)
-                            tokenization.ConfigureShortOptions((CliShortOptionSyntax)syntax);
-                        if (setting.Key == "AllowSingleDashLongOptions" && setting.Value.Value is bool allow)
-                            tokenization.ConfigureSingleDashLongOptions(allow);
-                        if (setting.Key == "StopAtFirstOperand" && setting.Value.Value is bool stop)
-                            tokenization.ConfigureStopAtFirstOperand(stop);
-                    }
                 }
 
-                var members = isRoot ? arguments : new List<CliArgumentInfo>();
-                if (declaration.TypeKind != TypeKind.Interface)
-                    CollectMembers();
-                CollectTokenizationOptions(members, ownDiscriminator, tokenization);
+                ConfigureTokenization(declaration);
+                var members = declaration.TypeKind == TypeKind.Interface
+                    ? Array.Empty<CliArgumentInfo>() : CollectMembers(declaration, "", false, declaration);
+                if (isRoot)
+                    rootMembers = members;
+                var leaves = new List<CliArgumentInfo>();
+                AppendLeaves(members);
+                var flattened = leaves.ToArray();
+                CollectTokenizationOptions(flattened, ownDiscriminator, tokenization);
 
                 var choiceTypes = new List<ITypeSymbol>();
                 foreach (var choice in declaration.GetAttributes(compilation, _choiceAttribute))
@@ -236,7 +449,7 @@ namespace Lokad.Cli.Generator
                     choiceTypes.Add(choiceType);
                 }
                 // Cache before following choices and implemented interfaces, which can lead back here.
-                collected.Add(declaration, new CollectedDeclaration(ownDiscriminator, members, choiceTypes, isHelpPrefix));
+                collected.Add(declaration, new CollectedDeclaration(ownDiscriminator, flattened, choiceTypes, isHelpPrefix));
                 foreach (var choiceType in choiceTypes)
                 {
                     var choiceDiscriminator = Collect(choiceType);
@@ -250,50 +463,13 @@ namespace Lokad.Cli.Generator
 
                 return ownDiscriminator;
 
-                void CollectMembers()
+                void AppendLeaves(IReadOnlyList<CliArgumentInfo> nested)
                 {
-                    var constructorBoundNames = new HashSet<string>();
-                    foreach (var member in declaration.GetMembers())
-                    {
-                        if (!(member is IMethodSymbol method) || method.MethodKind != MethodKind.Constructor)
-                            continue;
-
-                        foreach (var parameter in method.Parameters)
-                        {
-                            var argument = parameter.TryGetAttribute(compilation, _argumentAttribute) ??
-                                           FindMatchingPropertyArgument(parameter);
-                            if (argument == null)
-                                continue;
-
-                            var names = CollectArgumentNames(argument, shortOptions, longOptions, ref hasShortNumericArguments);
-                            constructorBoundNames.Add(parameter.Name);
-                            if (TryGetBindableMemberArgument(compilation, parameter, argument, names,
-                                isConstructorParameter: true, out var parameterArgument))
-                                members.Add(parameterArgument);
-                        }
-                    }
-
-                    foreach (var member in declaration.GetMembers())
-                    {
-                        if (constructorBoundNames.Contains(member.Name))
-                            continue;
-                        foreach (var argument in member.GetAttributes(compilation, _argumentAttribute))
-                        {
-                            var names = CollectArgumentNames(argument, shortOptions, longOptions, ref hasShortNumericArguments);
-                            if (TryGetBindableMemberArgument(compilation, member, argument, names,
-                                isConstructorParameter: false, out var memberArgument))
-                                members.Add(memberArgument);
-                        }
-                    }
-
-                    AttributeData? FindMatchingPropertyArgument(IParameterSymbol parameter)
-                    {
-                        foreach (var member in declaration.GetMembers(parameter.Name))
-                            if (member is IPropertySymbol property)
-                                return property.TryGetAttribute(compilation, _argumentAttribute);
-
-                        return null;
-                    }
+                    foreach (var member in nested)
+                        if (member.GroupMembers is IReadOnlyList<CliArgumentInfo> children)
+                            AppendLeaves(children);
+                        else
+                            leaves.Add(member);
                 }
 
                 static void CollectTokenizationOptions(
@@ -334,30 +510,34 @@ namespace Lokad.Cli.Generator
                     if (discriminator.ShortOption != '\0')
                         options.Add("-" + discriminator.ShortOption);
                 }
-
-                static CliDiscriminatorInfo? GetDiscriminator(AttributeData attribute)
-                {
-                    var prefix = GetNamedString(attribute, "Prefix");
-                    if (prefix != null && prefix.Length > 0)
-                        return new CliDiscriminatorInfo(prefix, prefix, null, '\0');
-
-                    var longOption = GetNamedString(attribute, "Long");
-                    var shortOption = GetNamedChar(attribute, "Short");
-                    if (!string.IsNullOrEmpty(longOption) || shortOption != '\0')
-                    {
-                        var display = !string.IsNullOrEmpty(longOption) ? "--" + longOption : "-" + shortOption;
-                        return new CliDiscriminatorInfo(display, null, longOption, shortOption);
-                    }
-
-                    return null;
-                }
             }
         }
+
+        private static CliDiscriminatorInfo? GetDiscriminator(AttributeData attribute)
+        {
+            var prefix = GetNamedString(attribute, "Prefix");
+            if (prefix != null && prefix.Length > 0)
+                return new CliDiscriminatorInfo(prefix, prefix, null, '\0');
+            var longOption = GetNamedString(attribute, "Long");
+            var shortOption = GetNamedChar(attribute, "Short");
+            if (!string.IsNullOrEmpty(longOption) || shortOption != '\0')
+            {
+                var display = !string.IsNullOrEmpty(longOption) ? "--" + longOption : "-" + shortOption;
+                return new CliDiscriminatorInfo(display, null, longOption, shortOption);
+            }
+            return null;
+        }
+
+        private static GeneratorException GroupError(AttributeData usage, string path, string reason) =>
+            new GeneratorException(GetAttributeLocation(usage), GeneratorException.InvalidArgumentGroup, path, reason);
+
+        private static Location? GetAttributeLocation(AttributeData annotation) =>
+            annotation.ApplicationSyntaxReference?.GetSyntax().GetLocation();
 
         private sealed class CollectedDeclaration
         {
             public CollectedDeclaration(CliDiscriminatorInfo? discriminator,
-                IReadOnlyList<CliArgumentInfo> arguments, IReadOnlyList<ITypeSymbol> choices, bool isHelpPrefix)
+                CliArgumentInfo[] arguments, IReadOnlyList<ITypeSymbol> choices, bool isHelpPrefix)
             {
                 Discriminator = discriminator;
                 Arguments = arguments;
@@ -366,129 +546,9 @@ namespace Lokad.Cli.Generator
             }
 
             public CliDiscriminatorInfo? Discriminator { get; }
-            public IReadOnlyList<CliArgumentInfo> Arguments { get; }
+            public CliArgumentInfo[] Arguments { get; }
             public IReadOnlyList<ITypeSymbol> Choices { get; }
             public bool IsHelpPrefix { get; }
-        }
-
-        private bool TryGetBindableMemberArgument(
-            Compilation compilation,
-            ISymbol symbol,
-            AttributeData attribute,
-            CliOptionNames optionNames,
-            bool isConstructorParameter,
-            out CliArgumentInfo argument)
-        {
-            var type = default(ITypeSymbol);
-            var isSettableMember = false;
-
-            if (symbol is IPropertySymbol property)
-            {
-                type = property.Type;
-                isSettableMember = property.SetMethod != null;
-            }
-            else if (symbol is IFieldSymbol field)
-            {
-                type = field.Type;
-                isSettableMember = !field.IsReadOnly;
-            }
-            else if (symbol is IParameterSymbol parameter)
-            {
-                type = parameter.Type;
-            }
-
-            if (type == null)
-            {
-                argument = null!;
-                return false;
-            }
-
-            var collectionKind = CliCollectionKind.None;
-            var containerType = UnwrapNullable(type);
-            var valueType = type;
-            if (containerType is IArrayTypeSymbol array && array.Rank == 1)
-            {
-                collectionKind = CliCollectionKind.Array;
-                valueType = array.ElementType;
-            }
-            else if (containerType is INamedTypeSymbol named && named.TypeArguments.Length == 1)
-            {
-                if (_readOnlyList(compilation, named.OriginalDefinition))
-                    collectionKind = CliCollectionKind.ReadOnlyList;
-                else if (_readOnlyMemory(compilation, named.OriginalDefinition))
-                    collectionKind = CliCollectionKind.ReadOnlyMemory;
-
-                if (collectionKind != CliCollectionKind.None)
-                    valueType = named.TypeArguments[0];
-            }
-
-            var isOptionalValue = false;
-            var optionalContainer = UnwrapNullable(valueType);
-            if (optionalContainer is INamedTypeSymbol optional && _optionalValue(compilation, optional.OriginalDefinition))
-            {
-                if (!SymbolEqualityComparer.Default.Equals(optionalContainer, valueType))
-                    throw new GeneratorException(GeneratorException.InvalidOptionalValue, symbol.Name);
-                isOptionalValue = true;
-                valueType = optional.TypeArguments[0];
-                if (UnwrapNullable(valueType) is INamedTypeSymbol nested && _optionalValue(compilation, nested.OriginalDefinition))
-                    throw new GeneratorException(GeneratorException.InvalidOptionalValue, symbol.Name);
-            }
-
-            var bindableType = UnwrapNullable(valueType);
-            var isNullable = !SymbolEqualityComparer.Default.Equals(bindableType, valueType) ||
-                             valueType.NullableAnnotation == NullableAnnotation.Annotated;
-            argument = new CliArgumentInfo(
-                symbol.Name,
-                GetTypeName(bindableType),
-                bindableType.IsReferenceType,
-                isNullable,
-                !isOptionalValue && collectionKind == CliCollectionKind.None && bindableType.SpecialType == SpecialType.System_Boolean,
-                bindableType.TypeKind == TypeKind.Enum,
-                collectionKind,
-                isConstructorParameter,
-                isSettableMember,
-                GetConstructorString(attribute, 0) ?? string.Empty,
-                GetNamedString(attribute, "Name"),
-                optionNames,
-                GetNamedBool(attribute, "ShortNumeric"),
-                GetNamedBool(attribute, "AllowRepeated"),
-                GetNamedBool(attribute, "ConsumeUntilBoundary"),
-                GetNamedBool(attribute, "ConsumeNextValueVerbatim"),
-                isOptionalValue,
-                GetNamedBool(attribute, "Remainder"),
-                GetNamedBool(attribute, "StopOptionParsing"),
-                GetNamedBool(attribute, "IsHelp"));
-
-            if (argument.IsHelp && (!argument.IsBoolean || argument.ShortNumeric || !optionNames.HasNamedOption))
-                throw new GeneratorException(GeneratorException.InvalidHelpFlag, argument.Name);
-
-            if (argument.IsRemainder && (argument.IsOption || !argument.IsCollection || isOptionalValue ||
-                bindableType.SpecialType != SpecialType.System_String || argument.ConsumeUntilBoundary))
-                throw new GeneratorException(GeneratorException.InvalidRemainder, argument.Name);
-
-            if (argument.StopOptionParsing && (argument.IsBoolean || argument.IsCollection || isOptionalValue ||
-                argument.ShortNumeric || !optionNames.HasNamedOption))
-                throw new GeneratorException(GeneratorException.InvalidStopOption, argument.Name);
-
-            if (isOptionalValue && (!optionNames.HasNamedOption || argument.ShortNumeric || argument.AllowRepeated || argument.ConsumeNextValueVerbatim))
-                throw new GeneratorException(GeneratorException.InvalidOptionalValue, argument.Name);
-
-            if (argument.ConsumeNextValueVerbatim &&
-                (argument.IsBoolean || argument.ShortNumeric || !argument.Options.HasNamedOption))
-                throw new GeneratorException(GeneratorException.InvalidVerbatimValue, argument.Name);
-
-            return true;
-
-            static ITypeSymbol UnwrapNullable(ITypeSymbol value)
-            {
-                if (value is INamedTypeSymbol nullable &&
-                    nullable.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
-                {
-                    return nullable.TypeArguments[0];
-                }
-
-                return value;
-            }
         }
 
         private static CliOptionNames CollectArgumentNames(
