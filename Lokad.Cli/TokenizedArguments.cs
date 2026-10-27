@@ -18,10 +18,13 @@ namespace Lokad.Cli
         /// </summary>
         private int _position;
 
+        // Binding can inspect a token with Peek or consume it with Shift before checking its prefix position.
+        private int _currentTokenIndex = -1;
+
         /// <summary>
-        ///     Positional values that should be ignored by the binding phase.
+        ///     Positions of selected prefixes that should be ignored by the binding phase.
         /// </summary>
-        private readonly Queue<string> _skipPositional = new Queue<string>();
+        private readonly Queue<int> _skipPositional = new Queue<int>();
 
         private HashSet<string>? _selectedLongOptions;
         private HashSet<char>? _selectedShortOptions;
@@ -109,8 +112,8 @@ namespace Lokad.Cli
         {
             if (prefix == null) throw new ArgumentNullException(nameof(prefix));
 
-            foreach (var value in PositionalValues())
-                return string.Equals(value, prefix, StringComparison.Ordinal);
+            foreach (var positional in PositionalTokens())
+                return string.Equals(positional.Token.Value, prefix, StringComparison.Ordinal);
 
             return false;
         }
@@ -161,7 +164,9 @@ namespace Lokad.Cli
                             break;
                     }
                 }
-                var values = new List<string>(PositionalValues());
+                var values = new List<string>();
+                foreach (var positional in PositionalTokens())
+                    values.Add(positional.Token.Value);
                 var visited = new HashSet<(CommandBoundary Command, int Position)>();
                 // The caller has selected this entrypoint. Consume its positional prefix before inspecting children.
                 var start = 0;
@@ -209,46 +214,59 @@ namespace Lokad.Cli
             }
         }
 
-        private IEnumerable<string> PositionalValues()
+        private IEnumerable<(int Index, ValueArg Token)> PositionalTokens()
         {
             var skipPositional = _skipPositional.ToArray();
             var skipIndex = 0;
-            foreach (var argument in _arguments)
+            for (var index = 0; index < _arguments.Count; index++)
             {
-                if (!(argument is ValueArg valueArg))
+                if (!(_arguments[index] is ValueArg valueArg))
                     continue;
 
                 if (skipIndex < skipPositional.Length &&
-                    string.Equals(valueArg.Value, skipPositional[skipIndex], StringComparison.Ordinal))
+                    index == skipPositional[skipIndex])
                 {
                     skipIndex++;
                     continue;
                 }
 
-                yield return valueArg.Value;
+                yield return (index, valueArg);
             }
         }
 
         /// <summary>
-        ///     Adds a positional value to skip when binding positional arguments.
+        ///     Selects the next matching positional token to skip when binding, after any previously selected prefixes.
         /// </summary>
         /// <param name="value"> Positional value to skip. </param>
         public void SkipPositional(string value)
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
-            _skipPositional.Enqueue(value);
+            var after = -1;
+            foreach (var index in _skipPositional)
+                after = index;
+            foreach (var positional in PositionalTokens())
+            {
+                if (positional.Index <= after || !string.Equals(positional.Token.Value, value, StringComparison.Ordinal))
+                    continue;
+                _skipPositional.Enqueue(positional.Index);
+                return;
+            }
         }
 
         /// <summary>
-        ///     Returns whether the supplied positional value should be skipped by binding.
+        ///     Returns whether the token most recently inspected with Peek or Shift is a selected prefix to skip.
         /// </summary>
         /// <param name="value"> Positional value about to be bound. </param>
         /// <returns> <c>true</c> when the value was scheduled to be skipped; otherwise <c>false</c>. </returns>
         public bool MaybeSkipPositional(string value)
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
+            while (_skipPositional.Count > 0 && _skipPositional.Peek() < _currentTokenIndex)
+                _skipPositional.Dequeue();
             if (_skipPositional.Count == 0 ||
-                !string.Equals(_skipPositional.Peek(), value, StringComparison.Ordinal))
+                _skipPositional.Peek() != _currentTokenIndex ||
+                !(_arguments[_currentTokenIndex] is ValueArg positional) ||
+                !string.Equals(positional.Value, value, StringComparison.Ordinal))
                 return false;
 
             _skipPositional.Dequeue();
@@ -261,6 +279,7 @@ namespace Lokad.Cli
         /// <returns> Next token, or <c>null</c> when the stream is exhausted. </returns>
         public ITokenizedArguments? Peek()
         {
+            _currentTokenIndex = _position;
             return _position < _arguments.Count ? _arguments[_position] : null;
         }
 
@@ -270,6 +289,7 @@ namespace Lokad.Cli
         /// <returns> Consumed token, or <c>null</c> when the stream is exhausted. </returns>
         public ITokenizedArguments? Shift()
         {
+            _currentTokenIndex = _position;
             if (_position >= _arguments.Count)
                 return null;
 

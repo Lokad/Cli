@@ -6,6 +6,40 @@ namespace Lokad.Cli.Generator.FullTests;
 public sealed class PrefixCommandTests
 {
     [Theory]
+    [InlineData(1, "a.txt", "copy", "b.txt")]
+    [InlineData(2, "copy", "b.txt")]
+    public void KeepsLaterDataAfterConsumingThePrefix(int consumed, params string[] expected)
+    {
+        var tokens = Parser.Tokenize<PrefixCopyArgs>(new[] { "copy", "a.txt", "copy", "b.txt" });
+        for (var i = 0; i < consumed; i++)
+            tokens.Shift();
+        Assert.True(tokens.HasPositionalPrefix("copy"));
+        Assert.Equal(expected, Parser.ParseTokenized<PrefixCopyArgs>(tokens).Files);
+        Assert.True(tokens.HasPositionalPrefix("copy"));
+    }
+
+    [Fact]
+    public void KeepsChildSelectorsOutOfDataAfterConsumingAnAncestorPrefix()
+    {
+        var tokens = Parser.Tokenize<INestedChoiceWithMembersSubArgs>(new[] { "sub", "B", "first-pos", "--first=first-name" });
+        Assert.Equal(new ValueArg("sub"), tokens.Shift());
+        var parsed = Assert.IsType<NestedChoiceWithMembersSubArgs1>(Parser.ParseTokenized<INestedChoiceWithMembersSubArgs>(tokens));
+        Assert.Equal("first-pos", parsed.Positional);
+        Assert.Equal("first-name", parsed.Named);
+    }
+
+    [Fact]
+    public void KeepsRepeatedPrefixDataInCollectionBoundaryBinding()
+    {
+        var tokens = Parser.Tokenize<IBoundaryCommand>(new[] { "numbers", "10", "numbers", "12" });
+        Assert.Equal(new ValueArg("numbers"), tokens.Shift());
+        var parsed = Assert.IsType<ArrayBoundaryArgs>(Parser.ParseTokenized<IBoundaryCommand>(tokens));
+        Assert.Equal(new[] { 10 }, parsed.Numbers);
+        Assert.Equal("numbers", parsed.Label);
+        Assert.Equal(12, parsed.Count);
+    }
+
+    [Theory]
     [InlineData("a.txt", "copy", "b.txt")]
     [InlineData("copy", "a.txt", "copy", "b.txt")]
     [InlineData("--source", "input.txt", "copy", "a.txt", "copy", "b.txt")]
