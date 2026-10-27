@@ -274,3 +274,17 @@ Groups must be non-nullable, non-collection concrete types without choices or
 discriminators. Their constructors and assigned members must be accessible from
 the containing command. Invalid group uses and cycles produce `LKC0024`;
 conflicting option names produce `LKC0005` with member paths.
+
+## Development
+
+Use the SDK selected by `global.json` and install the .NET 8 runtime for tests.
+
+```powershell
+dotnet restore Lokad.Cli.slnx --locked-mode
+dotnet test Lokad.Cli.slnx -c Debug --no-restore
+dotnet test Lokad.Cli.slnx -c Release --no-restore
+pwsh -File tools/PackageSmokeTest/verify-package.ps1 -NoBuild
+```
+
+Release packages and symbols go directly to `artifacts/nugets/`.
+See [CHANGELOG.md](CHANGELOG.md) for release and compatibility notes.
