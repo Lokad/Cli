@@ -96,15 +96,7 @@ partial class ProtectedOptions : global::Lokad.Cli.ICliParsed<global::Test.Prote
     {
         if (commandName == null) throw new global::System.ArgumentNullException(nameof(commandName));
 
-        var lines = new global::System.Collections.Generic.List<string> { FormatDocumentationLine__Cli(commandName, @"Protected constructor.") };
+        var lines = new global::System.Collections.Generic.List<string> { commandName + @": Protected constructor." };
         return string.Join(global::System.Environment.NewLine, lines);
-    }
-
-    private static string FormatDocumentationLine__Cli(string commandName, string documentation)
-    {
-        if (documentation.Length == 0)
-            return commandName;
-
-        return commandName + ": " + documentation;
     }
 }

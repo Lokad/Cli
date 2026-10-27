@@ -73,7 +73,7 @@ partial interface ICountGroupPolicy : global::Lokad.Cli.ICliParsed<global::Test.
 
         var documentedCommandName = commandName;
         var lines = new global::System.Collections.Generic.List<string>();
-        lines.Add(FormatDocumentationLine__Cli(documentedCommandName, @"Count policy."));
+        lines.Add(documentedCommandName + @": Count policy.");
         string documentation;
         documentation = DocumentChoice__Cli<global::Test.CountGroup>(documentedCommandName);
         if (documentation.Length > 0)
@@ -85,14 +85,6 @@ partial interface ICountGroupPolicy : global::Lokad.Cli.ICliParsed<global::Test.
         where TChoice : global::Lokad.Cli.ICliParsed<TChoice>
     {
         return TChoice.Document(commandName);
-    }
-
-    private static string FormatDocumentationLine__Cli(string commandName, string documentation)
-    {
-        if (documentation.Length == 0)
-            return commandName;
-
-        return commandName + ": " + documentation;
     }
 
     private static TChoice ParseChoice__Cli<TChoice>(global::Lokad.Cli.TokenizedArguments arguments)

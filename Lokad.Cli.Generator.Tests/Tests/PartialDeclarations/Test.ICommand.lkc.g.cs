@@ -106,14 +106,6 @@ partial interface ICommand : global::Lokad.Cli.ICliParsed<global::Test.ICommand>
         return TChoice.Document(commandName);
     }
 
-    private static string FormatDocumentationLine__Cli(string commandName, string documentation)
-    {
-        if (documentation.Length == 0)
-            return commandName;
-
-        return commandName + ": " + documentation;
-    }
-
     private static TChoice ParseChoice__Cli<TChoice>(global::Lokad.Cli.TokenizedArguments arguments)
         where TChoice : global::Lokad.Cli.ICliParsed<TChoice>
     {

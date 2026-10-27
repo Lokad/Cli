@@ -101,15 +101,7 @@ partial record DuplicateFirst : global::Lokad.Cli.ICliParsed<global::Test.Duplic
     {
         if (commandName == null) throw new global::System.ArgumentNullException(nameof(commandName));
 
-        var lines = new global::System.Collections.Generic.List<string> { FormatDocumentationLine__Cli(commandName + @" run", @"First.") };
+        var lines = new global::System.Collections.Generic.List<string> { commandName + @" run" + @": First." };
         return string.Join(global::System.Environment.NewLine, lines);
-    }
-
-    private static string FormatDocumentationLine__Cli(string commandName, string documentation)
-    {
-        if (documentation.Length == 0)
-            return commandName;
-
-        return commandName + ": " + documentation;
     }
 }

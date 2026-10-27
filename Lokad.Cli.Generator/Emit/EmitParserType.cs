@@ -822,9 +822,7 @@ $@"#nullable enable
                 lines.AppendLine("        var lines = new global::System.Collections.Generic.List<string>();");
                 if (type.Documentation != null)
                 {
-                    lines.Append("        lines.Add(FormatDocumentationLine").Append(type.ImplementationSuffix).Append("(documentedCommandName, ")
-                        .Append(FormatStringLiteral(type.Documentation))
-                        .AppendLine("));");
+                    lines.Append("        lines.Add(").Append(GetDocumentationLineExpression("documentedCommandName")).AppendLine(");");
                 }
 
                 lines.AppendLine("        string documentation;");
@@ -841,11 +839,9 @@ $@"#nullable enable
             }
             else
             {
-                lines.Append("        var lines = new global::System.Collections.Generic.List<string> { FormatDocumentationLine").Append(type.ImplementationSuffix).Append('(')
-                    .Append(GetDocumentedCommandNameExpression(type, "commandName"))
-                    .Append(", ")
-                    .Append(FormatStringLiteral(type.Documentation ?? string.Empty))
-                    .AppendLine(") };");
+                lines.Append("        var lines = new global::System.Collections.Generic.List<string> { ")
+                    .Append(GetDocumentationLineExpression(GetDocumentedCommandNameExpression(type, "commandName")))
+                    .AppendLine(" };");
 
                 foreach (var argument in type.Arguments)
                 {
@@ -869,16 +865,11 @@ $@"#nullable enable
     }}");
             }
 
-            lines.AppendLine();
-            lines.AppendLine($@"    private static string FormatDocumentationLine{type.ImplementationSuffix}(string commandName, string documentation)
-    {{
-        if (documentation.Length == 0)
-            return commandName;
-
-        return commandName + "": "" + documentation;
-    }}");
-
             return lines.ToString().TrimEnd();
+
+            string GetDocumentationLineExpression(string commandNameExpression) => string.IsNullOrEmpty(type.Documentation)
+                ? commandNameExpression
+                : commandNameExpression + " + " + FormatStringLiteral(": " + type.Documentation);
         }
 
         private static string GetDocumentedCommandNameExpression(CliTypeInfo type, string commandNameExpression)

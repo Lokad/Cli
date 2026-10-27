@@ -118,17 +118,9 @@ partial record InputArgs : global::Lokad.Cli.ICliParsed<global::InputArgs>
     {
         if (commandName == null) throw new global::System.ArgumentNullException(nameof(commandName));
 
-        var lines = new global::System.Collections.Generic.List<string> { FormatDocumentationLine__Cli(commandName, @"Input-prefixed parser.") };
+        var lines = new global::System.Collections.Generic.List<string> { commandName + @": Input-prefixed parser." };
         lines.Add(@"  --value: Value.");
         return string.Join(global::System.Environment.NewLine, lines);
-    }
-
-    private static string FormatDocumentationLine__Cli(string commandName, string documentation)
-    {
-        if (documentation.Length == 0)
-            return commandName;
-
-        return commandName + ": " + documentation;
     }
 
 

@@ -343,7 +343,7 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
     {
         if (commandName == null) throw new global::System.ArgumentNullException(nameof(commandName));
 
-        var lines = new global::System.Collections.Generic.List<string> { FormatDocumentationLine__Cli(commandName + @" --mode" + @" <number...>" + @" <label>", @"Tokenization mode.") };
+        var lines = new global::System.Collections.Generic.List<string> { commandName + @" --mode" + @" <number...>" + @" <label>" + @": Tokenization mode." };
         lines.Add(@"  --from-ctor, -c: Constructor property value.");
         lines.Add(@"  --raw-param, -p: Raw constructor parameter.");
         lines.Add(@"  --verbose, --chatty, -v, -V: Enable verbose output.");
@@ -357,14 +357,6 @@ partial record TokenizationOptions : global::Lokad.Cli.ICliParsed<global::Test.T
         lines.Add(@"  --code, -e: Code boundary.");
         lines.Add(@"  --help, -h: Help.");
         return string.Join(global::System.Environment.NewLine, lines);
-    }
-
-    private static string FormatDocumentationLine__Cli(string commandName, string documentation)
-    {
-        if (documentation.Length == 0)
-            return commandName;
-
-        return commandName + ": " + documentation;
     }
 
 

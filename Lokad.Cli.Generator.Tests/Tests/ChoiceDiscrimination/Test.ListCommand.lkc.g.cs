@@ -99,15 +99,7 @@ partial record ListCommand : global::Lokad.Cli.ICliParsed<global::Test.ListComma
     {
         if (commandName == null) throw new global::System.ArgumentNullException(nameof(commandName));
 
-        var lines = new global::System.Collections.Generic.List<string> { FormatDocumentationLine__Cli(commandName + @" list", @"List command.") };
+        var lines = new global::System.Collections.Generic.List<string> { commandName + @" list" + @": List command." };
         return string.Join(global::System.Environment.NewLine, lines);
-    }
-
-    private static string FormatDocumentationLine__Cli(string commandName, string documentation)
-    {
-        if (documentation.Length == 0)
-            return commandName;
-
-        return commandName + ": " + documentation;
     }
 }

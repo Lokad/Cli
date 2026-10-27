@@ -106,17 +106,9 @@ partial record NullableGroup : global::Lokad.Cli.ICliParsed<global::Test.Nullabl
     {
         if (commandName == null) throw new global::System.ArgumentNullException(nameof(commandName));
 
-        var lines = new global::System.Collections.Generic.List<string> { FormatDocumentationLine__Cli(commandName + @" <Limit?>", @"Nullable group leaf.") };
+        var lines = new global::System.Collections.Generic.List<string> { commandName + @" <Limit?>" + @": Nullable group leaf." };
         lines.Add(@"  <Limit?>: Limit.");
         return string.Join(global::System.Environment.NewLine, lines);
-    }
-
-    private static string FormatDocumentationLine__Cli(string commandName, string documentation)
-    {
-        if (documentation.Length == 0)
-            return commandName;
-
-        return commandName + ": " + documentation;
     }
 
 

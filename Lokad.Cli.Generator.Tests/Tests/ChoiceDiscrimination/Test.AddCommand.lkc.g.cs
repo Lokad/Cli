@@ -115,16 +115,8 @@ partial record AddCommand : global::Lokad.Cli.ICliParsed<global::Test.AddCommand
     {
         if (commandName == null) throw new global::System.ArgumentNullException(nameof(commandName));
 
-        var lines = new global::System.Collections.Generic.List<string> { FormatDocumentationLine__Cli(commandName + @" --add", @"Add command.") };
+        var lines = new global::System.Collections.Generic.List<string> { commandName + @" --add" + @": Add command." };
         lines.Add(@"  --name: Name to add.");
         return string.Join(global::System.Environment.NewLine, lines);
-    }
-
-    private static string FormatDocumentationLine__Cli(string commandName, string documentation)
-    {
-        if (documentation.Length == 0)
-            return commandName;
-
-        return commandName + ": " + documentation;
     }
 }

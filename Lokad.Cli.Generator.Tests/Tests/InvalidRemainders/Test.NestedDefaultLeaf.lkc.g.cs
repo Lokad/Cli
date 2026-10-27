@@ -101,15 +101,7 @@ partial record NestedDefaultLeaf : global::Lokad.Cli.ICliParsed<global::Test.Nes
     {
         if (commandName == null) throw new global::System.ArgumentNullException(nameof(commandName));
 
-        var lines = new global::System.Collections.Generic.List<string> { FormatDocumentationLine__Cli(commandName + @" run", @"Leaf.") };
+        var lines = new global::System.Collections.Generic.List<string> { commandName + @" run" + @": Leaf." };
         return string.Join(global::System.Environment.NewLine, lines);
-    }
-
-    private static string FormatDocumentationLine__Cli(string commandName, string documentation)
-    {
-        if (documentation.Length == 0)
-            return commandName;
-
-        return commandName + ": " + documentation;
     }
 }
