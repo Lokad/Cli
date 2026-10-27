@@ -5,12 +5,14 @@ namespace Lokad.Cli.Generator.Tests;
 public sealed class AliasedValueTests
 {
     [Theory]
-    [InlineData(false, false, "values")]
-    [InlineData(true, false, "values")]
-    [InlineData(false, true, "values")]
-    [InlineData(true, true, "values")]
-    [InlineData(false, true, "class")]
-    public void CompilesAliasedValuesInScalarsCollectionsAndGroups(bool globallyVisible, bool conflicting, string alias)
+    [InlineData(false, false, "values", false)]
+    [InlineData(true, false, "values", false)]
+    [InlineData(false, true, "values", false)]
+    [InlineData(true, true, "values", false)]
+    [InlineData(false, true, "class", false)]
+    [InlineData(false, false, "values", true)]
+    [InlineData(true, false, "values", true)]
+    public void CompilesAliasedValuesInScalarsCollectionsAndGroups(bool globallyVisible, bool conflicting, string alias, bool hidesNamespace)
     {
         const string values = """
             #nullable enable
@@ -56,6 +58,9 @@ public sealed class AliasedValueTests
                 public static int Run() => Parser.Parse<Args>(new[] { "--value=7", "--mode=One" }).Value.Value;
             }
             """;
-        GeneratorTestFixture.AssertCompiles(source.Replace("ALIAS", alias), new LokadCliGenerator(), references);
+        var consumer = source.Replace("ALIAS", alias);
+        if (hidesNamespace)
+            consumer = consumer.Replace("namespace Example;", "namespace Example {") + "\n}\npublic class Values { }";
+        GeneratorTestFixture.AssertCompiles(consumer, new LokadCliGenerator(), references);
     }
 }

@@ -13,8 +13,8 @@ namespace Lokad.Cli.Generator.Emit
                 SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
 
         private readonly Compilation _compilation;
-        private readonly Dictionary<INamedTypeSymbol, string> _qualifiers =
-            new Dictionary<INamedTypeSymbol, string>(SymbolEqualityComparer.Default);
+        private readonly Dictionary<IAssemblySymbol, string> _qualifiers =
+            new Dictionary<IAssemblySymbol, string>(SymbolEqualityComparer.Default);
         private readonly SortedSet<string> _externAliases = new SortedSet<string>(StringComparer.Ordinal);
 
         public TypeNameFormatter(Compilation compilation) => _compilation = compilation;
@@ -39,49 +39,33 @@ namespace Lokad.Cli.Generator.Emit
                     for (var next = index + 1; next < parts.Length; next++)
                         if (parts[next].Symbol is INamedTypeSymbol named)
                         {
-                            spelling = GetQualifier(named.OriginalDefinition);
+                            spelling = GetQualifier(named.ContainingAssembly);
                             break;
                         }
                 text.Append(spelling);
             }
             return text.ToString();
 
-            string GetQualifier(INamedTypeSymbol type)
+            string GetQualifier(IAssemblySymbol assembly)
             {
-                if (_qualifiers.TryGetValue(type, out var qualifier))
+                if (_qualifiers.TryGetValue(assembly, out var qualifier))
                     return qualifier;
 
                 qualifier = "global";
-                var reference = _compilation.GetMetadataReference(type.ContainingAssembly);
+                var reference = _compilation.GetMetadataReference(assembly);
                 if (reference != null && !reference.Properties.Aliases.IsDefaultOrEmpty)
                 {
-                    var globallyVisible = false;
-                    string? alias = null;
+                    // Metadata identity does not account for C# namespace/type shadowing. Prefer an explicit alias.
                     foreach (var name in reference.Properties.Aliases)
-                        if (name == "global")
-                            globallyVisible = true;
-                        else
-                            alias ??= name;
-
-                    if (alias != null && (!globallyVisible || !SymbolEqualityComparer.Default.Equals(
-                        _compilation.GetTypeByMetadataName(GetMetadataName()), type)))
-                    {
-                        qualifier = "@" + alias;
-                        _externAliases.Add(alias);
-                    }
+                        if (name != "global")
+                        {
+                            qualifier = "@" + name;
+                            _externAliases.Add(name);
+                            break;
+                        }
                 }
-                _qualifiers.Add(type, qualifier);
+                _qualifiers.Add(assembly, qualifier);
                 return qualifier;
-
-                string GetMetadataName()
-                {
-                    var name = type.MetadataName;
-                    for (var parent = type.ContainingType; parent != null; parent = parent.ContainingType)
-                        name = parent.MetadataName + "+" + name;
-                    for (var parent = type.ContainingNamespace; !parent.IsGlobalNamespace; parent = parent.ContainingNamespace)
-                        name = parent.MetadataName + "." + name;
-                    return name;
-                }
             }
         }
     }

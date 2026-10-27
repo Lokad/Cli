@@ -1,3 +1,5 @@
+using Microsoft.CodeAnalysis;
+
 namespace Lokad.Cli.Generator.Tests;
 
 public sealed class AttributeIdentityTests
@@ -51,6 +53,7 @@ public sealed class AttributeIdentityTests
             """;
         var source = "extern alias runtime; extern alias foreign; using Lokad.Cli; namespace Example; " +
             (foreignFirst ? foreign + actual : actual + foreign) + usage;
-        GeneratorTestFixture.AssertCompiles(source, new LokadCliGenerator(), new[] { reference });
+        var runtime = MetadataReference.CreateFromFile(typeof(ArgumentsAttribute).Assembly.Location).WithAliases(new[] { "runtime" });
+        GeneratorTestFixture.AssertCompiles(source, new LokadCliGenerator(), new[] { reference, runtime });
     }
 }
