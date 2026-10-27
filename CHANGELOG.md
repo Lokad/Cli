@@ -1,6 +1,8 @@
 # Changelog
 
-## 1.1.0 — Unreleased
+## 1.1.0 — 2026-10-27
+
+Published on [NuGet](https://www.nuget.org/packages/Lokad.Cli/1.1.0).
 
 ### Added
 

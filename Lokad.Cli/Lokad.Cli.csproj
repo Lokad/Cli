@@ -15,7 +15,7 @@
         <Company>Lokad</Company>
         <Description>A source-generated command-line parser for .NET with strongly typed arguments, subcommands, and generated help.</Description>
         <PackageTags>cli;command-line;parser;source-generator</PackageTags>
-        <PackageReleaseNotes>Upcoming 1.1.0: token inspection and rewriting, help detection, argument groups, option aliases, optional values and improved diagnostics. See https://github.com/Lokad/Cli/blob/master/CHANGELOG.md</PackageReleaseNotes>
+        <PackageReleaseNotes>1.1.0: token inspection and rewriting, help detection, argument groups, option aliases, optional values and improved diagnostics. See https://github.com/Lokad/Cli/blob/master/CHANGELOG.md</PackageReleaseNotes>
         <PackageProjectUrl>https://github.com/Lokad/Cli</PackageProjectUrl>
         <RepositoryUrl>https://github.com/Lokad/Cli.git</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
