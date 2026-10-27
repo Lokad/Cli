@@ -8,6 +8,21 @@ namespace Lokad.Cli.Generator.FullTests;
 public sealed class TokenizationCommandTests
 {
     [Fact]
+    public void RejectsUnsupportedTokenImplementations()
+    {
+        Check<FormattingArgs>(new ForeignToken(), new ValueArg("data"));
+        Check<ArrayBoundaryArgs>(new ValueArg("10"), new ForeignToken(), new ValueArg("label"), new ValueArg("12"));
+
+        static void Check<T>(params ITokenizedArguments[] tokens) where T : ICliParsed<T>
+        {
+            var error = Assert.Throws<ParseException>(() => Parser.ParseTokenized<T>(new TokenizedArguments(tokens)));
+            Assert.Equal("unexpected token type `ForeignToken`", error.Message);
+        }
+    }
+
+    private sealed record ForeignToken : ITokenizedArguments;
+
+    [Fact]
     public void BindsLiteralArgumentsWithoutDeclaredBoundaries()
     {
         var tokens = new TokenizedArguments(new ITokenizedArguments[]

@@ -253,6 +253,8 @@ $@"#nullable enable
             lines.AppendLine("                case global::Lokad.Cli.LiteralArg:");
             lines.AppendLine("                    var positionalValue = current is global::Lokad.Cli.ValueArg valueArg ? valueArg.Value : ((global::Lokad.Cli.LiteralArg)current).Value;");
             lines.Append(EmitPositionalBinding(type, positional, useCollectionBoundaries));
+            lines.AppendLine("                default:");
+            lines.AppendLine("                    throw new global::Lokad.Cli.ParseException($\"unexpected token type `{current.GetType().Name}`\");");
             lines.AppendLine("            }");
             lines.AppendLine("        }");
 

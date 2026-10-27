@@ -94,6 +94,8 @@ partial record NullableGroup : global::Lokad.Cli.ICliParsed<global::Test.Nullabl
                         break;
                     }
                     throw new global::Lokad.Cli.ParseException($"unexpected argument `{positionalValue}`");
+                default:
+                    throw new global::Lokad.Cli.ParseException($"unexpected token type `{current.GetType().Name}`");
             }
         }
 

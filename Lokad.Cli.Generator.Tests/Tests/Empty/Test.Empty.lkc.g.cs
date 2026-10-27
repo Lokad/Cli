@@ -84,6 +84,8 @@ partial record Empty : global::Lokad.Cli.ICliParsed<global::Test.Empty>
                     if (current is global::Lokad.Cli.ValueArg && tokenized.MaybeSkipPositional(positionalValue))
                         break;
                     throw new global::Lokad.Cli.ParseException($"unexpected argument `{positionalValue}`");
+                default:
+                    throw new global::Lokad.Cli.ParseException($"unexpected token type `{current.GetType().Name}`");
             }
         }
 
