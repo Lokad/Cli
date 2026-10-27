@@ -51,7 +51,8 @@ partial record RawChoice : global::Lokad.Cli.ICliParsed<global::Test.RawChoice>
 
     private static global::Test.RawChoice ParseTokenizedCore__Cli(global::Lokad.Cli.TokenizedArguments tokenized)
     {
-        tokenized.SkipPositional(@"raw");
+        if (tokenized.HasPositionalPrefix(@"raw"))
+            tokenized.SkipPositional(@"raw");
 
         // Discrimination
         _ = tokenized;

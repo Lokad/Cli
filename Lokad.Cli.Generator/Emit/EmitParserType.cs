@@ -177,7 +177,10 @@ $@"#nullable enable
             var lines = new System.Text.StringBuilder();
             lines.AppendLine();
             if (type.Discriminator.Prefix is string prefix)
-                lines.Append("        tokenized.SkipPositional(").Append(FormatStringLiteral(prefix)).AppendLine(");");
+            {
+                lines.Append("        if (tokenized.HasPositionalPrefix(").Append(FormatStringLiteral(prefix)).AppendLine("))");
+                lines.Append("            tokenized.SkipPositional(").Append(FormatStringLiteral(prefix)).AppendLine(");");
+            }
             else
                 lines.Append("        tokenized.SelectDiscriminator(")
                     .Append(type.Discriminator.LongOption is string name ? FormatStringLiteral(name) : "null")

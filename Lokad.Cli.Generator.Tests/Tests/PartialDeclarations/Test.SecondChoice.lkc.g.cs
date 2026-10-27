@@ -51,7 +51,8 @@ partial record SecondChoice : global::Lokad.Cli.ICliParsed<global::Test.SecondCh
 
     private static global::Test.SecondChoice ParseTokenizedCore__Cli(global::Lokad.Cli.TokenizedArguments tokenized)
     {
-        tokenized.SkipPositional(@"second");
+        if (tokenized.HasPositionalPrefix(@"second"))
+            tokenized.SkipPositional(@"second");
 
         // Discrimination
         _ = tokenized;

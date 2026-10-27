@@ -51,7 +51,8 @@ partial record RequiredMode : global::Lokad.Cli.ICliParsed<global::Test.Required
 
     private static global::Test.RequiredMode ParseTokenizedCore__Cli(global::Lokad.Cli.TokenizedArguments tokenized)
     {
-        tokenized.SkipPositional(@"required");
+        if (tokenized.HasPositionalPrefix(@"required"))
+            tokenized.SkipPositional(@"required");
 
         // Discrimination
         _ = tokenized;

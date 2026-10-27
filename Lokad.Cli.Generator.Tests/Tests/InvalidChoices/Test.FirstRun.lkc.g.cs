@@ -51,7 +51,8 @@ partial record FirstRun : global::Lokad.Cli.ICliParsed<global::Test.FirstRun>
 
     private static global::Test.FirstRun ParseTokenizedCore__Cli(global::Lokad.Cli.TokenizedArguments tokenized)
     {
-        tokenized.SkipPositional(@"run");
+        if (tokenized.HasPositionalPrefix(@"run"))
+            tokenized.SkipPositional(@"run");
 
         // Discrimination
         _ = tokenized;

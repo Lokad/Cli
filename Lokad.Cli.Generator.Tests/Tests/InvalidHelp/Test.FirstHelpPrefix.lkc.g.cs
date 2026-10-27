@@ -55,7 +55,8 @@ partial record FirstHelpPrefix : global::Lokad.Cli.ICliParsed<global::Test.First
 
     private static global::Test.FirstHelpPrefix ParseTokenizedCore__Cli(global::Lokad.Cli.TokenizedArguments tokenized)
     {
-        tokenized.SkipPositional(@"help");
+        if (tokenized.HasPositionalPrefix(@"help"))
+            tokenized.SkipPositional(@"help");
 
         // Discrimination
         _ = tokenized;

@@ -51,7 +51,8 @@ partial record NestedDiscriminatorAlias : global::Lokad.Cli.ICliParsed<global::T
 
     private static global::Test.NestedDiscriminatorAlias ParseTokenizedCore__Cli(global::Lokad.Cli.TokenizedArguments tokenized)
     {
-        tokenized.SkipPositional(@"nested");
+        if (tokenized.HasPositionalPrefix(@"nested"))
+            tokenized.SkipPositional(@"nested");
 
         // Discrimination
         _ = tokenized;

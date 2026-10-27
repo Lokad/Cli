@@ -53,7 +53,8 @@ partial record NestedDefaultLeaf : global::Lokad.Cli.ICliParsed<global::Test.Nes
 
     private static global::Test.NestedDefaultLeaf ParseTokenizedCore__Cli(global::Lokad.Cli.TokenizedArguments tokenized)
     {
-        tokenized.SkipPositional(@"run");
+        if (tokenized.HasPositionalPrefix(@"run"))
+            tokenized.SkipPositional(@"run");
 
         // Discrimination
         _ = tokenized;

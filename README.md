@@ -172,6 +172,7 @@ A discriminator can be requested as part of the `[Arguments]` itself:
  - `[Arguments("...", Short = 'g')]` expects `-g` (without arguments) to appear as a short argument.
  
 Choose a positional `Prefix` or named `Long`/`Short` discriminators (`LKC0033`); `Long` and `Short` can be combined.
+A prefix is skipped only when it is the first unmatched positional token; later equal operands remain data.
 Being used as a discriminator does not prevent the option from appearing on an argument as well.
 
 The `[Choice]` annotation is added to an interface that can represent multiple ways of parsing arguments. 

@@ -51,7 +51,8 @@ partial record ListCommand : global::Lokad.Cli.ICliParsed<global::Test.ListComma
 
     private static global::Test.ListCommand ParseTokenizedCore__Cli(global::Lokad.Cli.TokenizedArguments tokenized)
     {
-        tokenized.SkipPositional(@"list");
+        if (tokenized.HasPositionalPrefix(@"list"))
+            tokenized.SkipPositional(@"list");
 
         // Discrimination
         _ = tokenized;

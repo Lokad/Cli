@@ -51,7 +51,8 @@ partial record PrefixOptions : global::Lokad.Cli.ICliParsed<global::Test.PrefixO
 
     private static global::Test.PrefixOptions ParseTokenizedCore__Cli(global::Lokad.Cli.TokenizedArguments tokenized)
     {
-        tokenized.SkipPositional(@"mode");
+        if (tokenized.HasPositionalPrefix(@"mode"))
+            tokenized.SkipPositional(@"mode");
 
         // Discrimination
         _ = tokenized;

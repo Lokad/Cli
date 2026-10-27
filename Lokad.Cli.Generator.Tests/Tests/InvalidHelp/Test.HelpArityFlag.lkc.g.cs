@@ -53,7 +53,8 @@ partial record HelpArityFlag : global::Lokad.Cli.ICliParsed<global::Test.HelpAri
 
     private static global::Test.HelpArityFlag ParseTokenizedCore__Cli(global::Lokad.Cli.TokenizedArguments tokenized)
     {
-        tokenized.SkipPositional(@"flag");
+        if (tokenized.HasPositionalPrefix(@"flag"))
+            tokenized.SkipPositional(@"flag");
 
         // Discrimination
         _ = tokenized;

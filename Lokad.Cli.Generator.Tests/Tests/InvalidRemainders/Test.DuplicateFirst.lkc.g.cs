@@ -53,7 +53,8 @@ partial record DuplicateFirst : global::Lokad.Cli.ICliParsed<global::Test.Duplic
 
     private static global::Test.DuplicateFirst ParseTokenizedCore__Cli(global::Lokad.Cli.TokenizedArguments tokenized)
     {
-        tokenized.SkipPositional(@"run");
+        if (tokenized.HasPositionalPrefix(@"run"))
+            tokenized.SkipPositional(@"run");
 
         // Discrimination
         _ = tokenized;

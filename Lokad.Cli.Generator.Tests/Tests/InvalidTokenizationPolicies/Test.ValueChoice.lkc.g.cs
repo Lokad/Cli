@@ -51,7 +51,8 @@ partial record ValueChoice : global::Lokad.Cli.ICliParsed<global::Test.ValueChoi
 
     private static global::Test.ValueChoice ParseTokenizedCore__Cli(global::Lokad.Cli.TokenizedArguments tokenized)
     {
-        tokenized.SkipPositional(@"value");
+        if (tokenized.HasPositionalPrefix(@"value"))
+            tokenized.SkipPositional(@"value");
 
         // Discrimination
         _ = tokenized;

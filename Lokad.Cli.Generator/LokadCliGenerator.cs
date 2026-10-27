@@ -183,6 +183,8 @@ namespace Lokad.Cli.Generator
                 if (!activeCommands.Add(declaration))
                     throw new GeneratorException(selectorDiagnostic, "cyclic choices");
                 var info = collected[declaration];
+                if (info.Discriminator?.Prefix != null)
+                    tokenization.RequirePositionalPrefix();
                 var operands = new List<CliArgumentInfo>();
                 var stopShort = new List<char>();
                 var stopLong = new List<string>();
@@ -240,10 +242,7 @@ namespace Lokad.Cli.Generator
                     else
                     {
                         if (selector.Prefix != null)
-                        {
                             AddSelector("prefix:" + selector.Prefix);
-                            tokenization.RequirePositionalChoices();
-                        }
                         if (selector.LongOption != null) AddSelector("--" + selector.LongOption);
                         if (selector.ShortOption != '\0') AddSelector("-" + selector.ShortOption);
                     }

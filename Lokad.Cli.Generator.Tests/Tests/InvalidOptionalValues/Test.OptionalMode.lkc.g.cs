@@ -51,7 +51,8 @@ partial record OptionalMode : global::Lokad.Cli.ICliParsed<global::Test.Optional
 
     private static global::Test.OptionalMode ParseTokenizedCore__Cli(global::Lokad.Cli.TokenizedArguments tokenized)
     {
-        tokenized.SkipPositional(@"optional");
+        if (tokenized.HasPositionalPrefix(@"optional"))
+            tokenized.SkipPositional(@"optional");
 
         // Discrimination
         _ = tokenized;

@@ -6,7 +6,7 @@ partial record HelpArityValue : global::Lokad.Cli.ICliParsed<global::Test.HelpAr
     private static class OptionNames__Cli
     {
         public static readonly global::System.Collections.Generic.IReadOnlyDictionary<char, global::Lokad.Cli.OptionValueMode> Short = new global::System.Collections.Generic.Dictionary<char, global::Lokad.Cli.OptionValueMode> {  };
-        public static readonly global::System.Collections.Generic.IReadOnlyDictionary<string, global::Lokad.Cli.OptionValueMode> Long = new global::System.Collections.Generic.Dictionary<string, global::Lokad.Cli.OptionValueMode> { [@"help"] = global::Lokad.Cli.OptionValueMode.None };
+        public static readonly global::System.Collections.Generic.IReadOnlyDictionary<string, global::Lokad.Cli.OptionValueMode> Long = new global::System.Collections.Generic.Dictionary<string, global::Lokad.Cli.OptionValueMode> { [@"help"] = global::Lokad.Cli.OptionValueMode.Required };
     }
 
     public static global::Test.HelpArityValue Parse(global::System.Collections.Generic.IReadOnlyList<string> arguments)
@@ -51,7 +51,8 @@ partial record HelpArityValue : global::Lokad.Cli.ICliParsed<global::Test.HelpAr
 
     private static global::Test.HelpArityValue ParseTokenizedCore__Cli(global::Lokad.Cli.TokenizedArguments tokenized)
     {
-        tokenized.SkipPositional(@"value");
+        if (tokenized.HasPositionalPrefix(@"value"))
+            tokenized.SkipPositional(@"value");
 
         // Discrimination
         _ = tokenized;

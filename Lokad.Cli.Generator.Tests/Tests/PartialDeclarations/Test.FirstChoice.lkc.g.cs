@@ -51,7 +51,8 @@ partial record FirstChoice : global::Lokad.Cli.ICliParsed<global::Test.FirstChoi
 
     private static global::Test.FirstChoice ParseTokenizedCore__Cli(global::Lokad.Cli.TokenizedArguments tokenized)
     {
-        tokenized.SkipPositional(@"first");
+        if (tokenized.HasPositionalPrefix(@"first"))
+            tokenized.SkipPositional(@"first");
 
         // Discrimination
         _ = tokenized;

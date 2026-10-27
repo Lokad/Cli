@@ -51,7 +51,8 @@ partial record SecondHelpPrefix : global::Lokad.Cli.ICliParsed<global::Test.Seco
 
     private static global::Test.SecondHelpPrefix ParseTokenizedCore__Cli(global::Lokad.Cli.TokenizedArguments tokenized)
     {
-        tokenized.SkipPositional(@"help");
+        if (tokenized.HasPositionalPrefix(@"help"))
+            tokenized.SkipPositional(@"help");
 
         // Discrimination
         _ = tokenized;

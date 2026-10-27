@@ -51,7 +51,8 @@ partial record FlagChoice : global::Lokad.Cli.ICliParsed<global::Test.FlagChoice
 
     private static global::Test.FlagChoice ParseTokenizedCore__Cli(global::Lokad.Cli.TokenizedArguments tokenized)
     {
-        tokenized.SkipPositional(@"flag");
+        if (tokenized.HasPositionalPrefix(@"flag"))
+            tokenized.SkipPositional(@"flag");
 
         // Discrimination
         _ = tokenized;

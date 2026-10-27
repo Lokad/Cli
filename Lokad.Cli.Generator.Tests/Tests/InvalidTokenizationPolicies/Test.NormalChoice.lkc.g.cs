@@ -6,7 +6,7 @@ partial record NormalChoice : global::Lokad.Cli.ICliParsed<global::Test.NormalCh
     private static class OptionNames__Cli
     {
         public static readonly global::System.Collections.Generic.IReadOnlyDictionary<char, global::Lokad.Cli.OptionValueMode> Short = new global::System.Collections.Generic.Dictionary<char, global::Lokad.Cli.OptionValueMode> {  };
-        public static readonly global::System.Collections.Generic.IReadOnlyDictionary<string, global::Lokad.Cli.OptionValueMode> Long = new global::System.Collections.Generic.Dictionary<string, global::Lokad.Cli.OptionValueMode> { [@"value"] = global::Lokad.Cli.OptionValueMode.None };
+        public static readonly global::System.Collections.Generic.IReadOnlyDictionary<string, global::Lokad.Cli.OptionValueMode> Long = new global::System.Collections.Generic.Dictionary<string, global::Lokad.Cli.OptionValueMode> { [@"value"] = global::Lokad.Cli.OptionValueMode.Required };
     }
 
     public static global::Test.NormalChoice Parse(global::System.Collections.Generic.IReadOnlyList<string> arguments)
@@ -51,7 +51,8 @@ partial record NormalChoice : global::Lokad.Cli.ICliParsed<global::Test.NormalCh
 
     private static global::Test.NormalChoice ParseTokenizedCore__Cli(global::Lokad.Cli.TokenizedArguments tokenized)
     {
-        tokenized.SkipPositional(@"normal");
+        if (tokenized.HasPositionalPrefix(@"normal"))
+            tokenized.SkipPositional(@"normal");
 
         // Discrimination
         _ = tokenized;
