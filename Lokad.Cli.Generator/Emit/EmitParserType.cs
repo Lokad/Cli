@@ -920,7 +920,7 @@ $@"#nullable enable
                     return string.Join(", ", names);
                 }
                 var labels = string.Join(", ", argument.Options.Labels);
-                return argument.ShortNumeric && argument.Options.HasAliases ? labels + ", -<number>" : labels;
+                return argument.ShortNumeric ? labels + ", -<number>" : labels;
             }
 
             if (argument.ShortNumeric)
