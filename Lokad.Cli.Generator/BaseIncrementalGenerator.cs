@@ -64,7 +64,8 @@ namespace Lokad.Cli.Generator
             }
             catch (Exception ex)
             {
-                return new GenerationItem(new ErrorReportStrategy(ex, TypeName.FromSymbol(typeSymbol)), GetPrimaryLocation(typeSymbol));
+                return new GenerationItem(new ErrorReportStrategy(ex,
+                    new TypeNameFormatter(context.SemanticModel.Compilation).FromSymbol(typeSymbol)), GetPrimaryLocation(typeSymbol));
             }
         }
 

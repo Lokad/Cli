@@ -47,6 +47,18 @@ public static class GeneratorTestFixture
         Assert.DoesNotContain(generated, file => file.FileName == "Diagnostics.txt");
     }
 
+    internal static PortableExecutableReference CompileReference(string assemblyName, string source)
+    {
+        var compilation = CSharpCompilation.Create(assemblyName,
+            new[] { CSharpSyntaxTree.ParseText(source, ParseOptions) },
+            new[] { MetadataReference.CreateFromFile(typeof(object).Assembly.Location) },
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+        using var stream = new MemoryStream();
+        var emitted = compilation.Emit(stream);
+        Assert.True(emitted.Success, string.Join("\n", emitted.Diagnostics));
+        return MetadataReference.CreateFromImage(stream.ToArray());
+    }
+
     private static IReadOnlyList<(string FileName, string Source)> Generate(
         IReadOnlyList<SyntaxTree> syntaxTrees, string assemblyName, IIncrementalGenerator generator, IReadOnlyList<MetadataReference> additionalReferences)
     {

@@ -1,6 +1,3 @@
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-
 namespace Lokad.Cli.Generator.Tests;
 
 public sealed class AttributeIdentityTests
@@ -30,14 +27,7 @@ public sealed class AttributeIdentityTests
                 public ChoiceAttribute(System.Type type) { }
             }
             """;
-        var compilation = CSharpCompilation.Create("ForeignAnnotations",
-            new[] { CSharpSyntaxTree.ParseText(foreignSource, new CSharpParseOptions(LanguageVersion.CSharp11)) },
-            new[] { MetadataReference.CreateFromFile(typeof(Attribute).Assembly.Location) },
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
-        using var stream = new MemoryStream();
-        var emitted = compilation.Emit(stream);
-        Assert.True(emitted.Success, string.Join("\n", emitted.Diagnostics));
-        var reference = MetadataReference.CreateFromImage(stream.ToArray())
+        var reference = GeneratorTestFixture.CompileReference("ForeignAnnotations", foreignSource)
             .WithAliases(foreignGlobal ? new[] { "global", "foreign" } : new[] { "foreign" });
 
         const string foreign = """

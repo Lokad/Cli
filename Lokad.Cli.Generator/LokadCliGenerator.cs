@@ -74,6 +74,7 @@ namespace Lokad.Cli.Generator
 
         private CliTypeInfo CollectParserInfo(Compilation compilation, ITypeSymbol typeSymbol)
         {
+            var typeNames = new TypeNameFormatter(compilation);
             var hasShortNumericArguments = false;
             var choices = new List<CliChoiceInfo>();
             var rootMembers = Array.Empty<CliArgumentInfo>();
@@ -140,7 +141,7 @@ namespace Lokad.Cli.Generator
             while (System.Linq.Enumerable.Any(existingNames, name => name.EndsWith(implementationSuffix, StringComparison.Ordinal)))
                 implementationSuffix += "_";
             return new CliTypeInfo(
-                TypeName.FromSymbol(typeSymbol),
+                typeNames.FromSymbol(typeSymbol),
                 GetTypeKind(typeSymbol),
                 explicitParserMethods,
                 implementationSuffix,
@@ -151,7 +152,8 @@ namespace Lokad.Cli.Generator
                 discriminator,
                 documentation,
                 tokenization,
-                boundary);
+                boundary,
+                typeNames.ExternAliases);
 
             void ReserveNames(ITypeSymbol declaration)
             {
@@ -401,7 +403,7 @@ namespace Lokad.Cli.Generator
                         return false;
                     var position = context.OpenBraceToken.RawKind == 0 || context.OpenBraceToken.IsMissing
                         ? context.Identifier.Span.End : context.OpenBraceToken.Span.End;
-                    var creation = SyntaxFactory.ObjectCreationExpression(SyntaxFactory.ParseTypeName(TypeName.FromSymbol(declaration).FullName))
+                    var creation = SyntaxFactory.ObjectCreationExpression(SyntaxFactory.ParseTypeName(typeNames.FromSymbol(declaration).FullName))
                         .WithArgumentList(SyntaxFactory.ArgumentList());
                     var info = compilation.GetSemanticModel(context.SyntaxTree).GetSpeculativeSymbolInfo(
                         position, creation, SpeculativeBindingOption.BindAsExpression);
@@ -485,13 +487,13 @@ namespace Lokad.Cli.Generator
                         throw InvalidTarget();
                     var argument = new CliArgumentInfo(
                         member.Name,
-                        TypeName.FromSymbol(bindableType),
+                        typeNames.FromSymbol(bindableType),
                         bindableType.IsReferenceType,
                         isNullable,
                         !isOptionalValue && collectionKind == CliCollectionKind.None && bindableType.SpecialType == SpecialType.System_Boolean,
                         bindableType.TypeKind == TypeKind.Enum,
                         collectionKind,
-                        isConstructorParameter ? TypeName.FormatSymbol(type) : null,
+                        isConstructorParameter ? typeNames.FormatSymbol(type) : null,
                         GetConstructorString(annotation, 0) ?? string.Empty,
                         GetNamedString(annotation, "Name"),
                         names,
@@ -631,7 +633,7 @@ namespace Lokad.Cli.Generator
                 {
                     var choiceDiscriminator = Collect(choiceType);
                     if (isRoot)
-                        choices.Add(new CliChoiceInfo(TypeName.FromSymbol(choiceType), choiceDiscriminator));
+                        choices.Add(new CliChoiceInfo(typeNames.FromSymbol(choiceType), choiceDiscriminator));
                 }
 
                 return ownDiscriminator;

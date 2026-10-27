@@ -16,7 +16,8 @@ namespace Lokad.Cli.Generator.Emit
             CliDiscriminatorInfo? discriminator,
             string? documentation,
             CliTokenizationInfo tokenization,
-            CliCommandBoundaryInfo? commandBoundary)
+            CliCommandBoundaryInfo? commandBoundary,
+            IReadOnlyCollection<string> externAliases)
         {
             TypeName = typeName;
             Kind = kind;
@@ -30,6 +31,7 @@ namespace Lokad.Cli.Generator.Emit
             Documentation = documentation;
             Tokenization = tokenization;
             CommandBoundary = commandBoundary;
+            ExternAliases = externAliases;
         }
 
         public TypeName TypeName { get; }
@@ -55,5 +57,7 @@ namespace Lokad.Cli.Generator.Emit
         public CliTokenizationInfo Tokenization { get; }
 
         public CliCommandBoundaryInfo? CommandBoundary { get; }
+
+        public IReadOnlyCollection<string> ExternAliases { get; }
     }
 }

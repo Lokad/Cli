@@ -9,7 +9,7 @@ namespace Lokad.Cli.Generator.Emit
         {
             return
 $@"#nullable enable
-{GetNamespaceDeclaration(type)}partial {GetTypeDeclaration(type)} {FormatIdentifier(type.TypeName.Name)} : global::Lokad.Cli.ICliParsed<{type.TypeName.FullName}>
+{GetExternAliasDeclarations(type)}{GetNamespaceDeclaration(type)}partial {GetTypeDeclaration(type)} {FormatIdentifier(type.TypeName.Name)} : global::Lokad.Cli.ICliParsed<{type.TypeName.FullName}>
 {{
 {EmitOptionNames(type)}
 
@@ -63,6 +63,10 @@ $@"#nullable enable
 {EmitParseHelpers(type)}
 }}
 ";
+
+            static string GetExternAliasDeclarations(CliTypeInfo parserType) => parserType.ExternAliases.Count == 0
+                ? string.Empty : string.Join(Environment.NewLine, System.Linq.Enumerable.Select(
+                    parserType.ExternAliases, alias => "extern alias @" + alias + ";")) + Environment.NewLine;
 
             static string GetNamespaceDeclaration(CliTypeInfo parserType) => parserType.TypeName.Namespace.Length == 0
                 ? string.Empty : "namespace " + parserType.TypeName.Namespace + ";" + Environment.NewLine;
