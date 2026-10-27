@@ -157,6 +157,28 @@ public sealed class HelpCommandTests
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void InspectsTheSelectedGroupWithItsOwnPrefixOptional(bool includePrefix)
+    {
+        var arguments = includePrefix ? new[] { "tools", "help", "topic" } : new[] { "help", "topic" };
+        var tokens = Parser.Tokenize<IToolsHelpCommand>(arguments);
+        var first = tokens.Peek();
+        Assert.True(Parser.IsHelpRequested<IToolsHelpCommand>(tokens));
+        Assert.Same(first, tokens.Peek());
+        Assert.Equal("topic", Assert.IsType<PrefixHelpArgs>(Parser.ParseTokenized<IToolsHelpCommand>(tokens)).Target);
+    }
+
+    [Fact]
+    public void RequiresAnOccurrenceOfTheEntrypointsOwnHelpPrefix()
+    {
+        Assert.True(Parser.IsHelpRequested<PrefixHelpArgs>(new[] { "help", "topic" }));
+        Assert.False(Parser.IsHelpRequested<PrefixHelpArgs>(new[] { "topic" }));
+        Assert.False(Parser.IsHelpRequested<PrefixHelpArgs>(Array.Empty<string>()));
+        Assert.Equal("topic", Parser.Parse<PrefixHelpArgs>(new[] { "topic" }).Target);
+    }
+
     [Fact]
     public void RespectsLiteralRemaindersAndNamedBoundaries()
     {

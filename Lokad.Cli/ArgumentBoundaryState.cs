@@ -64,8 +64,6 @@ namespace Lokad.Cli
                 _rootPrefixPending = false;
                 if (string.Equals(_root.Prefix, value, StringComparison.Ordinal))
                     return true;
-                if (_root.Choices.Count > 0)
-                    throw new ParseException($"expected `{_root.Prefix}` before command arguments");
             }
 
             var node = _root;
@@ -107,7 +105,7 @@ namespace Lokad.Cli
         public void OptionValueConsumed(ITokenizedArguments option)
         {
             var command = GetCommand();
-            if (command == null || (_rootPrefixPending && _root.Choices.Count > 0))
+            if (command == null)
             {
                 var visited = new HashSet<CommandBoundary>();
                 if (HasBoundaryOption(_root))

@@ -70,6 +70,34 @@ public sealed class PrefixCommandTests
         var arguments = new[] { "a.txt", "copy", "b.txt" };
         Assert.Equal(arguments, Parser.Parse<StoppedPrefixCopyArgs>(arguments).Files);
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void DirectInterfacesAcceptTheirOwnPrefixOptionallyBeforeTheFirstOperand(bool includePrefix)
+    {
+        var arguments = includePrefix
+            ? new[] { "tools", "run", "file", "--child" }
+            : new[] { "run", "file", "--child" };
+        var parsed = Assert.IsType<FirstOperandArgs>(Parser.Parse<INestedRemainderCommand>(arguments));
+        Assert.Equal("file", parsed.File);
+        Assert.Equal(new[] { "--child" }, parsed.Tail);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void DirectInterfacesAcceptTheirOwnPrefixOptionallyBeforeAnOptionBoundary(bool includePrefix)
+    {
+        var arguments = includePrefix
+            ? new[] { "tools", "--execute", "--code=text", "tools", "--child" }
+            : new[] { "--execute", "--code=text", "tools", "--child" };
+        var parsed = Assert.IsType<NestedCodeArgs>(Parser.Parse<IToolBoundaryCommand>(arguments));
+        Assert.Equal("text", parsed.Code);
+        Assert.Equal(new[] { "tools", "--child" }, parsed.Tail);
+        Assert.Throws<ParseException>(() => Parser.Parse<IBoundaryRoot>(
+            new[] { "--execute", "--code=text", "--child" }));
+    }
 }
 
 [Choice(typeof(PrefixCopyArgs))]

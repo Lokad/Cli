@@ -168,17 +168,16 @@ namespace Lokad.Cli
                 foreach (var positional in PositionalTokens())
                     values.Add(positional.Token.Value);
                 var visited = new HashSet<(CommandBoundary Command, int Position)>();
-                // The caller has selected this entrypoint. Consume its positional prefix before inspecting children.
+                // The caller has selected this entrypoint. Its own prefix is optional, but children still need selectors.
                 var start = 0;
-                if (commands.Prefix != null && !TryMatch(commands, 0, out start))
-                    return false;
+                var matchesRootPrefix = commands.Prefix != null && TryMatch(commands, 0, out start);
                 return Visit(commands, start);
 
                 bool Visit(CommandBoundary command, int position)
                 {
                     if (!command.HasHelpPrefixes || !visited.Add((command, position)))
                         return false;
-                    if (command.IsHelpPrefix)
+                    if (command.IsHelpPrefix && (command != commands || matchesRootPrefix))
                         return true;
                     var hasExplicitChoice = false;
                     foreach (var child in command.Choices)
