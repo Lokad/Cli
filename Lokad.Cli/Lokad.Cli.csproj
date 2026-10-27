@@ -6,22 +6,34 @@
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <LangVersion>11.0</LangVersion>
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
-        <IsPackable Condition="'$(Configuration)'=='Release'">true</IsPackable>
-        <IsPackable Condition="'$(Configuration)'!='Release'">false</IsPackable>
-        <GeneratePackageOnBuild Condition="'$(Configuration)'=='Release'">true</GeneratePackageOnBuild>
+        <IsPackable>true</IsPackable>
         <BuildProjectReferences Condition="'$(NoBuild)' == 'true'">false</BuildProjectReferences>
         <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);IncludeCliGeneratorInPackage</TargetsForTfmSpecificContentInPackage>
         <_CliGeneratorPackageFramework>$(TargetFrameworks.Split(';').GetValue(0))</_CliGeneratorPackageFramework>
-        <PackageReadmeFile>Readme.md</PackageReadmeFile>
+        <Version>1.1.0</Version>
+        <Authors>Lokad</Authors>
+        <Company>Lokad</Company>
+        <Description>A source-generated command-line parser for .NET with strongly typed arguments, subcommands, and generated help.</Description>
+        <PackageTags>cli;command-line;parser;source-generator</PackageTags>
+        <PackageReleaseNotes>Upcoming 1.1.0: token inspection and rewriting, help detection, argument groups, option aliases, optional values and improved diagnostics. See https://github.com/Lokad/Cli/blob/master/CHANGELOG.md</PackageReleaseNotes>
+        <PackageProjectUrl>https://github.com/Lokad/Cli</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/Lokad/Cli.git</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
         <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
-        <PackageIcon>lokad.png</PackageIcon>
-        <Version>1.0.0</Version>
+        <PackageIcon>icon.png</PackageIcon>
+        <DebugType>portable</DebugType>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <PackageOutputPath>$(MSBuildThisFileDirectory)../artifacts/nugets/</PackageOutputPath>
     </PropertyGroup>
 
     <ItemGroup>
-        <None Include="Readme.md" Pack="true" PackagePath="\" />
-        <None Include="..\LICENSE.txt" Pack="true" PackagePath="\" />
-        <None Include="..\lokad.png" Pack="true" PackagePath="\" />
+        <None Include="../README.md" Pack="true" PackagePath="/" />
+        <None Include="../CHANGELOG.md" Pack="true" PackagePath="/" />
+        <None Include="../LICENSE.txt" Pack="true" PackagePath="/" />
+        <None Include="../icon.png" Pack="true" PackagePath="/" Visible="false" />
     </ItemGroup>
 
     <ItemGroup>
@@ -38,6 +50,10 @@
         <ItemGroup>
             <TfmSpecificPackageFile Include="@(CliGeneratorOutput)" PackagePath="analyzers/dotnet/cs" />
         </ItemGroup>
+    </Target>
+
+    <Target Name="RequireReleasePackage" BeforeTargets="GenerateNuspec" Condition="'$(Configuration)' != 'Release'">
+        <Error Text="Produce NuGet packages with -c Release." />
     </Target>
 
 </Project>
