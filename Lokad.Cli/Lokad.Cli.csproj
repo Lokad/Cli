@@ -9,6 +9,9 @@
         <IsPackable Condition="'$(Configuration)'=='Release'">true</IsPackable>
         <IsPackable Condition="'$(Configuration)'!='Release'">false</IsPackable>
         <GeneratePackageOnBuild Condition="'$(Configuration)'=='Release'">true</GeneratePackageOnBuild>
+        <BuildProjectReferences Condition="'$(NoBuild)' == 'true'">false</BuildProjectReferences>
+        <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);IncludeCliGeneratorInPackage</TargetsForTfmSpecificContentInPackage>
+        <_CliGeneratorPackageFramework>$(TargetFrameworks.Split(';').GetValue(0))</_CliGeneratorPackageFramework>
         <PackageReadmeFile>Readme.md</PackageReadmeFile>
         <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
         <PackageIcon>lokad.png</PackageIcon>
@@ -19,15 +22,22 @@
         <None Include="Readme.md" Pack="true" PackagePath="\" />
         <None Include="..\LICENSE.txt" Pack="true" PackagePath="\" />
         <None Include="..\lokad.png" Pack="true" PackagePath="\" />
-        <None Include="..\Lokad.Cli.Generator\bin\$(Configuration)\netstandard2.0\Lokad.Cli.Generator.dll"
-              Pack="true"
-              PackagePath="analyzers/dotnet/cs" />
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\Lokad.Cli.Generator\Lokad.Cli.Generator.csproj"
                           PrivateAssets="all"
+                          OutputItemType="CliGeneratorOutput"
                           ReferenceOutputAssembly="false" />
     </ItemGroup>
+
+    <!-- The generator is shared by all target frameworks; include it only once. -->
+    <Target Name="IncludeCliGeneratorInPackage"
+            DependsOnTargets="ResolveProjectReferences"
+            Condition="'$(TargetFramework)' == '$(_CliGeneratorPackageFramework)'">
+        <ItemGroup>
+            <TfmSpecificPackageFile Include="@(CliGeneratorOutput)" PackagePath="analyzers/dotnet/cs" />
+        </ItemGroup>
+    </Target>
 
 </Project>
