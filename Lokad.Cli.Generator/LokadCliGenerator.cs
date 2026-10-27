@@ -363,10 +363,24 @@ namespace Lokad.Cli.Generator
                         throw ConstructorError("the constructor call without arguments is ambiguous");
                     }
                 }
+                var constructorSetsRequiredMembers = boundConstructor != null && System.Linq.Enumerable.Any(
+                    boundConstructor.GetAttributes(), attribute =>
+                        attribute.AttributeClass?.ToDisplayString() == "System.Diagnostics.CodeAnalysis.SetsRequiredMembersAttribute");
                 foreach (var parameter in constructorArguments)
                 {
                     if (parameter.Member != null)
+                    {
+                        if (!constructorSetsRequiredMembers && IsRequiredMember(parameter.Member))
+                        {
+                            var reason = "constructor-bound required member '" + parameter.Member.Name +
+                                         "' requires SetsRequiredMembers on its constructor";
+                            if (groupUsage != null)
+                                throw GroupError(groupUsage, path, reason);
+                            throw new GeneratorException(GetAttributeLocation(parameter.Annotation),
+                                GeneratorException.InvalidArgumentConstructor, declaration.Name, reason);
+                        }
                         constructorBoundMembers.Add(parameter.Member);
+                    }
                     AddMember(parameter.Parameter, parameter.Annotation, true);
                 }
                 foreach (var member in declaration.GetMembers())
@@ -386,6 +400,9 @@ namespace Lokad.Cli.Generator
 
                 GeneratorException ConstructorError(string reason) =>
                     new GeneratorException(GeneratorException.InvalidArgumentConstructor, declaration.Name, reason);
+
+                static bool IsRequiredMember(ISymbol symbol) =>
+                    symbol is IPropertySymbol property && property.IsRequired || symbol is IFieldSymbol field && field.IsRequired;
 
                 bool HasAmbiguousZeroArgumentCall()
                 {

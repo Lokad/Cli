@@ -58,6 +58,25 @@ public sealed class BindingTargetCommandTests
         Assert.Equal("private", Parser.Parse<PartialOptionalArgs>(System.Array.Empty<string>()).Constructor);
         Assert.Equal("zero", Parser.Parse<PreferredZeroArgs>(System.Array.Empty<string>()).Constructor);
     }
+
+    [Fact]
+    public void PreservesConstructorInitializationOfRequiredMembers()
+    {
+        var direct = Parser.Parse<RequiredConstructorArgs>(new[] { "--value=7" });
+        Assert.Equal(8, direct.Value);
+        Assert.Equal(1, direct.Assignments);
+        var grouped = Parser.Parse<RequiredConstructorGroupArgs>(new[] { "--value=9" }).Options;
+        Assert.Equal(10, grouped.Value);
+        Assert.Equal(1, grouped.Assignments);
+    }
+
+    [Fact]
+    public void InitializesRequiredPropertiesAndFieldsWithoutConstructorBinding()
+    {
+        var parsed = Parser.Parse<RequiredInitializerArgs>(new[] { "--value=7", "--other=8" });
+        Assert.Equal(7, parsed.Value);
+        Assert.Equal(8, parsed.Other);
+    }
 }
 
 [Arguments("Read-only result.")]
@@ -160,4 +179,25 @@ public partial class PreferredZeroArgs
     public PreferredZeroArgs() => Constructor = "zero";
     public PreferredZeroArgs(int value = 1) => Constructor = "optional";
     public string Constructor { get; }
+}
+
+[Arguments("Constructor-initialized required member.")]
+public partial class RequiredConstructorArgs
+{
+    private int _value;
+    public int Assignments { get; private set; }
+    [Argument("Value.", Long = "value")]
+    public required int Value { get => _value; init { _value = value; Assignments++; } }
+    [System.Diagnostics.CodeAnalysis.SetsRequiredMembers]
+    public RequiredConstructorArgs(int Value) => this.Value = Value + 1;
+}
+
+[Arguments("Required constructor group.")]
+public partial record RequiredConstructorGroupArgs([property: Argument("Options.")] RequiredConstructorArgs Options);
+
+[Arguments("Required initialized members.")]
+public partial class RequiredInitializerArgs
+{
+    [Argument("Value.", Long = "value")] public required int Value { get; init; }
+    [Argument("Other.", Long = "other")] public required int Other;
 }

@@ -43,3 +43,20 @@ public partial class AmbiguousParams
 
 [Arguments("Ambiguous group constructor.")]
 public partial record AmbiguousConstructorGroup([property: Argument("Options.")] AmbiguousOptional Options);
+
+[Arguments("Required constructor-bound property.")]
+public partial class RequiredProperty
+{
+    [Argument("Value.", Long = "value")] public required int Value { get; init; }
+    public RequiredProperty(int Value) { this.Value = Value; }
+}
+
+[Arguments("Required constructor-bound field.")]
+public partial class RequiredField
+{
+    [Argument("Value.", Long = "value")] public required int value;
+    public RequiredField([Argument("Value.", Long = "value")] int value) { this.value = value; }
+}
+
+[Arguments("Required member in a group.")]
+public partial record RequiredConstructorGroup([property: Argument("Options.")] RequiredProperty Options);

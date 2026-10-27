@@ -44,14 +44,15 @@ public static class GeneratorTestFixture
     internal static void AssertCompiles(string source, IIncrementalGenerator generator, IReadOnlyList<MetadataReference> additionalReferences)
     {
         var generated = Generate(new[] { CSharpSyntaxTree.ParseText(source, ParseOptions, path: "Example.cs") }, "Example", generator, additionalReferences);
-        Assert.DoesNotContain(generated, file => file.FileName == "Diagnostics.txt");
+        var diagnostics = string.Join("\n", generated.Where(file => file.FileName == "Diagnostics.txt").Select(file => file.Source));
+        Assert.True(diagnostics.Length == 0, diagnostics);
     }
 
     internal static PortableExecutableReference CompileReference(string assemblyName, string source)
     {
         var compilation = CSharpCompilation.Create(assemblyName,
             new[] { CSharpSyntaxTree.ParseText(source, ParseOptions) },
-            new[] { MetadataReference.CreateFromFile(typeof(object).Assembly.Location) },
+            CreateReferences(),
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
         using var stream = new MemoryStream();
         var emitted = compilation.Emit(stream);
@@ -62,20 +63,10 @@ public static class GeneratorTestFixture
     private static IReadOnlyList<(string FileName, string Source)> Generate(
         IReadOnlyList<SyntaxTree> syntaxTrees, string assemblyName, IIncrementalGenerator generator, IReadOnlyList<MetadataReference> additionalReferences)
     {
-
-        var runtimeDirectory = System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory();
-        var references = new[]
-        {
-            MetadataReference.CreateFromFile(Path.Combine(runtimeDirectory, "System.Runtime.dll")),
-            MetadataReference.CreateFromFile(Path.Combine(runtimeDirectory, "System.Private.CoreLib.dll")),
-            MetadataReference.CreateFromFile(typeof(Console).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(ArgumentsAttribute).Assembly.Location),
-        };
-
         var compilation = CSharpCompilation.Create(
             assemblyName,
             syntaxTrees,
-            references.Concat(additionalReferences),
+            CreateReferences().Concat(additionalReferences),
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
         var syntaxDiagnostics = syntaxTrees.SelectMany(tree => tree.GetDiagnostics())
@@ -89,6 +80,18 @@ public static class GeneratorTestFixture
 
         driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
         return CollectResults(driver, outputCompilation, diagnostics, syntaxDiagnostics, parseDiagnostics);
+    }
+
+    private static MetadataReference[] CreateReferences()
+    {
+        var runtimeDirectory = System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory();
+        return new[]
+        {
+            MetadataReference.CreateFromFile(Path.Combine(runtimeDirectory, "System.Runtime.dll")),
+            MetadataReference.CreateFromFile(Path.Combine(runtimeDirectory, "System.Private.CoreLib.dll")),
+            MetadataReference.CreateFromFile(typeof(Console).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(ArgumentsAttribute).Assembly.Location),
+        };
     }
 
     private static IReadOnlyList<(string FileName, string Source)> CollectResults(
