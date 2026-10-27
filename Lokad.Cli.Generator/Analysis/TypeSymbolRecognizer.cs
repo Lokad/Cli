@@ -1,3 +1,4 @@
+using System;
 using System.Runtime.CompilerServices;
 using Microsoft.CodeAnalysis;
 
@@ -5,13 +6,13 @@ namespace Lokad.Cli.Generator.Analysis
 {
     public static class TypeSymbolRecognizer
     {
-        internal static TypeRecognizer IsNamed(string fullyQualifiedName)
+        internal static TypeRecognizer FromResolver(Func<Compilation, INamedTypeSymbol?> resolve)
         {
             var types = new ConditionalWeakTable<Compilation, ResolvedType>();
-            ConditionalWeakTable<Compilation, ResolvedType>.CreateValueCallback resolve =
-                compilation => new ResolvedType(compilation.GetTypeByMetadataName(fullyQualifiedName));
+            ConditionalWeakTable<Compilation, ResolvedType>.CreateValueCallback create =
+                compilation => new ResolvedType(resolve(compilation));
 
-            return (compilation, type) => SymbolEqualityComparer.Default.Equals(types.GetValue(compilation, resolve).Symbol, type);
+            return (compilation, type) => SymbolEqualityComparer.Default.Equals(types.GetValue(compilation, create).Symbol, type);
         }
 
         private sealed class ResolvedType

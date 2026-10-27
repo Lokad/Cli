@@ -6,9 +6,11 @@ namespace Lokad.Cli.Generator.Tests;
 public sealed class AttributeIdentityTests
 {
     [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void IgnoresForeignAttributeNamesInEitherDeclarationOrder(bool foreignFirst)
+    [InlineData(true, false)]
+    [InlineData(false, false)]
+    [InlineData(true, true)]
+    [InlineData(false, true)]
+    public void IgnoresForeignAttributeNamesInEitherDeclarationOrder(bool foreignFirst, bool foreignGlobal)
     {
         const string foreignSource = """
             namespace Lokad.Cli;
@@ -16,6 +18,16 @@ public sealed class AttributeIdentityTests
             public sealed class ArgumentsAttribute : System.Attribute
             {
                 public ArgumentsAttribute(string documentation) { }
+            }
+            [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Parameter)]
+            public sealed class ArgumentAttribute : System.Attribute
+            {
+                public ArgumentAttribute(string documentation) { }
+            }
+            [System.AttributeUsage(System.AttributeTargets.Interface, AllowMultiple = true)]
+            public sealed class ChoiceAttribute : System.Attribute
+            {
+                public ChoiceAttribute(System.Type type) { }
             }
             """;
         var compilation = CSharpCompilation.Create("ForeignAnnotations",
@@ -25,20 +37,29 @@ public sealed class AttributeIdentityTests
         using var stream = new MemoryStream();
         var emitted = compilation.Emit(stream);
         Assert.True(emitted.Success, string.Join("\n", emitted.Diagnostics));
-        var reference = MetadataReference.CreateFromImage(stream.ToArray()).WithAliases(new[] { "foreign" });
+        var reference = MetadataReference.CreateFromImage(stream.ToArray())
+            .WithAliases(foreignGlobal ? new[] { "global", "foreign" } : new[] { "foreign" });
 
-        const string foreign = "[foreign::Lokad.Cli.Arguments(\"Foreign.\")] public class ForeignMarked { }";
+        const string foreign = """
+            [foreign::Lokad.Cli.Arguments("Foreign.")] public class ForeignMarked { }
+            [foreign::Lokad.Cli.Choice(typeof(ForeignMarked))] public interface ForeignChoice { }
+            """;
         const string actual = """
-            [Arguments("Actual.")]
-            public partial record Actual([property: Argument("Value.", Long = "value")] int Value);
+            [runtime::Lokad.Cli.Choice(typeof(Actual))]
+            public partial interface IActual { int Value { get; } }
+            [runtime::Lokad.Cli.Arguments("Actual.")]
+            public partial record Actual([property: runtime::Lokad.Cli.Argument("Value.", Long = "value")] int Value) : IActual
+            {
+                [foreign::Lokad.Cli.Argument("Ignored.")] public int Ignored => 0;
+            }
             """;
         const string usage = """
             public static class Usage
             {
-                public static int Run() => Parser.Parse<Actual>(new[] { "--value=7" }).Value;
+                public static int Run() => Parser.Parse<IActual>(new[] { "--value=7" }).Value;
             }
             """;
-        var source = "extern alias foreign; using Lokad.Cli; namespace Example; " +
+        var source = "extern alias runtime; extern alias foreign; using Lokad.Cli; namespace Example; " +
             (foreignFirst ? foreign + actual : actual + foreign) + usage;
         GeneratorTestFixture.AssertCompiles(source, new LokadCliGenerator(), new[] { reference });
     }

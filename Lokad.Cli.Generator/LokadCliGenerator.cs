@@ -12,13 +12,13 @@ namespace Lokad.Cli.Generator
     public sealed class LokadCliGenerator : BaseIncrementalGenerator
     {
         private readonly TypeRecognizer _argumentAttribute =
-            Recognize.Type("Lokad.Cli.ArgumentAttribute");
+            Recognize.CliType("Lokad.Cli.ArgumentAttribute");
 
         private readonly TypeRecognizer _argumentsAttribute =
-            Recognize.Type("Lokad.Cli.ArgumentsAttribute");
+            Recognize.CliType("Lokad.Cli.ArgumentsAttribute");
 
         private readonly TypeRecognizer _choiceAttribute =
-            Recognize.Type("Lokad.Cli.ChoiceAttribute");
+            Recognize.CliType("Lokad.Cli.ChoiceAttribute");
 
         private readonly TypeRecognizer _readOnlyList =
             Recognize.Type("System.Collections.Generic.IReadOnlyList`1");
@@ -27,7 +27,7 @@ namespace Lokad.Cli.Generator
             Recognize.Type("System.ReadOnlyMemory`1");
 
         private readonly TypeRecognizer _optionalValue =
-            Recognize.Type("Lokad.Cli.OptionalValue`1");
+            Recognize.CliType("Lokad.Cli.OptionalValue`1");
 
         public LokadCliGenerator()
             : base("lkc")
