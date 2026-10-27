@@ -1,4 +1,4 @@
-using System;
+using System.Runtime.CompilerServices;
 using Microsoft.CodeAnalysis;
 
 namespace Lokad.Cli.Generator.Analysis
@@ -7,40 +7,18 @@ namespace Lokad.Cli.Generator.Analysis
     {
         internal static TypeRecognizer IsNamed(string fullyQualifiedName)
         {
-            var comparer = SymbolEqualityComparer.Default;
-            var weakCompilation = new WeakReference<Compilation?>(null);
-            var weakType = new WeakReference<ITypeSymbol?>(null);
+            var types = new ConditionalWeakTable<Compilation, ResolvedType>();
+            ConditionalWeakTable<Compilation, ResolvedType>.CreateValueCallback resolve =
+                compilation => new ResolvedType(compilation.GetTypeByMetadataName(fullyQualifiedName));
 
-            return (compilation, type) =>
-            {
-                if (weakCompilation.TryGetTarget(out var cachedCompilation) &&
-                    weakType.TryGetTarget(out var cachedType) &&
-                    ReferenceEquals(cachedCompilation, compilation))
-                {
-                    return comparer.Equals(cachedType, type);
-                }
+            return (compilation, type) => SymbolEqualityComparer.Default.Equals(types.GetValue(compilation, resolve).Symbol, type);
+        }
 
-                var maybeType = compilation.GetTypeByMetadataName(fullyQualifiedName);
-                if (maybeType != null)
-                {
-                    if (comparer.Equals(maybeType, type))
-                    {
-                        weakCompilation.SetTarget(compilation);
-                        weakType.SetTarget(maybeType);
-                        return true;
-                    }
-                }
+        private sealed class ResolvedType
+        {
+            public ResolvedType(INamedTypeSymbol? symbol) => Symbol = symbol;
 
-                if (fullyQualifiedName == type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) ||
-                    fullyQualifiedName == type.ToDisplayString())
-                {
-                    weakCompilation.SetTarget(compilation);
-                    weakType.SetTarget(type);
-                    return true;
-                }
-
-                return false;
-            };
+            public INamedTypeSymbol? Symbol { get; }
         }
     }
 }

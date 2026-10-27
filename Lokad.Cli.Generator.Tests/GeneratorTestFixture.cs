@@ -33,19 +33,22 @@ public static class GeneratorTestFixture
             })
             .ToArray();
 
-        return Generate(syntaxTrees, assemblyName, new LokadCliGenerator());
+        return Generate(syntaxTrees, assemblyName, new LokadCliGenerator(), Array.Empty<MetadataReference>());
     }
 
     internal static void AssertCompiles(string source) => AssertCompiles(source, new LokadCliGenerator());
 
-    internal static void AssertCompiles(string source, IIncrementalGenerator generator)
+    internal static void AssertCompiles(string source, IIncrementalGenerator generator) =>
+        AssertCompiles(source, generator, Array.Empty<MetadataReference>());
+
+    internal static void AssertCompiles(string source, IIncrementalGenerator generator, IReadOnlyList<MetadataReference> additionalReferences)
     {
-        var generated = Generate(new[] { CSharpSyntaxTree.ParseText(source, ParseOptions, path: "Example.cs") }, "Example", generator);
+        var generated = Generate(new[] { CSharpSyntaxTree.ParseText(source, ParseOptions, path: "Example.cs") }, "Example", generator, additionalReferences);
         Assert.DoesNotContain(generated, file => file.FileName == "Diagnostics.txt");
     }
 
     private static IReadOnlyList<(string FileName, string Source)> Generate(
-        IReadOnlyList<SyntaxTree> syntaxTrees, string assemblyName, IIncrementalGenerator generator)
+        IReadOnlyList<SyntaxTree> syntaxTrees, string assemblyName, IIncrementalGenerator generator, IReadOnlyList<MetadataReference> additionalReferences)
     {
 
         var runtimeDirectory = System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory();
@@ -60,7 +63,7 @@ public static class GeneratorTestFixture
         var compilation = CSharpCompilation.Create(
             assemblyName,
             syntaxTrees,
-            references,
+            references.Concat(additionalReferences),
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
         var syntaxDiagnostics = syntaxTrees.SelectMany(tree => tree.GetDiagnostics())
