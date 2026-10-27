@@ -23,7 +23,8 @@ namespace Lokad.Cli
         public string Documentation { get; }
 
         /// <summary>
-        ///     Positional discriminator prefix required for this argument shape.
+        ///     Positional discriminator prefix required when selecting this shape as a choice.
+        ///     Optional when parsing this shape directly.
         ///     Cannot be combined with <see cref="Long"/> or <see cref="Short"/>.
         /// </summary>
         public string? Prefix { get; set; }
