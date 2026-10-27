@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.Loader;
 using System.Text;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
@@ -33,7 +34,7 @@ public static class GeneratorTestFixture
             })
             .ToArray();
 
-        return Generate(syntaxTrees, assemblyName, new LokadCliGenerator(), Array.Empty<MetadataReference>());
+        return Generate(syntaxTrees, assemblyName, new LokadCliGenerator(), Array.Empty<MetadataReference>(), null);
     }
 
     internal static void AssertCompiles(string source) => AssertCompiles(source, new LokadCliGenerator());
@@ -43,7 +44,30 @@ public static class GeneratorTestFixture
 
     internal static void AssertCompiles(string source, IIncrementalGenerator generator, IReadOnlyList<MetadataReference> additionalReferences)
     {
-        var generated = Generate(new[] { CSharpSyntaxTree.ParseText(source, ParseOptions, path: "Example.cs") }, "Example", generator, additionalReferences);
+        var generated = Generate(new[] { CSharpSyntaxTree.ParseText(source, ParseOptions, path: "Example.cs") }, "Example", generator, additionalReferences, null);
+        AssertNoDiagnostics(generated);
+    }
+
+    internal static void AssertRuns(string source, IReadOnlyList<MetadataReference> additionalReferences, string expected)
+    {
+        var generated = Generate(new[] { CSharpSyntaxTree.ParseText(source, ParseOptions, path: "Example.cs") },
+            "Example", new LokadCliGenerator(), additionalReferences, stream =>
+            {
+                var context = new AssemblyLoadContext("GeneratedParser", isCollectible: true);
+                try
+                {
+                    var assembly = context.LoadFromStream(stream);
+                    var type = assembly.GetType("Example.Usage") ?? throw new InvalidOperationException("Missing Example.Usage.");
+                    var run = type.GetMethod("Run") ?? throw new InvalidOperationException("Missing Usage.Run.");
+                    Assert.Equal(expected, run.Invoke(null, null));
+                }
+                finally { context.Unload(); }
+            });
+        AssertNoDiagnostics(generated);
+    }
+
+    private static void AssertNoDiagnostics(IReadOnlyList<(string FileName, string Source)> generated)
+    {
         var diagnostics = string.Join("\n", generated.Where(file => file.FileName == "Diagnostics.txt").Select(file => file.Source));
         Assert.True(diagnostics.Length == 0, diagnostics);
     }
@@ -61,7 +85,8 @@ public static class GeneratorTestFixture
     }
 
     private static IReadOnlyList<(string FileName, string Source)> Generate(
-        IReadOnlyList<SyntaxTree> syntaxTrees, string assemblyName, IIncrementalGenerator generator, IReadOnlyList<MetadataReference> additionalReferences)
+        IReadOnlyList<SyntaxTree> syntaxTrees, string assemblyName, IIncrementalGenerator generator,
+        IReadOnlyList<MetadataReference> additionalReferences, Action<Stream>? inspectAssembly)
     {
         var compilation = CSharpCompilation.Create(
             assemblyName,
@@ -79,7 +104,7 @@ public static class GeneratorTestFixture
             parseOptions: ParseOptions);
 
         driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
-        return CollectResults(driver, outputCompilation, diagnostics, syntaxDiagnostics, parseDiagnostics);
+        return CollectResults(driver, outputCompilation, diagnostics, syntaxDiagnostics, parseDiagnostics, inspectAssembly);
     }
 
     private static MetadataReference[] CreateReferences()
@@ -99,7 +124,8 @@ public static class GeneratorTestFixture
         Compilation outputCompilation,
         ImmutableArray<Diagnostic> diagnostics,
         IEnumerable<Diagnostic> syntaxDiagnostics,
-        IEnumerable<Diagnostic> parseDiagnostics)
+        IEnumerable<Diagnostic> parseDiagnostics,
+        Action<Stream>? inspectAssembly)
     {
         var result = driver.GetRunResult();
         foreach (var run in result.Results)
@@ -136,6 +162,8 @@ public static class GeneratorTestFixture
             using var stream = new MemoryStream();
             var emitted = outputCompilation.Emit(stream);
             Assert.True(emitted.Success, string.Join(Environment.NewLine, emitted.Diagnostics));
+            stream.Position = 0;
+            inspectAssembly?.Invoke(stream);
         }
 
         var generatedSources =

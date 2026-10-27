@@ -1,4 +1,5 @@
 using System;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
 namespace Lokad.Cli.Generator.Emit
@@ -648,7 +649,7 @@ $@"#nullable enable
 
         private static string GetParseMethod(CliTypeInfo type, CliArgumentInfo argument)
         {
-            var method = GetBuiltInParseMethod(argument.TypeName.FullName) ??
+            var method = GetBuiltInParseMethod(argument.SpecialType) ??
                 (argument.IsEnum ? "ParseEnum<" + argument.TypeName.FullName + ">" : "ParseCustom<" + argument.TypeName.FullName + ">");
             return method.Length == 0 ? method : GetImplementationName(type, method);
         }
@@ -659,29 +660,23 @@ $@"#nullable enable
             return generic < 0 ? method + type.ImplementationSuffix : method.Insert(generic, type.ImplementationSuffix);
         }
 
-        private static string? GetBuiltInParseMethod(string type)
+        private static string? GetBuiltInParseMethod(SpecialType type)
         {
             switch (type)
             {
-                case "string":
-                case "global::System.String":
+                case SpecialType.System_String:
                     return string.Empty;
-                case "int":
-                case "global::System.Int32":
+                case SpecialType.System_Int32:
                     return "ParseInt32";
-                case "uint":
-                case "global::System.UInt32":
+                case SpecialType.System_UInt32:
                     return "ParseUInt32";
-                case "long":
-                case "global::System.Int64":
+                case SpecialType.System_Int64:
                     return "ParseInt64";
-                case "ulong":
-                case "global::System.UInt64":
+                case SpecialType.System_UInt64:
                     return "ParseUInt64";
-                case "double":
-                case "global::System.Double":
+                case SpecialType.System_Double:
                     return "ParseDouble";
-                case "global::System.DateTime":
+                case SpecialType.System_DateTime:
                     return "ParseDateTime";
                 default:
                     return null;
@@ -691,7 +686,7 @@ $@"#nullable enable
         private static string GetBoundValueType(CliArgumentInfo argument)
         {
             var type = argument.TypeName.FullName;
-            if (type == "string" || type == "global::System.String")
+            if (argument.SpecialType == SpecialType.System_String)
                 type = "string";
 
             if (argument.IsNullable)
@@ -729,34 +724,34 @@ $@"#nullable enable
 
             var helpers = new System.Text.StringBuilder();
 
-            if (UsesType("int", "global::System.Int32"))
+            if (GetTypeName(SpecialType.System_Int32) != null)
                 helpers.Append(EmitValueParser("int", "ParseInt32",
                     "global::System.Int32.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out parsed)",
                     string.Empty, string.Empty));
 
-            if (UsesType("uint", "global::System.UInt32"))
+            if (GetTypeName(SpecialType.System_UInt32) != null)
                 helpers.Append(EmitValueParser("uint", "ParseUInt32",
                     "global::System.UInt32.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out parsed)",
                     string.Empty, string.Empty));
 
-            if (UsesType("long", "global::System.Int64"))
+            if (GetTypeName(SpecialType.System_Int64) != null)
                 helpers.Append(EmitValueParser("long", "ParseInt64",
                     "global::System.Int64.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out parsed)",
                     string.Empty, string.Empty));
 
-            if (UsesType("ulong", "global::System.UInt64"))
+            if (GetTypeName(SpecialType.System_UInt64) != null)
                 helpers.Append(EmitValueParser("ulong", "ParseUInt64",
                     "global::System.UInt64.TryParse(value, global::System.Globalization.NumberStyles.Integer, global::System.Globalization.CultureInfo.InvariantCulture, out parsed)",
                     string.Empty, string.Empty));
 
-            if (UsesType("double", "global::System.Double"))
+            if (GetTypeName(SpecialType.System_Double) != null)
                 helpers.Append(EmitValueParser("double", "ParseDouble",
                     "global::System.Double.TryParse(value, global::System.Globalization.NumberStyles.Float | global::System.Globalization.NumberStyles.AllowThousands, global::System.Globalization.CultureInfo.InvariantCulture, out parsed)",
                     string.Empty, string.Empty));
 
-            if (UsesType("global::System.DateTime"))
-                helpers.Append(EmitValueParser("global::System.DateTime", "ParseDateTime",
-                    "global::System.DateTime.TryParse(value, global::System.Globalization.CultureInfo.InvariantCulture, global::System.Globalization.DateTimeStyles.None, out parsed)",
+            if (GetTypeName(SpecialType.System_DateTime) is string dateTimeType)
+                helpers.Append(EmitValueParser(dateTimeType, "ParseDateTime",
+                    dateTimeType + ".TryParse(value, global::System.Globalization.CultureInfo.InvariantCulture, global::System.Globalization.DateTimeStyles.None, out parsed)",
                     string.Empty, string.Empty));
 
             if (Array.Exists(type.Arguments, argument => argument.IsEnum))
@@ -765,7 +760,7 @@ $@"#nullable enable
                     "where TEnum : struct, global::System.Enum", string.Empty));
 
             if (Array.Exists(type.Arguments, argument => !argument.IsBoolean && !argument.IsEnum &&
-                    GetBuiltInParseMethod(argument.TypeName.FullName) == null))
+                    GetBuiltInParseMethod(argument.SpecialType) == null))
                 helpers.Append(EmitValueParser("TValue", "ParseCustom<TValue>",
                     "TValue.TryParse(value, null, out parsed)", "where TValue : global::System.IParsable<TValue>",
                     "[global::System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] "));
@@ -779,13 +774,12 @@ $@"#nullable enable
             lines.Append(helpers);
             return lines.ToString();
 
-            bool UsesType(params string[] typeNames)
+            string? GetTypeName(SpecialType specialType)
             {
                 foreach (var argument in type.Arguments)
-                    foreach (var typeName in typeNames)
-                        if (argument.TypeName.FullName == typeName)
-                            return true;
-                return false;
+                    if (argument.SpecialType == specialType)
+                        return argument.TypeName.FullName;
+                return null;
             }
 
             string EmitValueParser(string returnType, string method, string tryExpression, string constraints, string outAnnotation)

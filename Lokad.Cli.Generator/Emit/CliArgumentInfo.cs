@@ -8,6 +8,7 @@ namespace Lokad.Cli.Generator.Emit
         public CliArgumentInfo(
             string name,
             TypeName typeName,
+            SpecialType specialType,
             bool isReferenceType,
             bool isNullable,
             bool isBoolean,
@@ -31,6 +32,7 @@ namespace Lokad.Cli.Generator.Emit
         {
             Name = name;
             TypeName = typeName;
+            SpecialType = specialType;
             IsReferenceType = isReferenceType;
             IsNullable = isNullable;
             IsBoolean = isBoolean;
@@ -56,6 +58,9 @@ namespace Lokad.Cli.Generator.Emit
         public string Name { get; }
 
         public TypeName TypeName { get; }
+
+        /// <summary>Roslyn classification of the converted input type, independent of its emitted name.</summary>
+        public SpecialType SpecialType { get; }
 
         /// <summary>Whether the converted input value is a reference type.</summary>
         public bool IsReferenceType { get; }

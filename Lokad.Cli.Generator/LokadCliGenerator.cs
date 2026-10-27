@@ -505,6 +505,7 @@ namespace Lokad.Cli.Generator
                     var argument = new CliArgumentInfo(
                         member.Name,
                         typeNames.FromSymbol(bindableType),
+                        bindableType.SpecialType,
                         bindableType.IsReferenceType,
                         isNullable,
                         !isOptionalValue && collectionKind == CliCollectionKind.None && bindableType.SpecialType == SpecialType.System_Boolean,
