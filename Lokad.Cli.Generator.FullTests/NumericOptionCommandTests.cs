@@ -17,10 +17,35 @@ public sealed class NumericOptionCommandTests
         Assert.Equal(7, Assert.IsType<NumericFirst>(Parser.Parse<INumericChoice>(new[] { "first", "-7" })).Number);
         Assert.Equal(9, Assert.IsType<NumericSecond>(Parser.Parse<INumericChoice>(new[] { "second", "-9" })).Number);
     }
+
+    [Fact]
+    public void ReportsMissingNumericShorthandWithItsDocumentedLabel()
+    {
+        var error = Assert.Throws<ParseException>(() => Parser.Parse<RequiredNumericArgs>(System.Array.Empty<string>()));
+        Assert.Equal("missing option `-<number>`", error.Message);
+        Assert.Contains("-<number>: Count.", Parser.Document<RequiredNumericArgs>("app"));
+        Assert.Equal(7, Parser.Parse<RequiredNumericArgs>(new[] { "-7" }).Count);
+    }
+
+    [Fact]
+    public void PreservesThePrimaryNameForRequiredNamedNumericOptions()
+    {
+        var error = Assert.Throws<ParseException>(() => Parser.Parse<RequiredNamedNumericArgs>(System.Array.Empty<string>()));
+        Assert.Equal("missing option `--count`", error.Message);
+        Assert.Equal(7, Parser.Parse<RequiredNamedNumericArgs>(new[] { "-7" }).Count);
+        Assert.Equal(8, Parser.Parse<RequiredNamedNumericArgs>(new[] { "--limit=8" }).Count);
+    }
 }
 
 [Arguments("Named numeric shorthand.")]
 public partial record NamedNumericArgs([property: Argument("Depth.", Long = "depth", ShortNumeric = true)] int? Depth);
+
+[Arguments("Required numeric shorthand.")]
+public partial record RequiredNumericArgs([property: Argument("Count.", ShortNumeric = true)] int Count);
+
+[Arguments("Required named numeric shorthand.")]
+public partial record RequiredNamedNumericArgs(
+    [property: Argument("Count.", LongNames = new[] { "count", "limit" }, ShortNumeric = true)] int Count);
 
 [Choice(typeof(NumericFirst))]
 [Choice(typeof(NumericSecond))]

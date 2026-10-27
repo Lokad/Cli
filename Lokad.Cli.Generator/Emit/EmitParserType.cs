@@ -283,7 +283,7 @@ $@"#nullable enable
                     if (argument.IsOption)
                     {
                         lines.Append("            throw new global::Lokad.Cli.ParseException(")
-                            .Append(FormatStringLiteral("missing option `" + argument.Options.PrimaryLabel + "`"))
+                            .Append(FormatStringLiteral("missing option `" + argument.PrimaryLabel + "`"))
                             .AppendLine(");");
                     }
                     else
@@ -508,7 +508,7 @@ $@"#nullable enable
         }
 
         private static string GetOptionLabel<T>(CliArgumentInfo argument, System.Collections.Generic.IReadOnlyList<T> names, string prefix) =>
-            argument.Options.HasAliases ? argument.Options.PrimaryLabel : prefix + names[0];
+            argument.Options.HasAliases ? argument.PrimaryLabel : prefix + names[0];
 
         private static string EmitBooleanFlag(CliTypeInfo type, int index, CliArgumentInfo argument, string label, string indent)
         {
@@ -535,7 +535,7 @@ $@"#nullable enable
                     continue;
 
                 lines.AppendLine("                    {");
-                var label = argument.Options.HasAliases ? FormatStringLiteral(argument.Options.PrimaryLabel) : "\"-\" + numericShortArg.Value";
+                var label = argument.Options.HasAliases ? FormatStringLiteral(argument.PrimaryLabel) : "\"-\" + numericShortArg.Value";
                 lines.Append(EmitAssign(type, i, argument, "numericShortArg.Value", label, "                        "));
                 lines.AppendLine("                        break;");
                 lines.AppendLine("                    }");
@@ -909,11 +909,11 @@ $@"#nullable enable
                     return string.Join(", ", names);
                 }
                 var labels = string.Join(", ", argument.Options.Labels);
-                return argument.ShortNumeric ? labels + ", -<number>" : labels;
+                return argument.ShortNumeric ? labels + ", " + CliArgumentInfo.NumericShortLabel : labels;
             }
 
             if (argument.ShortNumeric)
-                return "-<number>";
+                return CliArgumentInfo.NumericShortLabel;
 
             return GetPositionalDocumentationPlaceholder(argument);
         }

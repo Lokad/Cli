@@ -110,7 +110,7 @@ namespace Lokad.Cli.Generator
                     throw new GeneratorException(argument.Location, GeneratorException.InvalidBooleanFlag, argument.Path);
 
                 if (argument.ShortNumeric)
-                    AddOwner("-<number>", argument);
+                    AddOwner(CliArgumentInfo.NumericShortLabel, argument);
                 foreach (var label in argument.Options.Labels)
                     AddOwner(label, argument);
             }

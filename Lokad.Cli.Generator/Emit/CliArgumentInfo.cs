@@ -5,6 +5,8 @@ namespace Lokad.Cli.Generator.Emit
 {
     public sealed class CliArgumentInfo
     {
+        public const string NumericShortLabel = "-<number>";
+
         public CliArgumentInfo(
             string name,
             TypeName typeName,
@@ -86,6 +88,8 @@ namespace Lokad.Cli.Generator.Emit
         public string? DocumentationName { get; }
 
         public CliOptionNames Options { get; }
+
+        public string PrimaryLabel => ShortNumeric && !Options.HasNamedOption ? NumericShortLabel : Options.PrimaryLabel;
 
         public bool ShortNumeric { get; }
 
